@@ -9,7 +9,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Clock,
-  Check,
   Calendar as CalendarIcon,
   User,
   Mail,
@@ -96,8 +95,7 @@ export default function AdminAppointments() {
   const deleteAppointment = useDeleteAppointment();
   const createAppointmentMutation = useCreateAppointment();
 
-  const handlePrev = () => setCurrentDate(addDays(currentDate, isMobile ? -1 : -7));
-  const handleNext = () => setCurrentDate(addDays(currentDate, isMobile ? 1 : -7));
+
   
   // Corregir handleNext (tenía un error en el código original de arriba, decía -7 en ambos)
   const handlePrevPeriod = () => setCurrentDate(addDays(currentDate, isMobile ? -1 : -7));

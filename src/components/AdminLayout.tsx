@@ -22,7 +22,7 @@ export default function AdminLayout() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  useAuth();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
