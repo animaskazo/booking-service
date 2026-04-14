@@ -65,19 +65,19 @@ export default function AdminLayout() {
           })}
         </nav>
 
-        <div className="p-4 mt-auto border-t border-slate-800">
-          <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl mb-4">
-            <div className="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center font-bold text-slate-300">
+        <div className="p-4 mt-auto border-t border-slate-800 bg-slate-950/30">
+          <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl mb-4 border border-white/5">
+            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/20">
               {user?.email?.[0].toUpperCase()}
             </div>
             <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-bold truncate">{user?.email?.split('@')[0]}</p>
-              <p className="text-[10px] text-slate-500 font-bold uppercase">Administrador</p>
+              <p className="text-sm font-bold text-white truncate">{user?.email?.split('@')[0]}</p>
+              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Administrador</p>
             </div>
           </div>
           <Button 
             variant="ghost" 
-            className="w-full justify-start text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-xl"
+            className="w-full justify-start text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-xl font-bold transition-all"
             onClick={handleLogout}
           >
             <LogOut className="w-5 h-5 mr-3" />
@@ -87,38 +87,79 @@ export default function AdminLayout() {
       </aside>
 
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-slate-900 text-white flex items-center justify-between px-6 z-50 shadow-lg">
+      <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-slate-900 text-white flex items-center justify-between px-4 z-40 shadow-lg border-b border-slate-800">
         <div className="flex items-center gap-2">
-          <Calendar className="w-6 h-6" />
-          <span className="font-bold">BookingPro</span>
+          <div className="bg-white/10 p-1.5 rounded-lg">
+            <Calendar className="w-5 h-5 text-white" />
+          </div>
+          <span className="font-bold tracking-tight">BookingPro</span>
         </div>
-        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>
-          {isMobileMenuOpen ? <X /> : <Menu />}
-        </button>
+        
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-[12px] text-white shadow-lg shadow-blue-500/20">
+            {user?.email?.[0].toUpperCase()}
+          </div>
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-2 hover:bg-white/5 rounded-lg transition-colors"
+          >
+            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 bg-slate-900 z-40 pt-20 px-6 space-y-2">
-          {sidebarItems.map((item) => (
-            <Link
-              key={item.name}
-              to={item.path}
+        <div className="md:hidden fixed inset-0 bg-slate-900 z-50 pt-20 flex flex-col">
+          {/* Mobile User Header */}
+          <div className="px-6 py-6 border-b border-slate-800 flex items-center gap-4 bg-white/5">
+            <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/20 text-xl">
+              {user?.email?.[0].toUpperCase()}
+            </div>
+            <div>
+              <p className="text-white font-bold">{user?.email?.split('@')[0]}</p>
+              <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Administrador</p>
+            </div>
+            <button 
               onClick={() => setIsMobileMenuOpen(false)}
-              className="flex items-center gap-4 p-4 text-white text-lg font-medium border-b border-slate-800"
+              className="ml-auto bg-slate-800 p-2 rounded-lg text-slate-400"
             >
-              <item.icon className="w-6 h-6 text-slate-400" />
-              {item.name}
-            </Link>
-          ))}
-          <Button 
-            variant="ghost" 
-            className="w-full justify-start text-red-400 p-4 mt-10"
-            onClick={handleLogout}
-          >
-            <LogOut className="w-6 h-6 mr-4" />
-            Cerrar Sesión
-          </Button>
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          <nav className="flex-1 px-6 py-8 space-y-2">
+            {sidebarItems.map((item) => {
+              const isActive = location.pathname === item.path || (item.path === '/admin' && location.pathname === '/admin');
+              return (
+                <Link
+                  key={item.name}
+                  to={item.path}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`
+                    flex items-center gap-4 p-4 rounded-xl text-lg font-bold transition-all
+                    ${isActive 
+                      ? 'bg-white text-slate-900 shadow-xl' 
+                      : 'text-slate-400 hover:text-white hover:bg-white/5'}
+                  `}
+                >
+                  <item.icon className={`w-6 h-6 ${isActive ? 'text-slate-900' : 'text-slate-400'}`} />
+                  {item.name}
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div className="p-6 mt-auto border-t border-slate-800 bg-slate-950/50">
+            <Button 
+              variant="ghost" 
+              className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-400/10 p-6 rounded-2xl font-bold text-lg"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-6 h-6 mr-4" />
+              Cerrar Sesión
+            </Button>
+          </div>
         </div>
       )}
 
