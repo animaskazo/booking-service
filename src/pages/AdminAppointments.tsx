@@ -635,7 +635,7 @@ export default function AdminAppointments() {
               <div className="flex flex-row-reverse gap-3">
                 {selectedApp.status === 'pending' && (
                   <Button
-                    className="flex-1 h-12 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold"
+                    className="flex-1 h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-colors"
                     onClick={() => { handleStatusUpdate(selectedApp.id, 'confirmed'); setSelectedApp(null); }}
                   >
                     Confirmar Cita
