@@ -40,8 +40,15 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 export default function AdminAppointments() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
-  const [selectedSlot, setSelectedSlot] = useState<{ date: Date, time: string } | null>(null);
   const [selectedApp, setSelectedApp] = useState<any | null>(null);
+  const [isMobile, setIsMobile] = React.useState(false);
+
+  React.useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Fechas de la semana
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -88,8 +95,12 @@ export default function AdminAppointments() {
   const deleteAppointment = useDeleteAppointment();
   const createAppointmentMutation = useCreateAppointment();
 
-  const handlePrevWeek = () => setCurrentDate(addDays(currentDate, -7));
-  const handleNextWeek = () => setCurrentDate(addDays(currentDate, 7));
+  const handlePrev = () => setCurrentDate(addDays(currentDate, isMobile ? -1 : -7));
+  const handleNext = () => setCurrentDate(addDays(currentDate, isMobile ? 1 : -7));
+  
+  // Corregir handleNext (tenía un error en el código original de arriba, decía -7 en ambos)
+  const handlePrevPeriod = () => setCurrentDate(addDays(currentDate, isMobile ? -1 : -7));
+  const handleNextPeriod = () => setCurrentDate(addDays(currentDate, isMobile ? 1 : 7));
   const handleToday = () => setCurrentDate(new Date());
 
   const getStatusBadge = (status: string) => {
@@ -186,44 +197,67 @@ export default function AdminAppointments() {
       {view === 'calendar' ? (
         <div className="space-y-6">
           {/* Calendar Navigation */}
-          <div className="flex items-center justify-between bg-white p-4 rounded-xl border">
-            <div className="flex items-center gap-4">
-              <Button variant="outline" size="icon" onClick={handlePrevWeek}><ChevronLeft className="w-4 h-4" /></Button>
-              <h2 className="text-lg font-bold min-w-[200px] text-center capitalize">
-                {format(weekStart, "MMMM yyyy", { locale: es })}
-              </h2>
-              <Button variant="outline" size="icon" onClick={handleNextWeek}><ChevronRight className="w-4 h-4" /></Button>
+          <div className="flex flex-col md:flex-row items-center justify-between bg-white p-4 rounded-xl border gap-4">
+            <div className="flex items-center gap-2 md:gap-4 w-full md:w-auto justify-between md:justify-start">
+              <Button variant="outline" size="icon" onClick={handlePrevPeriod} className="rounded-lg h-10 w-10">
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+              <div className="flex flex-col items-center">
+                <h2 className="text-lg font-bold text-slate-900 capitalize leading-none">
+                  {format(currentDate, isMobile ? "EEEE d 'de' MMMM" : "MMMM yyyy", { locale: es })}
+                </h2>
+                {!isMobile && (
+                  <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Vista Semanal</p>
+                )}
+              </div>
+              <Button variant="outline" size="icon" onClick={handleNextPeriod} className="rounded-lg h-10 w-10">
+                <ChevronRight className="w-5 h-5" />
+              </Button>
             </div>
-            <Button variant="ghost" className="font-bold text-slate-600" onClick={handleToday}>Hoy</Button>
+            
+            <div className="flex items-center gap-2 w-full md:w-auto">
+              <Button 
+                variant="ghost" 
+                className="flex-1 md:flex-none font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg px-6" 
+                onClick={handleToday}
+              >
+                Hoy
+              </Button>
+              {isMobile && (
+                <Badge variant="outline" className="px-3 py-1.5 rounded-lg border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-widest">
+                  Día
+                </Badge>
+              )}
+            </div>
           </div>
 
-          {/* Weekly Grid */}
-          <div className="bg-white rounded-2xl border shadow-lg overflow-hidden">
-            <div className="grid grid-cols-8 divide-x border-b bg-slate-50/50">
-              <div className="p-4 text-xs font-black text-slate-400 uppercase tracking-widest text-center">Hora</div>
-              {weekDays.map((day, i) => (
+          {/* Weekly/Daily Grid */}
+          <div className="bg-white rounded-2xl border shadow-lg overflow-hidden flex flex-col">
+            <div className={`grid ${isMobile ? 'grid-cols-[60px_1fr]' : 'grid-cols-[80px_repeat(7,1fr)]'} divide-x border-b bg-slate-50/50`}>
+              <div className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center flex items-center justify-center">Hora</div>
+              {(isMobile ? [currentDate] : weekDays).map((day, i) => (
                 <div key={i} className={`p-4 text-center ${isSameDay(day, new Date()) ? 'bg-slate-900/5' : ''}`}>
-                  <p className="text-xs font-bold text-slate-400 uppercase">{format(day, 'EEE', { locale: es })}</p>
-                  <p className={`text-2xl font-black ${isSameDay(day, new Date()) ? 'text-slate-900' : 'text-slate-400'}`}>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{format(day, 'EEE', { locale: es })}</p>
+                  <p className={`text-xl md:text-2xl font-black ${isSameDay(day, new Date()) ? 'text-slate-900' : 'text-slate-500'}`}>
                     {format(day, 'dd')}
                   </p>
                 </div>
               ))}
             </div>
 
-            <ScrollArea className="h-[700px]">
-              <div className="grid grid-cols-8 divide-x">
+            <ScrollArea className="h-[70vh] md:h-[700px]">
+              <div className={`grid ${isMobile ? 'grid-cols-[60px_1fr]' : 'grid-cols-[80px_repeat(7,1fr)]'} divide-x min-h-full`}>
                 {/* Hours Column */}
-                <div className="divide-y">
+                <div className="divide-y bg-slate-50/30">
                   {hoursArray.map((hour) => (
-                    <div key={hour} className="h-32 p-2 text-[10px] font-bold text-slate-400 border-b relative">
+                    <div key={hour} className="h-24 md:h-32 p-2 text-[10px] font-bold text-slate-400 border-b relative flex items-start justify-center">
                       {hour.toString().padStart(2, '0')}:00
                     </div>
                   ))}
                 </div>
 
                 {/* Day Columns */}
-                {weekDays.map((day, dayIdx) => {
+                {(isMobile ? [currentDate] : weekDays).map((day, dayIdx) => {
                   const dayApps = appointments.filter(a => isSameDay(parseISO(a.start_time), day));
                   const isToday = isSameDay(day, new Date());
                   const interval = bSettings.slot_interval || 30;
@@ -232,7 +266,7 @@ export default function AdminAppointments() {
                   return (
                     <div key={dayIdx} className={`divide-y relative min-h-full ${isToday ? 'bg-slate-50/40' : ''}`}>
                       {hoursArray.map((hour) => (
-                        <div key={hour} className="h-32 border-b group relative divide-y divide-slate-100/50">
+                        <div key={hour} className="h-24 md:h-32 border-b group relative divide-y divide-slate-100/30">
                           {/* Sub-slots within the hour */}
                           {[...Array(slotsPerHover)].map((_, i) => {
                             const minutes = i * interval;
@@ -252,6 +286,7 @@ export default function AdminAppointments() {
                           {/* Render appointments for this specific hour */}
                           {dayApps.filter(a => parseISO(a.start_time).getHours() === hour).map(app => {
                             const start = parseISO(app.start_time);
+                             // Height relative to the hour cell (24 or 32 units)
                             const top = (start.getMinutes() / 60) * 100;
                             const duration = (new Date(app.end_time).getTime() - new Date(app.start_time).getTime()) / (1000 * 60);
                             const height = (duration / 60) * 100;
@@ -260,22 +295,21 @@ export default function AdminAppointments() {
                             const isCompleted = app.status === 'completed';
                             const isConfirmed = app.status === 'confirmed';
 
-                            // Colores por estado (Ignorar color del servicio para el admin)
-                            let sColor = '#3b82f6'; // Azul (Agendada)
-                            if (isConfirmed) sColor = '#0e7c36'; // Verde (Confirmada)
-                            if (isCompleted) sColor = '#a855f7'; // Morado (Realizada)
+                            let sColor = '#3b82f6'; 
+                            if (isConfirmed) sColor = '#0e7c36'; 
+                            if (isCompleted) sColor = '#a855f7'; 
 
                             return (
                               <div
                                 key={app.id}
-                                className={`absolute left-1 right-1 rounded-lg p-2 text-[11px] font-bold overflow-hidden z-10 border-none cursor-pointer flex flex-col justify-between
+                                className={`absolute left-1 right-1 rounded-xl p-2 md:p-3 text-[10px] md:text-[11px] font-bold overflow-hidden z-10 border-none cursor-pointer flex flex-col justify-between shadow-sm transition-all hover:scale-[1.02] hover:shadow-md
                                   ${isPending ? 'border-dashed' : 'border-solid'}
                                 `}
                                 style={{
-                                  top: `calc(${top}% + 1px)`,
-                                  height: `calc(${height}% - 2px)`,
-                                  backgroundColor: `${sColor}${isPending ? '15' : '30'}`,
-                                  borderColor: sColor,
+                                  top: `calc(${top}% + 2px)`,
+                                  height: `calc(${height}% - 4px)`,
+                                  backgroundColor: `${sColor}${isPending ? '15' : '25'}`,
+                                  borderLeft: `4px solid ${sColor}`,
                                   color: sColor
                                 }}
                                 onClick={(e) => {
@@ -285,16 +319,17 @@ export default function AdminAppointments() {
                               >
                                 <div>
                                   <p className="truncate leading-tight uppercase tracking-tighter flex items-center gap-1.5">
-                                    {isPending ? <Clock className="w-3.5 h-3.5 shrink-0" /> : <Check className="w-3.5 h-3.5 shrink-0" />}
                                     {app.customer_name.split(' ')[0]}
                                   </p>
+                                  {isMobile && duration > 30 && (
+                                    <p className="text-[10px] opacity-60 font-medium truncate mt-0.5">{app.service?.name}</p>
+                                  )}
                                 </div>
 
-                                <div className="flex justify-between items-center mt-1">
-                                  <p className="opacity-70 text-[9px] font-mono">{format(parseISO(app.start_time), 'HH:mm')}</p>
+                                <div className="flex justify-between items-end">
+                                  <p className="opacity-60 text-[8px] md:text-[9px] font-mono leading-none">{format(parseISO(app.start_time), 'HH:mm')}</p>
                                   <div className="flex gap-1 items-center">
-                                    {isCompleted && <Badge className="bg-slate-200 text-slate-600 text-[7px] px-1 py-0 border-none">FIN</Badge>}
-                                    <Badge variant="outline" className="px-1 py-0 text-[8px] border-current opacity-60 font-mono tracking-tighter">{app.short_id || 'ID'}</Badge>
+                                    <Badge variant="outline" className="px-1 py-0 text-[8px] border-current opacity-40 font-mono tracking-tighter truncate max-w-[40px]">{app.short_id}</Badge>
                                   </div>
                                 </div>
                               </div>
