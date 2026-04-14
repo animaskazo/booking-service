@@ -326,9 +326,9 @@ export default function AdminAppointments() {
                                 </div>
 
                                 <div className="flex justify-between items-end">
-                                  <p className="opacity-90 text-[8px] md:text-[12px] font-mono leading-none">{format(parseISO(app.start_time), 'HH:mm')}</p>
+                                  <p className="opacity-100 text-[8px] md:text-[12px] font-weight-100 leading-none">{format(parseISO(app.start_time), 'HH:mm')}</p>
                                   <div className="flex gap-1 items-center">
-                                    <Badge variant="outline" className="px-1 py-0.5 text-[9px] border-current opacity-40 tracking-tighter truncate max-w-[48px]">{app.short_id}</Badge>
+                                    <Badge variant="outline" className="px-1 py-0.5 text-[9px] border-current opacity-50 tracking-tighter truncate max-w-[48px]">{app.short_id}</Badge>
                                   </div>
                                 </div>
                               </div>
