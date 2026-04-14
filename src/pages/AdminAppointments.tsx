@@ -545,7 +545,7 @@ export default function AdminAppointments() {
                   </div>
                 </div>
               </CardContent>
-              <div className="p-8 bg-slate-50 border-t flex gap-4">
+              <div className="p-8 bg-slate-50 border-t flex flex-row-reverse gap-4">
                 <Button
                   type="submit"
                   className="flex-1 bg-slate-900 hover:bg-slate-800 text-white rounded-xl h-14 shadow-xl shadow-slate-900/20 font-bold transition-transform active:scale-95"
@@ -553,7 +553,7 @@ export default function AdminAppointments() {
                 >
                   {createAppointmentMutation.isPending ? (
                     <div className="flex items-center gap-2">
-                      <Loader2 className="w-5 h-5 animate-spin" /> Creando reserva...
+                      <Loader2 className="w-5 h-5 animate-spin" /> Creando...
                     </div>
                   ) : 'Confirmar Reserva Manual'}
                 </Button>
@@ -632,7 +632,7 @@ export default function AdminAppointments() {
                 </div>
               )}
 
-              <div className="flex gap-3">
+              <div className="flex flex-row-reverse gap-3">
                 {selectedApp.status === 'pending' && (
                   <Button
                     className="flex-1 h-12 rounded-xl bg-green-500 hover:bg-green-600 text-white font-bold"
