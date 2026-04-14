@@ -111,7 +111,7 @@ export default function AdminServices() {
                 services.map((service) => (
                   <Card
                     key={service.id}
-                    className={`cursor-pointer transition-all hover:shadow-md ${selectedServiceId === service.id ? 'border-slate-900 shadow-lg' : 'border-slate-200'}`}
+                    className={`cursor-pointer transition-all duration-200 hover:border-slate-400 hover:shadow-sm ${selectedServiceId === service.id ? 'border-slate-900 shadow-md' : 'border-slate-200'}`}
                     onClick={() => { setSelectedServiceId(service.id); setIsAddingService(false); }}
                   >
                     <CardContent className="p-4">

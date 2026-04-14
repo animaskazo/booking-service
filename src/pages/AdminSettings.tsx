@@ -101,10 +101,10 @@ export default function AdminSettings() {
                             type="button"
                             onClick={() => toggleDay(i)}
                             className={`
-                              px-4 py-2 rounded-full border text-sm transition-all
+                              px-4 py-2 rounded-full border text-sm transition-colors duration-200
                               ${selectedDays.includes(i)
-                                ? 'bg-slate-900 text-white border-slate-900 shadow-md'
-                                : 'bg-white text-slate-600 hover:border-slate-300'}
+                                ? 'bg-slate-900 text-white border-slate-900'
+                                : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-100'}
                             `}
                           >
                             {day}
@@ -159,7 +159,7 @@ export default function AdminSettings() {
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {daySlots.map(slot => (
-                            <Badge key={slot.id} variant="secondary" className="bg-slate-50 border-slate-200 text-slate-700 pl-2 pr-1 py-1 flex items-center gap-1.5 transition-transform hover:scale-105">
+                            <Badge key={slot.id} variant="secondary" className="bg-slate-50 border-slate-200 text-slate-700 pl-2 pr-1 py-1 flex items-center gap-1.5 transition-all duration-300 hover:bg-white hover:shadow-sm">
                               <span className="text-[10px] font-bold">{slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}</span>
                               <button
                                 onClick={() => deleteAvailability.mutateAsync({ id: slot.id, serviceId: null })}
@@ -196,10 +196,10 @@ export default function AdminSettings() {
                       key={duration}
                       onClick={() => updateSettings.mutate({ slot_interval: duration })}
                       className={`
-                        flex-1 h-10 rounded-lg border transition-all flex items-center justify-center text-xs font-bold
+                        flex-1 h-10 rounded-lg border transition-all duration-300 flex items-center justify-center text-xs font-bold
                         ${settings.slot_interval === duration
                           ? 'bg-slate-900 border-slate-900 text-white shadow-lg'
-                          : 'bg-white border-slate-100 text-slate-500 hover:border-slate-200'}
+                          : 'bg-white border-slate-100 text-slate-500 hover:border-slate-400 hover:bg-slate-50'}
                       `}
                     >
                       {duration}

@@ -301,7 +301,7 @@ export default function AdminAppointments() {
                             return (
                               <div
                                 key={app.id}
-                                className={`absolute left-1 right-1 rounded-sm p-2 md:p-3 text-[10px] md:text-[11px] font-bold overflow-hidden z-10 border-none cursor-pointer flex flex-col justify-between shadow-sm transition-all hover:shadow-md
+                                className={`absolute left-1 right-1 rounded-sm p-2 md:p-3 text-[10px] md:text-[11px] font-bold overflow-hidden z-10 border-none cursor-pointer flex flex-col justify-between shadow-sm transition-all duration-300 hover:brightness-105 hover:shadow-md
                                   ${isPending ? 'border-dashed' : 'border-solid'}
                                 `}
                                 style={{
