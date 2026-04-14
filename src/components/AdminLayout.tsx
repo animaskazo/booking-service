@@ -164,11 +164,48 @@ export default function AdminLayout() {
       )}
 
       {/* Main Content Area */}
-      <main className="flex-1 pt-16 md:pt-0 overflow-y-auto">
-        <div className="p-6 md:p-10 max-w-7xl mx-auto">
-          <Outlet />
+      <main className="flex-1 flex flex-col h-screen overflow-hidden">
+        {/* Header Desktop */}
+        <header className="hidden md:flex h-16 bg-white border-b border-slate-200 items-center justify-between px-8 z-10 shrink-0 shadow-sm">
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-bold text-slate-800">
+              {sidebarItems.find(item => location.pathname === item.path || (item.path === '/admin' && location.pathname === '/admin'))?.name || 'Administración'}
+            </h2>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 p-1.5 pr-4 bg-slate-50 rounded-full border border-slate-200 transition-all hover:border-blue-200">
+              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs text-white shadow-lg shadow-blue-500/20">
+                {user?.email?.[0].toUpperCase()}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[11px] leading-none text-slate-500 font-bold uppercase tracking-wider mb-0.5">Admin</span>
+                <span className="text-xs font-bold text-slate-800 leading-none">{user?.email?.split('@')[0]}</span>
+              </div>
+            </div>
+            
+            <div className="w-px h-6 bg-slate-200 mx-2" />
+
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="text-slate-500 hover:text-red-500 hover:bg-red-50 font-bold rounded-lg transition-all"
+              onClick={handleLogout}
+            >
+              <LogOut className="w-4 h-4 mr-2" />
+              Cerrar Sesión
+            </Button>
+          </div>
+        </header>
+
+        {/* Scrollable Content Area */}
+        <div className="flex-1 overflow-y-auto pt-16 md:pt-0 bg-slate-50/50">
+          <div className="p-6 md:p-8 max-w-7xl mx-auto">
+            <Outlet />
+          </div>
         </div>
       </main>
     </div>
   );
 }
+
