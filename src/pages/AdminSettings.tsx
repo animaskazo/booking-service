@@ -155,7 +155,7 @@ export default function AdminSettings() {
                       <div key={dayNum} className="p-4 bg-white flex flex-col gap-2 hover:bg-slate-50/50 transition-colors">
                         <div className="flex items-center justify-between">
                           <span className="text-xs font-black text-slate-900 uppercase tracking-widest">{DAYS_ES[dayNum]}</span>
-                          {daySlots.length === 0 && <Badge variant="ghost" className="text-[10px] text-slate-300 font-bold">Cerrado</Badge>}
+                          {daySlots.length === 0 && <Badge variant="outline" className="text-[10px] text-slate-300 font-bold border-none">Cerrado</Badge>}
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {daySlots.map(slot => (
