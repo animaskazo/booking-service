@@ -91,118 +91,118 @@ export default function AdminServices() {
         </Button>
       </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Sidebar: Lista de Servicios */}
-          <div className="lg:col-span-4 space-y-4">
-            <h3 className="font-semibold text-slate-700 px-1">Servicios Disponibles</h3>
-            <ScrollArea className="h-[calc(100vh-250px)]">
-              <div className="space-y-3 pr-4">
-                {loadingServices ? (
-                  <div className="flex justify-center py-10">
-                    <Loader2 className="w-6 h-6 animate-spin text-slate-900" />
-                  </div>
-                ) : services.length === 0 ? (
-                  <Card className="border-dashed">
-                    <CardContent className="py-8 text-center text-slate-500">
-                      No hay servicios aún
-                    </CardContent>
-                  </Card>
-                ) : (
-                  services.map((service) => (
-                    <Card
-                      key={service.id}
-                      className={`cursor-pointer transition-all hover:shadow-md ${selectedServiceId === service.id ? 'border-slate-900 shadow-lg' : 'border-slate-200'}`}
-                      onClick={() => { setSelectedServiceId(service.id); setIsAddingService(false); }}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex justify-between items-start">
-                          <div className="flex items-center gap-3">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: service.color }} />
-                            <div>
-                              <h4 className="font-bold text-slate-900">{service.name}</h4>
-                              <div className="flex gap-3 text-xs text-slate-500 mt-1">
-                                <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {service.duration_min}m</span>
-                                <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> ${service.price}</span>
-                              </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Sidebar: Lista de Servicios */}
+        <div className="lg:col-span-4 space-y-4">
+          <h3 className="font-semibold text-slate-700 px-1">Servicios Disponibles</h3>
+          <ScrollArea className="h-[calc(100vh-250px)]">
+            <div className="space-y-3 pr-4">
+              {loadingServices ? (
+                <div className="flex justify-center py-10">
+                  <Loader2 className="w-6 h-6 animate-spin text-slate-900" />
+                </div>
+              ) : services.length === 0 ? (
+                <Card className="border-dashed">
+                  <CardContent className="py-8 text-center text-slate-500">
+                    No hay servicios aún
+                  </CardContent>
+                </Card>
+              ) : (
+                services.map((service) => (
+                  <Card
+                    key={service.id}
+                    className={`cursor-pointer transition-all hover:shadow-md ${selectedServiceId === service.id ? 'border-slate-900 shadow-lg' : 'border-slate-200'}`}
+                    onClick={() => { setSelectedServiceId(service.id); setIsAddingService(false); }}
+                  >
+                    <CardContent className="p-4">
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-3">
+                          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: service.color }} />
+                          <div>
+                            <h4 className="font-bold text-slate-900">{service.name}</h4>
+                            <div className="flex gap-3 text-xs text-slate-500 mt-1">
+                              <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {service.duration_min}m</span>
+                              <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> ${service.price}</span>
                             </div>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="text-slate-400 hover:text-red-500"
-                            onClick={(e) => handleDeleteService(service.id, e)}
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
                         </div>
-                      </CardContent>
-                    </Card>
-                  ))
-                )}
-              </div>
-            </ScrollArea>
-          </div>
-
-          {/* Main Content: Detalle y Disponibilidad */}
-          <div className="lg:col-span-8">
-            {isAddingService ? (
-              <Card className="border-2 border-slate-900 shadow-xl overflow-hidden">
-                <CardHeader className="bg-slate-50 border-b">
-                  <div className="flex justify-between items-center">
-                    <CardTitle>Añadir Nuevo Servicio</CardTitle>
-                    <Button variant="ghost" size="icon" onClick={() => setIsAddingService(false)}>
-                      <X className="w-5 h-5" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <form onSubmit={handleCreateService} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2 col-span-2 sm:col-span-1">
-                        <Label htmlFor="name">Nombre del Servicio</Label>
-                        <Input id="name" name="name" required placeholder="Ej: Consulta General" />
-                      </div>
-                      <div className="space-y-2 col-span-2 sm:col-span-1">
-                        <Label htmlFor="color">Color Etiqueta</Label>
-                        <Input id="color" name="color" type="color" defaultValue="#3B82F6" className="h-10" />
-                      </div>
-                      <div className="space-y-2 col-span-2 sm:col-span-1">
-                        <Label htmlFor="category">Categoría</Label>
-                        <select
-                          id="category"
-                          name="category"
-                          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                          defaultValue="General"
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="text-slate-400 hover:text-white"
+                          onClick={(e) => handleDeleteService(service.id, e)}
                         >
-                          {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                        </select>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
-                      <div className="space-y-2 col-span-2">
-                        <Label htmlFor="description">Descripción</Label>
-                        <Input id="description" name="description" placeholder="Breve descripción del servicio" />
-                      </div>
-                      <div className="space-y-2 col-span-1">
-                        <Label htmlFor="price">Precio ($)</Label>
-                        <Input id="price" name="price" type="number" required min="0" step="0.01" defaultValue="0" />
-                      </div>
-                    </div>
-                    <div className="pt-4 flex gap-3">
-                      <Button type="submit" className="flex-1">Crear Servicio</Button>
-                      <Button type="button" variant="outline" onClick={() => setIsAddingService(false)} className="flex-1">Cancelar</Button>
-                    </div>
-                  </form>
-                </CardContent>
-              </Card>
-            ) : selectedService ? (
-              <ServiceDetailsSection key={selectedService.id} service={selectedService} />
-            ) : (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400 bg-white rounded-xl border border-dashed p-12">
-                <CalendarIcon className="w-16 h-16 mb-4 opacity-20" />
-                <p>Selecciona un servicio para ver y editar su configuración</p>
-              </div>
-            )}
-          </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </div>
+          </ScrollArea>
         </div>
+
+        {/* Main Content: Detalle y Disponibilidad */}
+        <div className="lg:col-span-8">
+          {isAddingService ? (
+            <Card className="border-2 border-slate-900 shadow-xl overflow-hidden">
+              <CardHeader className="bg-slate-50 border-b">
+                <div className="flex justify-between items-center">
+                  <CardTitle>Añadir Nuevo Servicio</CardTitle>
+                  <Button variant="ghost" size="icon" onClick={() => setIsAddingService(false)}>
+                    <X className="w-5 h-5" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <form onSubmit={handleCreateService} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2 col-span-2 sm:col-span-1">
+                      <Label htmlFor="name">Nombre del Servicio</Label>
+                      <Input id="name" name="name" required placeholder="Ej: Consulta General" />
+                    </div>
+                    <div className="space-y-2 col-span-2 sm:col-span-1">
+                      <Label htmlFor="color">Color Etiqueta</Label>
+                      <Input id="color" name="color" type="color" defaultValue="#3B82F6" className="h-10" />
+                    </div>
+                    <div className="space-y-2 col-span-2 sm:col-span-1">
+                      <Label htmlFor="category">Categoría</Label>
+                      <select
+                        id="category"
+                        name="category"
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        defaultValue="General"
+                      >
+                        {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                      </select>
+                    </div>
+                    <div className="space-y-2 col-span-2">
+                      <Label htmlFor="description">Descripción</Label>
+                      <Input id="description" name="description" placeholder="Breve descripción del servicio" />
+                    </div>
+                    <div className="space-y-2 col-span-1">
+                      <Label htmlFor="price">Precio ($)</Label>
+                      <Input id="price" name="price" type="number" required min="0" step="0.01" defaultValue="0" />
+                    </div>
+                  </div>
+                  <div className="pt-4 flex gap-3">
+                    <Button type="submit" className="flex-1">Crear Servicio</Button>
+                    <Button type="button" variant="outline" onClick={() => setIsAddingService(false)} className="flex-1">Cancelar</Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          ) : selectedService ? (
+            <ServiceDetailsSection key={selectedService.id} service={selectedService} />
+          ) : (
+            <div className="h-full flex flex-col items-center justify-center text-slate-400 bg-white rounded-xl border border-dashed p-12">
+              <CalendarIcon className="w-16 h-16 mb-4 opacity-20" />
+              <p>Selecciona un servicio para ver y editar su configuración</p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -238,7 +238,7 @@ function ServiceDetailsSection({ service }: { service: ServiceWithAvailability }
               <CardDescription>Modifica los detalles del servicio seleccionado</CardDescription>
             </div>
             <div className="flex items-center gap-2">
-               <Badge variant="outline" className="bg-slate-50">ID: {service.id.slice(0, 8)}</Badge>
+              <Badge variant="outline" className="bg-slate-50">ID: {service.id.slice(0, 8)}</Badge>
             </div>
           </div>
         </CardHeader>
@@ -274,12 +274,12 @@ function ServiceDetailsSection({ service }: { service: ServiceWithAvailability }
               <div className="space-y-2 col-span-2">
                 <Label htmlFor="edit-price" className="text-slate-700 font-bold">Precio del Servicio ($)</Label>
                 <div className="relative">
-                   <DollarSign className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                   <Input id="edit-price" name="price" type="number" defaultValue={service.price} step="0.01" required className="pl-10 h-11" />
+                  <DollarSign className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                  <Input id="edit-price" name="price" type="number" defaultValue={service.price} step="0.01" required className="pl-10 h-11" />
                 </div>
               </div>
             </div>
-            
+
             <div className="pt-4 border-t flex items-center justify-between">
               <p className="text-xs text-slate-400">Los cambios se aplicarán a las nuevas reservas inmediatamente.</p>
               <Button type="submit" className="bg-slate-900 px-8 h-11 shadow-lg" disabled={updateServiceMutation.isPending}>
