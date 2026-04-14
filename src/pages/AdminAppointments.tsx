@@ -249,7 +249,7 @@ export default function AdminAppointments() {
                 {/* Hours Column */}
                 <div className="divide-y bg-slate-50/30">
                   {hoursArray.map((hour) => (
-                    <div key={hour} className="h-20 md:h-24 p-2 text-[10px] font-bold text-slate-400 border-b relative flex items-start justify-center">
+                    <div key={hour} className="h-24 md:h-32 p-2 text-[10px] font-bold text-slate-400 border-b relative flex items-start justify-center">
                       {hour.toString().padStart(2, '0')}:00
                     </div>
                   ))}
@@ -265,7 +265,7 @@ export default function AdminAppointments() {
                   return (
                     <div key={dayIdx} className={`divide-y relative min-h-full ${isToday ? 'bg-slate-50/40' : ''}`}>
                       {hoursArray.map((hour) => (
-                        <div key={hour} className="h-20 md:h-24 border-b group relative divide-y divide-slate-100/30">
+                        <div key={hour} className="h-24 md:h-32 border-b group relative divide-y divide-slate-100/30">
                           {/* Sub-slots within the hour */}
                           {[...Array(slotsPerHover)].map((_, i) => {
                             const minutes = i * interval;
