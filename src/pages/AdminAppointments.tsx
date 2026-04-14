@@ -40,6 +40,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 export default function AdminAppointments() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
+  const [selectedSlot, setSelectedSlot] = useState<{ date: Date, time: string } | null>(null);
   const [selectedApp, setSelectedApp] = useState<any | null>(null);
   const [isMobile, setIsMobile] = React.useState(false);
 
