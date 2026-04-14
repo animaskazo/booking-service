@@ -65,25 +65,6 @@ export default function AdminLayout() {
           })}
         </nav>
 
-        <div className="p-4 mt-auto border-t border-slate-800 bg-slate-950/30">
-          <div className="flex items-center gap-3 p-3 bg-white/5 rounded-xl mb-4 border border-white/5">
-            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/20">
-              {user?.email?.[0].toUpperCase()}
-            </div>
-            <div className="flex-1 overflow-hidden">
-              <p className="text-sm font-bold text-white truncate">{user?.email?.split('@')[0]}</p>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Administrador</p>
-            </div>
-          </div>
-          <Button 
-            variant="ghost" 
-            className="w-full justify-start text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-xl font-bold transition-all"
-            onClick={handleLogout}
-          >
-            <LogOut className="w-5 h-5 mr-3" />
-            Cerrar Sesión
-          </Button>
-        </div>
       </aside>
 
       {/* Mobile Header */}
@@ -95,10 +76,15 @@ export default function AdminLayout() {
           <span className="font-bold tracking-tight">BookingPro</span>
         </div>
         
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-[12px] text-white shadow-lg shadow-blue-500/20">
-            {user?.email?.[0].toUpperCase()}
-          </div>
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="text-slate-400 hover:text-red-400 p-2"
+            onClick={handleLogout}
+          >
+            <LogOut className="w-5 h-5" />
+          </Button>
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="p-2 hover:bg-white/5 rounded-lg transition-colors"
@@ -111,18 +97,12 @@ export default function AdminLayout() {
       {/* Mobile Menu Overlay */}
       {isMobileMenuOpen && (
         <div className="md:hidden fixed inset-0 bg-slate-900 z-50 pt-20 flex flex-col">
-          {/* Mobile User Header */}
-          <div className="px-6 py-6 border-b border-slate-800 flex items-center gap-4 bg-white/5">
-            <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center font-bold text-white shadow-lg shadow-blue-500/20 text-xl">
-              {user?.email?.[0].toUpperCase()}
-            </div>
-            <div>
-              <p className="text-white font-bold">{user?.email?.split('@')[0]}</p>
-              <p className="text-xs text-slate-400 font-medium uppercase tracking-wider">Administrador</p>
-            </div>
+          {/* Mobile Menu Header */}
+          <div className="px-6 py-6 border-b border-slate-800 flex items-center justify-between bg-white/5">
+            <span className="text-white font-bold text-lg">Menú</span>
             <button 
               onClick={() => setIsMobileMenuOpen(false)}
-              className="ml-auto bg-slate-800 p-2 rounded-lg text-slate-400"
+              className="bg-slate-800 p-2 rounded-lg text-slate-400"
             >
               <X className="w-6 h-6" />
             </button>
@@ -153,10 +133,10 @@ export default function AdminLayout() {
           <div className="p-6 mt-auto border-t border-slate-800 bg-slate-950/50">
             <Button 
               variant="ghost" 
-              className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-400/10 p-6 rounded-2xl font-bold text-lg"
+              className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-400/10 p-4 rounded-xl font-bold"
               onClick={handleLogout}
             >
-              <LogOut className="w-6 h-6 mr-4" />
+              <LogOut className="w-5 h-5 mr-3" />
               Cerrar Sesión
             </Button>
           </div>
@@ -173,19 +153,7 @@ export default function AdminLayout() {
             </h2>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-3 p-1.5 pr-4 bg-slate-50 rounded-full border border-slate-200 transition-all hover:border-blue-200">
-              <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center font-bold text-xs text-white shadow-lg shadow-blue-500/20">
-                {user?.email?.[0].toUpperCase()}
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[11px] leading-none text-slate-500 font-bold uppercase tracking-wider mb-0.5">Admin</span>
-                <span className="text-xs font-bold text-slate-800 leading-none">{user?.email?.split('@')[0]}</span>
-              </div>
-            </div>
-            
-            <div className="w-px h-6 bg-slate-200 mx-2" />
-
+          <div className="flex items-center">
             <Button 
               variant="ghost" 
               size="sm"
