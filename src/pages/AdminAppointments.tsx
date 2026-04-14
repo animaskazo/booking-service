@@ -96,7 +96,7 @@ export default function AdminAppointments() {
   const createAppointmentMutation = useCreateAppointment();
 
 
-  
+
   // Corregir handleNext (tenía un error en el código original de arriba, decía -7 en ambos)
   const handlePrevPeriod = () => setCurrentDate(addDays(currentDate, isMobile ? -1 : -7));
   const handleNextPeriod = () => setCurrentDate(addDays(currentDate, isMobile ? 1 : 7));
@@ -213,11 +213,11 @@ export default function AdminAppointments() {
                 <ChevronRight className="w-5 h-5" />
               </Button>
             </div>
-            
+
             <div className="flex items-center gap-2 w-full md:w-auto">
-              <Button 
-                variant="ghost" 
-                className="flex-1 md:flex-none font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg px-6" 
+              <Button
+                variant="ghost"
+                className="flex-1 md:flex-none font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg px-6"
                 onClick={handleToday}
               >
                 Hoy
@@ -285,7 +285,7 @@ export default function AdminAppointments() {
                           {/* Render appointments for this specific hour */}
                           {dayApps.filter(a => parseISO(a.start_time).getHours() === hour).map(app => {
                             const start = parseISO(app.start_time);
-                             // Height relative to the hour cell (24 or 32 units)
+                            // Height relative to the hour cell (24 or 32 units)
                             const top = (start.getMinutes() / 60) * 100;
                             const duration = (new Date(app.end_time).getTime() - new Date(app.start_time).getTime()) / (1000 * 60);
                             const height = (duration / 60) * 100;
@@ -294,14 +294,14 @@ export default function AdminAppointments() {
                             const isCompleted = app.status === 'completed';
                             const isConfirmed = app.status === 'confirmed';
 
-                            let sColor = '#3b82f6'; 
-                            if (isConfirmed) sColor = '#0e7c36'; 
-                            if (isCompleted) sColor = '#a855f7'; 
+                            let sColor = '#3b82f6';
+                            if (isConfirmed) sColor = '#0e7c36';
+                            if (isCompleted) sColor = '#a855f7';
 
                             return (
                               <div
                                 key={app.id}
-                                className={`absolute left-1 right-1 rounded-xl p-2 md:p-3 text-[10px] md:text-[11px] font-bold overflow-hidden z-10 border-none cursor-pointer flex flex-col justify-between shadow-sm transition-all hover:scale-[1.02] hover:shadow-md
+                                className={`absolute left-1 right-1 rounded-sm p-2 md:p-3 text-[10px] md:text-[11px] font-bold overflow-hidden z-10 border-none cursor-pointer flex flex-col justify-between shadow-sm transition-all hover:shadow-md
                                   ${isPending ? 'border-dashed' : 'border-solid'}
                                 `}
                                 style={{
@@ -326,9 +326,9 @@ export default function AdminAppointments() {
                                 </div>
 
                                 <div className="flex justify-between items-end">
-                                  <p className="opacity-60 text-[8px] md:text-[9px] font-mono leading-none">{format(parseISO(app.start_time), 'HH:mm')}</p>
+                                  <p className="opacity-90 text-[8px] md:text-[12px] font-mono leading-none">{format(parseISO(app.start_time), 'HH:mm')}</p>
                                   <div className="flex gap-1 items-center">
-                                    <Badge variant="outline" className="px-1 py-0 text-[8px] border-current opacity-40 font-mono tracking-tighter truncate max-w-[40px]">{app.short_id}</Badge>
+                                    <Badge variant="outline" className="px-1 py-0.5 text-[9px] border-current opacity-40 tracking-tighter truncate max-w-[48px]">{app.short_id}</Badge>
                                   </div>
                                 </div>
                               </div>
@@ -456,18 +456,18 @@ export default function AdminAppointments() {
               <div className="flex justify-between items-center">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                     <div className="bg-slate-900 p-1.5 rounded-lg text-white">
-                        <Plus className="w-4 h-4" />
-                     </div>
-                     <CardTitle className="text-xl">Nueva Reserva Manual</CardTitle>
+                    <div className="bg-slate-900 p-1.5 rounded-lg text-white">
+                      <Plus className="w-4 h-4" />
+                    </div>
+                    <CardTitle className="text-xl">Nueva Reserva Manual</CardTitle>
                   </div>
                   <CardDescription className="flex items-center gap-1.5 font-medium text-slate-500">
                     <CalendarIcon className="w-3.5 h-3.5" />
                     {format(selectedSlot.date, "EEEE d 'de' MMMM", { locale: es })} a las {selectedSlot.time}
                   </CardDescription>
                 </div>
-                <Button variant="ghost" size="icon" className="rounded-full hover:bg-slate-200" onClick={() => setSelectedSlot(null)}>
-                  <XCircle className="w-6 h-6 text-slate-400" />
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-red-50 hover:text-red-500 transition-colors" onClick={() => setSelectedSlot(null)}>
+                  <XCircle className="w-6 h-6" />
                 </Button>
               </div>
             </CardHeader>
@@ -477,12 +477,12 @@ export default function AdminAppointments() {
                   {/* Appointment Details Section */}
                   <div className="space-y-4">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                       <span className="w-4 h-px bg-slate-200" /> Detalles de la Cita
+                      <span className="w-4 h-px bg-slate-200" /> Detalles de la Cita
                     </p>
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <Label className="text-xs font-bold text-slate-700 flex items-center gap-2">
-                           <Tag className="w-3.5 h-3.5 text-slate-400" /> Servicio Solicitado
+                          <Tag className="w-3.5 h-3.5 text-slate-400" /> Servicio Solicitado
                         </Label>
                         <div className="relative">
                           <select name="serviceId" required className="w-full h-12 rounded-xl border border-slate-200 bg-white pl-4 pr-10 py-2 text-sm focus:ring-2 focus:ring-slate-900 outline-none appearance-none font-medium">
@@ -490,7 +490,7 @@ export default function AdminAppointments() {
                             {services.map(s => <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>)}
                           </select>
                           <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                             <ChevronRight className="w-4 h-4 rotate-90" />
+                            <ChevronRight className="w-4 h-4 rotate-90" />
                           </div>
                         </div>
                       </div>
@@ -500,25 +500,25 @@ export default function AdminAppointments() {
                   {/* Customer Information Section */}
                   <div className="space-y-4">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                       <span className="w-4 h-px bg-slate-200" /> Información del Cliente
+                      <span className="w-4 h-px bg-slate-200" /> Información del Cliente
                     </p>
                     <div className="grid gap-4">
                       <div className="space-y-2">
                         <Label className="text-xs font-bold text-slate-700 flex items-center gap-2">
-                           <User className="w-3.5 h-3.5 text-slate-400" /> Nombre Completo
+                          <User className="w-3.5 h-3.5 text-slate-400" /> Nombre Completo
                         </Label>
                         <Input name="name" required placeholder="Ej: Juan Pérez" className="h-12 rounded-xl bg-slate-50/50 focus:bg-white border-slate-200" />
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label className="text-xs font-bold text-slate-700 flex items-center gap-2">
-                             <Mail className="w-3.5 h-3.5 text-slate-400" /> Email
+                            <Mail className="w-3.5 h-3.5 text-slate-400" /> Email
                           </Label>
                           <Input name="email" type="email" required placeholder="juan@gmail.com" className="h-12 rounded-xl bg-slate-50/50 focus:bg-white border-slate-200" />
                         </div>
                         <div className="space-y-2">
                           <Label className="text-xs font-bold text-slate-700 flex items-center gap-2">
-                             <Phone className="w-3.5 h-3.5 text-slate-400" /> Teléfono
+                            <Phone className="w-3.5 h-3.5 text-slate-400" /> Teléfono
                           </Label>
                           <Input name="phone" required placeholder="+56 9..." className="h-12 rounded-xl bg-slate-50/50 focus:bg-white border-slate-200" />
                         </div>
@@ -529,16 +529,16 @@ export default function AdminAppointments() {
                   {/* Internal Notes Section */}
                   <div className="space-y-4">
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                       <span className="w-4 h-px bg-slate-200" /> Configuración Adicional
+                      <span className="w-4 h-px bg-slate-200" /> Configuración Adicional
                     </p>
                     <div className="space-y-2">
                       <Label className="text-xs font-bold text-slate-700 flex items-center gap-2">
-                         <AlertCircle className="w-3.5 h-3.5 text-slate-400" /> Notas Internas
+                        <AlertCircle className="w-3.5 h-3.5 text-slate-400" /> Notas Internas
                       </Label>
-                      <textarea 
-                        name="notes" 
-                        placeholder="Agrega recordatorios o detalles especiales para esta cita..." 
-                        rows={3} 
+                      <textarea
+                        name="notes"
+                        placeholder="Agrega recordatorios o detalles especiales para esta cita..."
+                        rows={3}
                         className="w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white p-4 text-sm outline-none focus:ring-2 focus:ring-slate-900 transition-all"
                       />
                     </div>
@@ -546,9 +546,9 @@ export default function AdminAppointments() {
                 </div>
               </CardContent>
               <div className="p-8 bg-slate-50 border-t flex gap-4">
-                <Button 
-                  type="submit" 
-                  className="flex-1 bg-slate-900 hover:bg-slate-800 text-white rounded-xl h-14 shadow-xl shadow-slate-900/20 font-bold transition-transform active:scale-95" 
+                <Button
+                  type="submit"
+                  className="flex-1 bg-slate-900 hover:bg-slate-800 text-white rounded-xl h-14 shadow-xl shadow-slate-900/20 font-bold transition-transform active:scale-95"
                   disabled={createAppointmentMutation.isPending}
                 >
                   {createAppointmentMutation.isPending ? (
@@ -581,8 +581,8 @@ export default function AdminAppointments() {
                     Información completa de la cita
                   </CardDescription>
                 </div>
-                <Button variant="ghost" size="icon" onClick={() => setSelectedApp(null)}>
-                  <XCircle className="w-6 h-6 text-slate-400" />
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-red-50 hover:text-red-500 transition-colors" onClick={() => setSelectedApp(null)}>
+                  <XCircle className="w-6 h-6" />
                 </Button>
               </div>
             </CardHeader>
@@ -599,11 +599,6 @@ export default function AdminAppointments() {
                       <Phone className="w-3.5 h-3.5" /> {selectedApp.customer_phone}
                     </p>
                   )}
-                </div>
-                <div className="text-right flex flex-col items-end">
-                  <div className="w-4 h-4 rounded-full mb-1" style={{ backgroundColor: selectedApp.service?.color }} title="Color del servicio" />
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Servicio</p>
-                  <p className="text-base font-bold text-slate-900">{selectedApp.service?.name}</p>
                 </div>
               </div>
 
