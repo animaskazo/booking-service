@@ -9,10 +9,14 @@ npm i -g vercel
 # 2. Deploy
 vercel
 
+# Nota: El archivo vercel.json ya está configurado para manejar las rutas (SPA routing).
+# Si tienes problemas con el 404 al recargar páginas, asegúrate de que vercel.json esté en la raíz.
+
 # 3. En dashboard Vercel, agregar variables:
 # Settings → Environment Variables
 # - VITE_SUPABASE_URL
 # - VITE_SUPABASE_ANON_KEY
+
 ```
 
 ## Netlify
