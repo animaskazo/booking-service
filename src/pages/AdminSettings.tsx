@@ -13,6 +13,7 @@ import {
   useUpdateBusinessSettings
 } from '../lib/supabase-client';
 import { Button } from '@/components/ui/button';
+import { useDialog } from '@/components/ui/dialog-provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
@@ -31,13 +32,18 @@ export default function AdminSettings() {
   const [showAdd, setShowAdd] = useState(false);
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
 
+  const { showAlert } = useDialog();
+
   const handleAddGlobalHours = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const startTime = formData.get('startTime') as string;
     const endTime = formData.get('endTime') as string;
 
-    if (selectedDays.length === 0) return alert('Selecciona al menos un día');
+    if (selectedDays.length === 0) {
+      showAlert('Selecciona un día', 'Debes elegir al menos un día de la semana para guardar el horario.');
+      return;
+    }
 
     try {
       for (const day of selectedDays) {

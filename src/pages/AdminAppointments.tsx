@@ -31,6 +31,7 @@ import { format, startOfWeek, addDays, isSameDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 import { Button } from '@/components/ui/button';
+import { useDialog } from '@/components/ui/dialog-provider';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -121,14 +122,21 @@ export default function AdminAppointments() {
     }
   };
 
+  const { showConfirm, showError } = useDialog();
+
   const handleDelete = async (id: string) => {
-    if (confirm('¿Estás seguro de eliminar esta cita de forma permanente?')) {
-      try {
-        await deleteAppointment.mutateAsync(id);
-      } catch (err) {
-        console.error(err);
-      }
-    }
+    showConfirm(
+      'Eliminar cita',
+      '¿Estás seguro de eliminar esta cita de forma permanente? Esta acción no se puede deshacer.',
+      async () => {
+        try {
+          await deleteAppointment.mutateAsync(id);
+        } catch (err) {
+          console.error(err);
+        }
+      },
+      'ELIMINAR'
+    );
   };
 
   const handleCreateManual = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -150,7 +158,7 @@ export default function AdminAppointments() {
 
     // Validar colisión (cruzar contra todas las citas de la semana)
     if (isSlotOccupied(startTime, endTime, appointments)) {
-      alert('⚠️ Este horario ya está ocupado por otra cita. Por favor elige otro momento.');
+      showError('Horario no disponible', 'Este horario ya está ocupado por otra cita. Por favor elige otro momento.');
       return;
     }
 

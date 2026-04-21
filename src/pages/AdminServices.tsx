@@ -19,6 +19,7 @@ import {
 import { ServiceWithAvailability } from '../lib/utils-booking';
 
 import { Button } from '@/components/ui/button';
+import { useDialog } from '@/components/ui/dialog-provider';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -65,16 +66,23 @@ export default function AdminServices() {
     }
   };
 
+  const { showConfirm } = useDialog();
+
   const handleDeleteService = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('¿Estás seguro de eliminar este servicio? Se borrarán también sus disponibilidades.')) {
-      try {
-        await deleteService.mutateAsync(id);
-        if (selectedServiceId === id) setSelectedServiceId(null);
-      } catch (err) {
-        console.error(err);
-      }
-    }
+    showConfirm(
+      'Eliminar servicio',
+      '¿Estás seguro de eliminar este servicio? Se borrarán también todas sus disponibilidades. Esta acción no se puede deshacer.',
+      async () => {
+        try {
+          await deleteService.mutateAsync(id);
+          if (selectedServiceId === id) setSelectedServiceId(null);
+        } catch (err) {
+          console.error(err);
+        }
+      },
+      'ELIMINAR'
+    );
   };
 
   return (

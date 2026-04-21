@@ -362,7 +362,7 @@ export const BookingSystemMVP: React.FC = () => {
                         </div>
                         {state.selectedService?.id === service.id && (
                           <div className="bg-slate-900 rounded-full p-1">
-                             <CheckCircle2 className="w-4 h-4 text-white" />
+                            <CheckCircle2 className="w-4 h-4 text-white" />
                           </div>
                         )}
                       </div>
@@ -488,9 +488,9 @@ export const BookingSystemMVP: React.FC = () => {
 
       {/* Sticky Navigation Footer */}
       <div className="sticky bottom-0 -mx-6 -mb-8 mt-10 p-6 bg-white/80 backdrop-blur-md border-t border-slate-100 flex gap-4 z-30">
-        <Button 
-          variant="outline" 
-          onClick={() => setCurrentStep('service')} 
+        <Button
+          variant="outline"
+          onClick={() => setCurrentStep('service')}
           className="flex-1 h-12 font-bold uppercase tracking-widest text-xs border-slate-200 hover:bg-slate-50 transition-all active:scale-95"
         >
           ATRÁS
@@ -594,9 +594,9 @@ export const BookingSystemMVP: React.FC = () => {
 
       {/* Sticky Navigation Footer */}
       <div className="sticky bottom-0 -mx-6 -mb-8 mt-10 p-6 bg-white/80 backdrop-blur-md border-t border-slate-100 flex gap-4 z-30">
-        <Button 
-          variant="outline" 
-          onClick={() => setCurrentStep('date')} 
+        <Button
+          variant="outline"
+          onClick={() => setCurrentStep('date')}
           className="flex-1 h-12 font-bold uppercase tracking-widest text-xs border-slate-200 hover:bg-slate-50 transition-all active:scale-95"
         >
           ATRÁS
@@ -687,19 +687,19 @@ export const BookingSystemMVP: React.FC = () => {
 
             {/* Bottom Message */}
             <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100/50 flex items-start gap-4">
-               <div className="mt-1"><AlertCircle className="w-5 h-5 text-blue-600" /></div>
-               <div className="space-y-1">
-                 <p className="text-sm font-bold text-blue-900">Tu cita está lista</p>
-                 <p className="text-xs text-blue-700 leading-relaxed">
-                   Te recomendamos llegar 5 minutos antes. Hemos enviado un comprobante a tu correo para que lo tengas a mano.
-                 </p>
-               </div>
+              <div className="mt-1"><AlertCircle className="w-5 h-5 text-blue-600" /></div>
+              <div className="space-y-1">
+                <p className="text-sm font-bold text-blue-900">Tu cita está lista</p>
+                <p className="text-xs text-blue-700 leading-relaxed">
+                  Te recomendamos llegar 5 minutos antes. Hemos enviado un comprobante a tu correo para que lo tengas a mano.
+                </p>
+              </div>
             </div>
 
             {/* Uber-like Button */}
             <div className="pt-4">
-              <Button 
-                onClick={handleReset} 
+              <Button
+                onClick={handleReset}
                 className="w-full bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95"
               >
                 VOLVER AL INICIO
@@ -749,7 +749,7 @@ export const BookingSystemMVP: React.FC = () => {
 
         {/* Footer */}
         <div className="text-center mt-8 text-sm text-gray-500">
-          <p>¿Preguntas? Contáctanos en support@booking.local</p>
+          <p>¿Preguntas? Contáctanos en hola@digital-solutions.work</p>
         </div>
       </div>
     </div>
