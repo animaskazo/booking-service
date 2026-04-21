@@ -16,7 +16,7 @@ import {
   useUpdateService,
   useDeleteService,
 } from '../lib/supabase-client';
-import { ServiceWithAvailability, formatPrice } from '../lib/utils-booking';
+import { ServiceWithAvailability } from '../lib/utils-booking';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';

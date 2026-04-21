@@ -76,7 +76,6 @@ export const BookingSystemMVP: React.FC = () => {
 
   const [currentStep, setCurrentStep] = useState<BookingStep>('service');
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
-  const [confirmationId, setConfirmationId] = useState<string | null>(null);
   const [shortId, setShortId] = useState<string | null>(null);
 
   // Queries
@@ -244,7 +243,6 @@ export const BookingSystemMVP: React.FC = () => {
       });
 
       // Éxito
-      setConfirmationId(result.id);
       setShortId(result.short_id);
       setBookingConfirmed(true);
       setCurrentStep('confirmation');
@@ -270,7 +268,6 @@ export const BookingSystemMVP: React.FC = () => {
     });
     setCurrentStep('service');
     setBookingConfirmed(false);
-    setConfirmationId(null);
     setShortId(null);
   };
 
