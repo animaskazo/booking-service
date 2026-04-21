@@ -417,24 +417,6 @@ export const BookingSystemMVP: React.FC = () => {
             }}
             locale={es}
             className="w-full"
-            classNames={{
-              months: "w-full space-y-4",
-              month: "w-full space-y-4",
-              caption: "flex justify-center pt-1 relative items-center mb-4",
-              caption_label: "text-lg font-bold text-slate-900",
-              nav: "space-x-1 flex items-center",
-              nav_button: "h-9 w-9 bg-transparent p-0 opacity-50 hover:opacity-100 transition-opacity",
-              table: "w-full border-collapse space-y-1",
-              head_row: "flex w-full justify-between",
-              head_cell: "text-slate-400 rounded-md w-12 font-bold text-[10px] uppercase tracking-widest",
-              row: "flex w-full mt-2 justify-between",
-              cell: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20",
-              day: "h-12 w-12 p-0 font-bold aria-selected:opacity-100 hover:bg-slate-100 rounded-xl transition-all",
-              day_selected: "bg-slate-900 text-white hover:bg-slate-900 hover:text-white focus:bg-slate-900 focus:text-white shadow-lg shadow-slate-900/20",
-              day_today: "bg-slate-100 text-slate-900",
-              day_outside: "text-slate-400 opacity-50",
-              day_disabled: "text-slate-400 opacity-20 hover:bg-transparent cursor-not-allowed",
-            }}
           />
         </div>
 
