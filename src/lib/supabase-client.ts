@@ -98,15 +98,23 @@ export const queryClient = new QueryClient({
 /**
  * Obtiene todos los servicios disponibles
  */
-export const useServices = () => {
+export const useServices = (userId?: string) => {
   return useQuery({
-    queryKey: ['services'],
+    queryKey: ['services', userId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('services')
         .select('*')
         .order('name');
 
+      if (userId) {
+        query = query.eq('user_id', userId);
+      } else {
+        // En vista pública sin ID, tal vez no devolver nada o requerir un ID
+        // Por ahora, si no hay ID devolvemos todo (comportamiento anterior)
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as ServiceWithAvailability[];
     },
@@ -116,18 +124,23 @@ export const useServices = () => {
 /**
  * Obtiene la disponibilidad de un servicio específico
  */
-export const useAvailability = (serviceId: string | null) => {
+export const useAvailability = (serviceId: string | null, userId?: string) => {
   return useQuery({
-    queryKey: ['availability', serviceId],
+    queryKey: ['availability', serviceId, userId],
     queryFn: async () => {
       let query = supabase.from('availability').select('*');
       
       if (serviceId) {
-        // Traer globales + los del servicio especifico
+        // Traer solo los del servicio especifico (asumiendo que RLS maneja el aislamiento)
+        // O si queremos traer globales del usuario + servicio:
         query = query.or(`service_id.eq.${serviceId},is_global.eq.true`);
       } else {
         // Solo globales
         query = query.eq('is_global', true);
+      }
+
+      if (userId) {
+        query = query.eq('user_id', userId);
       }
 
       const { data, error } = await query.order('day_of_week', { ascending: true });
@@ -143,19 +156,25 @@ export const useAvailability = (serviceId: string | null) => {
  */
 export const useAppointmentsByDateRange = (
   startDate: Date | null,
-  endDate: Date | null
+  endDate: Date | null,
+  userId?: string
 ) => {
   return useQuery({
-    queryKey: ['appointments', 'global_range', startDate?.toISOString(), endDate?.toISOString()],
+    queryKey: ['appointments', 'global_range', startDate?.toISOString(), endDate?.toISOString(), userId],
     queryFn: async () => {
       if (!startDate || !endDate) return [];
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('appointments')
         .select('*, service:services(*)')
         .gte('start_time', startDate.toISOString())
         .lte('start_time', endDate.toISOString());
 
+      if (userId) {
+        query = query.eq('user_id', userId);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return data as AppointmentRecord[];
     },
@@ -197,10 +216,11 @@ export const useCreateAppointment = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (appointmentData: ReturnType<typeof prepareAppointmentData>) => {
+    mutationFn: async ({ appointmentData, userId }: { appointmentData: any, userId?: string }) => {
+      const finalData = userId ? { ...appointmentData, user_id: userId } : appointmentData;
       const { data, error } = await supabase
         .from('appointments')
-        .insert([appointmentData])
+        .insert([finalData])
         .select()
         .single();
 
@@ -258,25 +278,38 @@ export const useCancelAppointment = () => {
 /**
  * Obtiene la configuración global del negocio
  */
-export const useBusinessSettings = () => {
+export const useBusinessSettings = (userId?: string) => {
   return useQuery({
-    queryKey: ['business_settings'],
+    queryKey: ['business_settings', userId],
     queryFn: async () => {
+      if (!userId) {
+        // Si no hay userID (vista pública), esto necesita una forma de saber a quién consultar
+        // Por ahora mantenemos el default
+        return { 
+          id: 'default', 
+          slot_interval: 30,
+          lunch_start: '13:00',
+          lunch_end: '14:00',
+          has_lunch_break: true
+        };
+      }
+
       const { data, error } = await supabase
         .from('business_settings')
         .select('*')
-        .eq('id', 'global')
+        .eq('id', userId)
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
       return data || { 
-        id: 'global', 
+        id: userId, 
         slot_interval: 30,
         lunch_start: '13:00',
         lunch_end: '14:00',
         has_lunch_break: true
       };
     },
+    enabled: !!userId
   });
 };
 
@@ -292,9 +325,12 @@ export const useUpdateBusinessSettings = () => {
       lunch_end?: string, 
       has_lunch_break?: boolean 
     }) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No hay sesión activa");
+      
       const { data, error } = await supabase
         .from('business_settings')
-        .upsert({ id: 'global', ...settings, updated_at: new Date().toISOString() })
+        .upsert({ id: user.id, ...settings, updated_at: new Date().toISOString() })
         .select()
         .single();
 
@@ -314,7 +350,8 @@ export const useCreateService = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (service: Omit<ServiceWithAvailability, 'id'>) => {
-      const { data, error } = await supabase.from('services').insert([service]).select().single();
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data, error } = await supabase.from('services').insert([{ ...service, user_id: user?.id }]).select().single();
       if (error) throw error;
       return data;
     },
@@ -331,7 +368,8 @@ export const useUpdateService = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ id, ...service }: Partial<ServiceWithAvailability> & { id: string }) => {
-      const { data, error } = await supabase.from('services').update(service).eq('id', id).select().single();
+      const { data: { user } } = await supabase.auth.getUser();
+      const { data, error } = await supabase.from('services').update(service).eq('id', id).eq('user_id', user?.id).select().single();
       if (error) throw error;
       return data;
     },
@@ -348,7 +386,8 @@ export const useDeleteService = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('services').delete().eq('id', id);
+      const { data: { user } } = await supabase.auth.getUser();
+      const { error } = await supabase.from('services').delete().eq('id', id).eq('user_id', user?.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -364,7 +403,9 @@ export const useCreateAvailability = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (availabilities: Omit<AvailabilityRecord, 'id'>[]) => {
-      const { data, error } = await supabase.from('availability').insert(availabilities).select();
+      const { data: { user } } = await supabase.auth.getUser();
+      const finalAvails = availabilities.map(a => ({ ...a, user_id: user?.id }));
+      const { data, error } = await supabase.from('availability').insert(finalAvails).select();
       if (error) throw error;
       return data;
     },
@@ -440,6 +481,7 @@ export const useAppointmentsAdmin = () => {
   return useQuery({
     queryKey: ['appointments', 'admin'],
     queryFn: async () => {
+      const { data: { user } } = await supabase.auth.getUser();
       const { data, error } = await supabase
         .from('appointments')
         .select(`
@@ -450,6 +492,7 @@ export const useAppointmentsAdmin = () => {
             category
           )
         `)
+        .eq('user_id', user?.id)
         .order('start_time', { ascending: false });
 
       if (error) throw error;
@@ -497,6 +540,74 @@ export const useDeleteAppointment = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    },
+  });
+};
+
+/**
+ * Obtiene el perfil del negocio por ID de usuario o por nombre de usuario (slug)
+ */
+export const useProfile = (identifier?: string) => {
+  return useQuery({
+    queryKey: ['profile', identifier],
+    queryFn: async () => {
+      if (!identifier) return null;
+      
+      const isUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(identifier);
+      let query = supabase.from('profiles').select('*');
+      
+      if (isUUID) {
+        query = query.eq('id', identifier);
+      } else {
+        query = query.eq('slug', identifier);
+      }
+
+      const { data, error } = await query.single();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      return data;
+    },
+    enabled: !!identifier
+  });
+};
+
+/**
+ * Obtiene todos los perfiles públicos para el Marketplace
+ */
+export const useAllProfiles = () => {
+  return useQuery({
+    queryKey: ['profiles-all'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .not('full_name', 'is', null)
+        .not('slug', 'is', null)
+        .order('full_name');
+        
+      if (error) throw error;
+      return data;
+    }
+  });
+};
+export const useUpdateProfile = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (profile: any) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("No hay sesión activa");
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .upsert({ id: user.id, ...profile, updated_at: new Date().toISOString() })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
 };

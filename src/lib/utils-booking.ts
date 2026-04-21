@@ -25,6 +25,7 @@ export interface ServiceWithAvailability {
   price: number;
   color: string;
   category: string;
+  user_id?: string;
 }
 
 export interface AppointmentRecord {
@@ -39,6 +40,7 @@ export interface AppointmentRecord {
   short_id: string; // ID corto para el cliente
   service?: ServiceWithAvailability;
   notes?: string;
+  user_id?: string;
 }
 
 export interface AvailabilityRecord {
@@ -48,6 +50,7 @@ export interface AvailabilityRecord {
   start_time: string; // HH:MM
   end_time: string;   // HH:MM
   is_global: boolean;
+  user_id?: string;
 }
 
 // ============================================================================
@@ -276,6 +279,7 @@ export const isValidEmail = (email: string): boolean => {
  * Formatea un monto de dinero para mostrar
  */
 export const formatPrice = (price: number, currency = 'CLP'): string => {
+  if (price === 0) return 'Gratis';
   return new Intl.NumberFormat('es-CL', {
     style: 'currency',
     currency,

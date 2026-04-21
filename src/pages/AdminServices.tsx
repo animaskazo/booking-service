@@ -15,6 +15,7 @@ import {
   useCreateService,
   useUpdateService,
   useDeleteService,
+  useAuth,
 } from '../lib/supabase-client';
 import { ServiceWithAvailability } from '../lib/utils-booking';
 
@@ -25,16 +26,11 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
-const CATEGORIES = [
-  'General',
-  'Servicio Técnico',
-  'Soporte',
-  'Postventa',
-  'Compra por mayor'
-];
+
 
 export default function AdminServices() {
-  const { data: services = [], isLoading: loadingServices } = useServices();
+  const { user } = useAuth();
+  const { data: services = [], isLoading: loadingServices } = useServices(user?.id);
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [isAddingService, setIsAddingService] = useState(false);
 
@@ -53,7 +49,7 @@ export default function AdminServices() {
       duration_min: parseInt(formData.get('duration') as string),
       price: parseFloat(formData.get('price') as string),
       color: formData.get('color') as string || '#3B82F6',
-      category: formData.get('category') as string || 'General',
+      category: 'General',
     };
 
     try {
@@ -166,17 +162,7 @@ export default function AdminServices() {
                       <Label htmlFor="color">Color Etiqueta</Label>
                       <Input id="color" name="color" type="color" defaultValue="#3B82F6" className="h-10" />
                     </div>
-                    <div className="space-y-2 col-span-2 sm:col-span-1">
-                      <Label htmlFor="category">Categoría</Label>
-                      <select
-                        id="category"
-                        name="category"
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        defaultValue="General"
-                      >
-                        {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                      </select>
-                    </div>
+
                     <div className="space-y-2 col-span-2">
                       <Label htmlFor="description">Descripción</Label>
                       <Input id="description" name="description" placeholder="Breve descripción del servicio" />
@@ -184,6 +170,10 @@ export default function AdminServices() {
                     <div className="space-y-2 col-span-1">
                       <Label htmlFor="price">Precio ($)</Label>
                       <Input id="price" name="price" type="number" required min="0" step="0.01" defaultValue="0" />
+                    </div>
+                    <div className="space-y-2 col-span-1">
+                      <Label htmlFor="duration">Duración (Minutos)</Label>
+                      <Input id="duration" name="duration" type="number" required min="5" defaultValue="30" />
                     </div>
                   </div>
                   <div className="pt-4 flex gap-3">
@@ -217,10 +207,10 @@ function ServiceDetailsSection({ service }: { service: ServiceWithAvailability }
         id: service.id,
         name: formData.get('name') as string,
         description: formData.get('description') as string,
-        duration_min: 30, // Default, will be ignored by logic
+        duration_min: parseInt(formData.get('duration') as string),
         price: parseFloat(formData.get('price') as string),
         color: formData.get('color') as string,
-        category: formData.get('category') as string || 'General',
+        category: 'General',
       });
     } catch (err) {
       console.error(err);
@@ -256,26 +246,25 @@ function ServiceDetailsSection({ service }: { service: ServiceWithAvailability }
                   <Input value={service.color} readOnly className="flex-1 h-11 bg-slate-50 text-slate-500 font-mono text-xs" />
                 </div>
               </div>
-              <div className="space-y-2 col-span-1 md:col-span-2">
-                <Label htmlFor="edit-category" className="text-slate-700 font-bold">Categoría / Tipo de Servicio</Label>
-                <select
-                  id="edit-category"
-                  name="category"
-                  className="flex h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  defaultValue={service.category}
-                >
-                  {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
-                </select>
-              </div>
+
               <div className="space-y-2 col-span-1 md:col-span-2">
                 <Label htmlFor="edit-desc" className="text-slate-700 font-bold">Descripción (opcional)</Label>
                 <Input id="edit-desc" name="description" defaultValue={service.description} className="h-11" placeholder="Ej: Servicio de mantenimiento preventivo para equipos Apple" />
               </div>
-              <div className="space-y-2 col-span-2">
-                <Label htmlFor="edit-price" className="text-slate-700 font-bold">Precio del Servicio ($)</Label>
-                <div className="relative">
-                  <DollarSign className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                  <Input id="edit-price" name="price" type="number" defaultValue={service.price} step="0.01" required className="pl-10 h-11" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 col-span-2">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-price" className="text-slate-700 font-bold">Precio del Servicio ($)</Label>
+                  <div className="relative">
+                    <DollarSign className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                    <Input id="edit-price" name="price" type="number" defaultValue={service.price} step="0.01" required className="pl-10 h-11" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="edit-duration" className="text-slate-700 font-bold">Duración (Minutos)</Label>
+                  <div className="relative">
+                    <Clock className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+                    <Input id="edit-duration" name="duration" type="number" defaultValue={service.duration_min} required min="5" className="pl-10 h-11" />
+                  </div>
                 </div>
               </div>
             </div>

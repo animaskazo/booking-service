@@ -7,7 +7,7 @@
 import React, { useState, useMemo } from 'react';
 import { format, addDays, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, CalendarIcon, Clock, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Calendar, CalendarIcon, Clock, Loader2, AlertCircle, CheckCircle2, MapPin } from 'lucide-react';
 
 import {
   calculateAvailableSlots,
@@ -27,6 +27,7 @@ import {
   useCreateAppointment,
   checkSlotAvailability,
   useBusinessSettings,
+  useProfile,
 } from '../lib/supabase-client';
 
 import { Button } from '@/components/ui/button';
@@ -60,7 +61,7 @@ interface BookingState {
 // COMPONENTE PRINCIPAL
 // ============================================================================
 
-export const BookingSystemMVP: React.FC = () => {
+export const BookingSystemMVP: React.FC<{ businessId?: string }> = ({ businessId }) => {
   // Estado del formulario
   const [state, setState] = useState<BookingState>({
     selectedService: null,
@@ -79,18 +80,11 @@ export const BookingSystemMVP: React.FC = () => {
   const [shortId, setShortId] = useState<string | null>(null);
 
   // Queries
-  const { data: services = [], isLoading: servicesLoading } = useServices();
+  const { data: profile } = useProfile(businessId);
+  const { data: services = [], isLoading: servicesLoading } = useServices(profile?.id);
 
-  const servicesByCategory = useMemo(() => {
-    const grouped: Record<string, ServiceWithAvailability[]> = {};
-    services.forEach((service) => {
-      const cat = service.category || 'General';
-      if (!grouped[cat]) grouped[cat] = [];
-      grouped[cat].push(service);
-    });
-    return grouped;
-  }, [services]);
-  const { data: availabilities = [] } = useAvailability(state.selectedService?.id || null);
+
+  const { data: availabilities = [] } = useAvailability(state.selectedService?.id || null, profile?.id);
 
   // Rango de fechas para buscar citas (próximos 30 días)
   const dateRangeStart = new Date();
@@ -98,14 +92,15 @@ export const BookingSystemMVP: React.FC = () => {
 
   const { data: appointments = [] } = useAppointmentsByDateRange(
     dateRangeStart,
-    dateRangeEnd
+    dateRangeEnd,
+    profile?.id
   );
 
   // Mutation para crear cita
   const createAppointment = useCreateAppointment();
 
   // Configuración global
-  const { data: bSettings = { slot_interval: 30 } } = useBusinessSettings();
+  const { data: bSettings = { slot_interval: 30 } } = useBusinessSettings(profile?.id);
 
   // Calcular fechas disponibles (basado en disponibilidades del servicio)
   const availableDates = useMemo(
@@ -228,7 +223,7 @@ export const BookingSystemMVP: React.FC = () => {
         state.notes || undefined
       );
 
-      const result = await createAppointment.mutateAsync(appointmentData);
+      const result = await createAppointment.mutateAsync({ appointmentData, userId: profile?.id });
 
       // Éxito
       setConfirmationId(result.id);
@@ -269,24 +264,26 @@ export const BookingSystemMVP: React.FC = () => {
     <div className="flex gap-2 justify-center flex-wrap">
       {(['service', 'date', 'details', 'confirmation'] as const).map((step, idx) => (
         <React.Fragment key={step}>
-          <button
+          <Button
+            variant={currentStep === step ? 'default' : 'secondary'}
+            size="icon"
             onClick={() => {
               if (step === 'service' || state.selectedService) {
                 handleGoToStep(step);
               }
             }}
             className={`
-              w-10 h-10 rounded-full font-semibold transition-all text-sm
+              w-10 h-10 rounded-full font-semibold transition-all text-sm shadow-none
               ${currentStep === step
-                ? 'bg-slate-900 text-white scale-110'
+                ? 'scale-110'
                 : bookingConfirmed || (['service', 'date', 'details'].includes(step) && state.selectedService)
-                  ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer'
-                  : 'bg-gray-200 text-gray-500'
+                  ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  : 'bg-gray-200 text-gray-400 opacity-50 cursor-not-allowed'
               }
             `}
           >
             {idx + 1}
-          </button>
+          </Button>
           {idx < 3 && <div className="w-1 h-1 rounded-full bg-gray-300 self-center" />}
         </React.Fragment>
       ))}
@@ -310,57 +307,47 @@ export const BookingSystemMVP: React.FC = () => {
           <AlertDescription>No hay servicios disponibles en este momento.</AlertDescription>
         </Alert>
       ) : (
-        <div className="space-y-8">
-          {Object.entries(servicesByCategory).map(([category, catServices]) => (
-            <div key={category} className="space-y-4">
-              <div className="flex items-center gap-2 px-1">
-                <div className="h-4 w-1 bg-slate-900 rounded-full" />
-                <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest">{category}</h3>
-              </div>
-              <div className="space-y-3">
-                {catServices.map((service) => (
-                  <Card
-                    key={service.id}
-                    onClick={() => handleSelectService(service.id)}
-                    className={`
-                      relative cursor-pointer transition-all hover:shadow-lg hover:scale-[1.01] overflow-hidden
-                      ${state.selectedService?.id === service.id ? 'border-slate-900 shadow-md bg-slate-50/50 scale-[1.01]' : 'border-slate-100 bg-white'}
-                    `}
-                  >
-                    <CardHeader className="pb-2">
-                      <div className="flex justify-between items-start">
-                        <CardTitle className="text-lg font-bold">{service.name}</CardTitle>
-                        <div
-                          className="w-3 h-3 rounded-full mt-1.5 shadow-sm"
-                          style={{ backgroundColor: service.color }}
-                        />
-                      </div>
-                      {service.description && (
-                        <CardDescription className="line-clamp-2 text-slate-500">{service.description}</CardDescription>
-                      )}
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex justify-between items-center">
-                        <div className="flex gap-4 text-sm text-slate-600">
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-4 h-4 text-slate-400" />
-                            {service.duration_min} min
-                          </span>
-                          <span className="font-bold text-slate-700">
-                            {formatPrice(service.price)}
-                          </span>
-                        </div>
-                        {state.selectedService?.id === service.id && (
-                          <div className="bg-slate-900 rounded-full p-1">
-                             <CheckCircle2 className="w-4 h-4 text-white" />
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
+        <div className="space-y-3">
+          {services.map((service) => (
+            <Card
+              key={service.id}
+              onClick={() => handleSelectService(service.id)}
+              className={`
+                relative cursor-pointer transition-all hover:shadow-lg hover:scale-[1.01] overflow-hidden
+                ${state.selectedService?.id === service.id ? 'border-slate-900 shadow-md bg-slate-50/50 scale-[1.01]' : 'border-slate-100 bg-white'}
+              `}
+            >
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start">
+                  <CardTitle className="text-lg font-bold">{service.name}</CardTitle>
+                  <div
+                    className="w-3 h-3 rounded-full mt-1.5 shadow-sm"
+                    style={{ backgroundColor: service.color }}
+                  />
+                </div>
+                {service.description && (
+                  <CardDescription className="line-clamp-2 text-slate-500">{service.description}</CardDescription>
+                )}
+              </CardHeader>
+              <CardContent>
+                <div className="flex justify-between items-center">
+                  <div className="flex gap-4 text-sm text-slate-600">
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-4 h-4 text-slate-400" />
+                      {service.duration_min} min
+                    </span>
+                    <span className="font-bold text-slate-700">
+                      {formatPrice(service.price)}
+                    </span>
+                  </div>
+                  {state.selectedService?.id === service.id && (
+                    <div className="bg-slate-900 rounded-full p-1">
+                       <CheckCircle2 className="w-4 h-4 text-white" />
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
@@ -675,8 +662,8 @@ export const BookingSystemMVP: React.FC = () => {
           <Button variant="outline" onClick={handleReset} className="flex-1">
             Hacer otra reserva
           </Button>
-          <Button onClick={() => window.print()} className="flex-1">
-            Imprimir comprobante
+          <Button onClick={() => window.location.href = '/'} className="flex-1 bg-slate-900">
+            Listo
           </Button>
         </div>
       </div>
@@ -693,13 +680,23 @@ export const BookingSystemMVP: React.FC = () => {
         {/* Header & Step Indicator Unified */}
         {!bookingConfirmed && (
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-            <div className="flex items-center gap-4">
-              <div className="bg-slate-900 text-white p-3 rounded-xl shadow-slate-200 shadow-lg">
-                <Calendar className="w-6 h-6" />
+            <div className="flex items-center gap-5">
+              <div className="bg-slate-900 text-white p-4 rounded-2xl shadow-xl rotate-3">
+                <Calendar className="w-8 h-8" />
               </div>
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900">Sistema de Reservas</h1>
-                <p className="text-sm text-slate-500">Agenda tu cita en pocos pasos</p>
+              <div className="space-y-1">
+                <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
+                  {profile?.full_name || 'Agendamiento Online'}
+                </h1>
+                <p className="text-slate-500 font-medium text-sm md:text-base max-w-md">
+                  {profile?.description || 'Reserva tu cita de forma rápida y sencilla.'}
+                </p>
+                {profile?.city && (
+                  <div className="flex items-center gap-2 text-slate-400 font-bold uppercase tracking-widest text-[9px] pt-1">
+                    <MapPin className="w-3 h-3" />
+                    {profile.city}
+                  </div>
+                )}
               </div>
             </div>
 

@@ -103,7 +103,17 @@ export default function Login() {
             </Button>
           </CardFooter>
         </form>
-        <div className="pb-6 text-center">
+        <div className="pb-6 text-center space-y-2">
+          <p className="text-sm text-slate-500">
+            ¿No tienes una cuenta? {' '}
+            <button 
+              type="button" 
+              onClick={() => navigate('/register')} 
+              className="text-slate-900 font-bold hover:underline"
+            >
+              Regístrate aquí
+            </button>
+          </p>
           <Button variant="link" size="sm" onClick={() => navigate('/')} className="text-slate-500">
             Volver a la vista pública
           </Button>

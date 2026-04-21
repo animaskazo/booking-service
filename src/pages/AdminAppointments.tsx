@@ -23,7 +23,8 @@ import {
   useAvailability,
   useBusinessSettings,
   useServices,
-  useCreateAppointment
+  useCreateAppointment,
+  useAuth
 } from '../lib/supabase-client';
 import { isSlotOccupied, generateShortId } from '../lib/utils-booking';
 import { format, startOfWeek, addDays, isSameDay, parseISO } from 'date-fns';
@@ -42,6 +43,7 @@ export default function AdminAppointments() {
   const [selectedSlot, setSelectedSlot] = useState<{ date: Date, time: string } | null>(null);
   const [selectedApp, setSelectedApp] = useState<any | null>(null);
   const [isMobile, setIsMobile] = React.useState(false);
+  const { user } = useAuth();
 
   React.useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -54,13 +56,14 @@ export default function AdminAppointments() {
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekDays = [...Array(7)].map((_, i) => addDays(weekStart, i));
 
-  const { data: appointments = [] } = useAppointmentsByDateRange(weekDays[0], addDays(weekDays[6], 1));
-  const { data: globalAvailabilities = [] } = useAvailability(null);
-  const { data: bSettings = { lunch_start: '13:00', lunch_end: '14:00', has_lunch_break: true, slot_interval: 30 } } = useBusinessSettings();
-  const { data: services = [] } = useServices();
+  const { data: appointments = [] } = useAppointmentsByDateRange(weekDays[0], addDays(weekDays[6], 1), user?.id);
+  const { data: globalAvailabilities = [] } = useAvailability(null, user?.id);
+  const { data: bSettings = { lunch_start: '13:00', lunch_end: '14:00', has_lunch_break: true, slot_interval: 30 } } = useBusinessSettings(user?.id);
+  const { data: services = [] } = useServices(user?.id);
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [serviceFilter, setServiceFilter] = useState('all');
 
   // Calcular rango de horas visibles basado en disponibilidad global
   const visibleHours = useMemo(() => {
@@ -155,15 +158,18 @@ export default function AdminAppointments() {
 
     try {
       await createAppointmentMutation.mutateAsync({
-        service_id: serviceId,
-        customer_name: formData.get('name') as string,
-        customer_email: formData.get('email') as string,
-        customer_phone: formData.get('phone') as string,
-        start_time: startTime.toISOString(),
-        end_time: endTime.toISOString(),
-        status: 'confirmed' as 'pending' | 'confirmed' | 'cancelled' | 'completed',
-        notes: 'Creado manualmente por admin',
-        short_id: generateShortId()
+        appointmentData: {
+          service_id: serviceId,
+          customer_name: formData.get('name') as string,
+          customer_email: formData.get('email') as string,
+          customer_phone: formData.get('phone') as string,
+          start_time: startTime.toISOString(),
+          end_time: endTime.toISOString(),
+          status: 'confirmed' as 'pending' | 'confirmed' | 'cancelled' | 'completed',
+          notes: 'Creado manualmente por admin',
+          short_id: generateShortId()
+        },
+        userId: user?.id
       });
       setSelectedSlot(null);
     } catch (err) {
@@ -190,6 +196,42 @@ export default function AdminAppointments() {
               <TabsTrigger value="list" className="rounded-lg">Lista</TabsTrigger>
             </TabsList>
           </Tabs>
+      </div>
+    </div>
+      
+      {/* Filtros Globales */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white/50 p-1 rounded-2xl">
+        <div className="md:col-span-2 relative">
+          <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
+          <Input
+            placeholder="Buscar cliente, email o short ID..."
+            className="pl-10 h-11 rounded-xl bg-white border-slate-200 shadow-sm transition-all focus:shadow-md"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-col md:flex-row gap-2 md:col-span-2">
+          <select
+            value={serviceFilter}
+            onChange={(e) => setServiceFilter(e.target.value)}
+            className="flex-1 h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-900 shadow-sm transition-all focus:shadow-md"
+          >
+            <option value="all">Todos los servicios</option>
+            {services.map(service => (
+              <option key={service.id} value={service.id}>{service.name}</option>
+            ))}
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="flex-1 h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-900 shadow-sm transition-all focus:shadow-md"
+          >
+            <option value="all">Todos los estados</option>
+            <option value="pending">Pendientes</option>
+            <option value="confirmed">Confirmadas</option>
+            <option value="completed">Completadas</option>
+            <option value="cancelled">Canceladas</option>
+          </select>
         </div>
       </div>
 
@@ -257,7 +299,17 @@ export default function AdminAppointments() {
 
                 {/* Day Columns */}
                 {(isMobile ? [currentDate] : weekDays).map((day, dayIdx) => {
-                  const dayApps = appointments.filter(a => isSameDay(parseISO(a.start_time), day));
+                  const dayApps = appointments
+                    .filter(a => isSameDay(parseISO(a.start_time), day))
+                    .filter(a => {
+                      const matchesSearch =
+                        a.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        a.customer_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                        a.short_id?.toLowerCase().includes(searchTerm.toLowerCase());
+                      const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
+                      const matchesService = serviceFilter === 'all' || a.service_id === serviceFilter;
+                      return matchesSearch && matchesStatus && matchesService;
+                    });
                   const isToday = isSameDay(day, new Date());
                   const interval = bSettings.slot_interval || 30;
                   const slotsPerHover = 60 / interval;
@@ -345,31 +397,6 @@ export default function AdminAppointments() {
         </div>
       ) : (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="md:col-span-2 relative">
-              <Search className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-              <Input
-                placeholder="Buscar cliente, email o short ID..."
-                className="pl-10 h-11 rounded-xl"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-            <div className="flex gap-2 md:col-span-2">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="flex-1 h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-900"
-              >
-                <option value="all">Todos los estados</option>
-                <option value="pending">Pendientes</option>
-                <option value="confirmed">Confirmadas</option>
-                <option value="completed">Completadas</option>
-                <option value="cancelled">Canceladas</option>
-              </select>
-            </div>
-          </div>
-
           <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
@@ -391,7 +418,8 @@ export default function AdminAppointments() {
                         a.customer_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         a.short_id?.toLowerCase().includes(searchTerm.toLowerCase());
                       const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
-                      return matchesSearch && matchesStatus;
+                      const matchesService = serviceFilter === 'all' || a.service_id === serviceFilter;
+                      return matchesSearch && matchesStatus && matchesService;
                     })
                     .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())
                     .map(app => (
