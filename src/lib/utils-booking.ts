@@ -276,6 +276,7 @@ export const isValidEmail = (email: string): boolean => {
  * Formatea un monto de dinero para mostrar
  */
 export const formatPrice = (price: number, currency = 'CLP'): string => {
+  if (price === 0) return 'Gratis';
   return new Intl.NumberFormat('es-CL', {
     style: 'currency',
     currency,

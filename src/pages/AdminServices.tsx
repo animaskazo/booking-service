@@ -16,7 +16,7 @@ import {
   useUpdateService,
   useDeleteService,
 } from '../lib/supabase-client';
-import { ServiceWithAvailability } from '../lib/utils-booking';
+import { ServiceWithAvailability, formatPrice } from '../lib/utils-booking';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -122,7 +122,13 @@ export default function AdminServices() {
                             <h4 className="font-bold text-slate-900">{service.name}</h4>
                             <div className="flex gap-3 text-xs text-slate-500 mt-1">
                               <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {service.duration_min}m</span>
-                              <span className="flex items-center gap-1"><DollarSign className="w-3 h-3" /> ${service.price}</span>
+                              <span className="flex items-center gap-1">
+                                {service.price === 0 ? (
+                                  <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 border-none px-2 py-0 text-[10px]">Gratis</Badge>
+                                ) : (
+                                  <><DollarSign className="w-3 h-3" /> {service.price}</>
+                                )}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -184,6 +190,7 @@ export default function AdminServices() {
                     <div className="space-y-2 col-span-1">
                       <Label htmlFor="price">Precio ($)</Label>
                       <Input id="price" name="price" type="number" required min="0" step="0.01" defaultValue="0" />
+                      <p className="text-[10px] text-slate-500 font-medium">💡 Pon 0 para que figure como <strong className="text-emerald-600">Gratis</strong></p>
                     </div>
                   </div>
                   <div className="pt-4 flex gap-3">
@@ -277,6 +284,7 @@ function ServiceDetailsSection({ service }: { service: ServiceWithAvailability }
                   <DollarSign className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
                   <Input id="edit-price" name="price" type="number" defaultValue={service.price} step="0.01" required className="pl-10 h-11" />
                 </div>
+                <p className="text-[10px] text-slate-500 font-medium">💡 Ingrese 0 para mostrar la etiqueta <strong className="text-emerald-600">Gratis</strong> al cliente</p>
               </div>
             </div>
 

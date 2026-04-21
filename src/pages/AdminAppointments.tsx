@@ -23,9 +23,10 @@ import {
   useAvailability,
   useBusinessSettings,
   useServices,
-  useCreateAppointment
+  useCreateAppointment,
+  sendBookingEmail
 } from '../lib/supabase-client';
-import { isSlotOccupied, generateShortId } from '../lib/utils-booking';
+import { isSlotOccupied, generateShortId, formatPrice, formatDateForDisplay, formatTimeRange } from '../lib/utils-booking';
 import { format, startOfWeek, addDays, isSameDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -154,7 +155,7 @@ export default function AdminAppointments() {
     }
 
     try {
-      await createAppointmentMutation.mutateAsync({
+      const result = await createAppointmentMutation.mutateAsync({
         service_id: serviceId,
         customer_name: formData.get('name') as string,
         customer_email: formData.get('email') as string,
@@ -162,9 +163,22 @@ export default function AdminAppointments() {
         start_time: startTime.toISOString(),
         end_time: endTime.toISOString(),
         status: 'confirmed' as 'pending' | 'confirmed' | 'cancelled' | 'completed',
-        notes: 'Creado manualmente por admin',
+        notes: formData.get('notes') as string || 'Creado manualmente por admin',
         short_id: generateShortId()
       });
+
+      // Enviar email de confirmación para reserva manual
+      sendBookingEmail({
+        customerName: formData.get('name') as string,
+        customerEmail: formData.get('email') as string,
+        serviceName: service.name,
+        date: formatDateForDisplay(startTime),
+        time: formatTimeRange(startTime, endTime),
+        shortId: result.short_id,
+        notes: (formData.get('notes') as string) || undefined,
+        techSupportEmail: 'fernando.rg@live.cl'
+      });
+
       setSelectedSlot(null);
     } catch (err) {
       console.error(err);
@@ -487,7 +501,7 @@ export default function AdminAppointments() {
                         <div className="relative">
                           <select name="serviceId" required className="w-full h-12 rounded-xl border border-slate-200 bg-white pl-4 pr-10 py-2 text-sm focus:ring-2 focus:ring-slate-900 outline-none appearance-none font-medium">
                             <option value="">Selecciona un servicio...</option>
-                            {services.map(s => <option key={s.id} value={s.id}>{s.name} - ${s.price}</option>)}
+                            {services.map(s => <option key={s.id} value={s.id}>{s.name} - {formatPrice(s.price)}</option>)}
                           </select>
                           <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
                             <ChevronRight className="w-4 h-4 rotate-90" />

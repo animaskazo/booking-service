@@ -7,7 +7,7 @@
 import React, { useState, useMemo } from 'react';
 import { format, addDays, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, CalendarIcon, Clock, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Calendar, CalendarIcon, Clock, Loader2, AlertCircle, CheckCircle2, Tag } from 'lucide-react';
 
 import {
   calculateAvailableSlots,
@@ -27,6 +27,7 @@ import {
   useCreateAppointment,
   checkSlotAvailability,
   useBusinessSettings,
+  sendBookingEmail,
 } from '../lib/supabase-client';
 
 import { Button } from '@/components/ui/button';
@@ -229,6 +230,18 @@ export const BookingSystemMVP: React.FC = () => {
       );
 
       const result = await createAppointment.mutateAsync(appointmentData);
+
+      // 3. Disparar email de confirmación (sin esperar a que termine para no bloquear la UI)
+      sendBookingEmail({
+        customerName: state.customerName,
+        customerEmail: state.customerEmail,
+        serviceName: state.selectedService.name,
+        date: formatDateForDisplay(state.selectedSlot.start),
+        time: formatTimeRange(state.selectedSlot.start, state.selectedSlot.end),
+        shortId: result.short_id,
+        notes: state.notes || undefined,
+        techSupportEmail: 'fernando.rg@live.cl'
+      });
 
       // Éxito
       setConfirmationId(result.id);
@@ -594,91 +607,88 @@ export const BookingSystemMVP: React.FC = () => {
       : null;
 
     return (
-      <div className="space-y-6">
-        <div className="text-center">
-          <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-4" />
-          <h2 className="text-3xl font-bold mb-2">¡Reserva confirmada!</h2>
-          <p className="text-gray-600 mb-2">Tu cita ha sido agendada exitosamente.</p>
-          <div className="bg-slate-100 w-fit mx-auto px-4 py-1.5 rounded-full border border-slate-200">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest mr-2">Orden:</span>
-            <span className="text-lg font-black text-slate-900 tracking-tighter">{shortId}</span>
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 min-h-[500px] flex flex-col">
+        {/* Header Uber Style */}
+        <div className="bg-slate-900 text-white p-10 -mx-8 -mt-8 mb-8 text-center space-y-4">
+          <div className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-full">
+            <CheckCircle2 className="w-6 h-6 text-slate-900" />
+          </div>
+          <div className="space-y-1">
+            <h2 className="text-3xl font-bold tracking-tight">Reserva confirmada</h2>
+            <p className="text-slate-400 text-sm font-medium">Gracias por elegirnos, {state.customerName.split(' ')[0]}</p>
           </div>
         </div>
 
         {summary && (
-          <Card className="overflow-hidden border-2 border-blue-100 shadow-md">
-            <div className="h-2 w-full" style={{ backgroundColor: summary.serviceColor }} />
-            <CardHeader className="bg-slate-50/50">
-              <div className="flex justify-between items-center">
-                <CardTitle className="text-xl">Detalles de la Cita</CardTitle>
-                <Badge variant="secondary" className="bg-white border">Confirmada</Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4 pt-6">
-              <div className="flex justify-between items-start pb-2 border-b border-dashed">
+          <div className="flex-1 space-y-8 px-2">
+            {/* Main Info Section */}
+            <div className="space-y-6">
+              <div className="flex justify-between items-start border-b pb-6">
                 <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Servicio</p>
-                  <p className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: summary.serviceColor }} />
-                    {summary.serviceName}
-                  </p>
-                </div>
-                <div className="text-right space-y-1">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Precio</p>
-                  <p className="text-lg font-bold text-slate-900">{summary.price}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 pb-2 border-b border-dashed">
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha</p>
-                  <p className="font-semibold text-slate-700">{summary.date}</p>
-                </div>
-                <div className="space-y-1 text-right">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Horario</p>
-                  <p className="font-semibold text-slate-700">{summary.time}</p>
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center">
-                <div className="space-y-1">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Duración</p>
-                  <p className="text-sm font-medium text-slate-600">{summary.duration}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Servicio</p>
+                  <p className="text-2xl font-bold text-slate-900">{summary.serviceName}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: summary.serviceColor }} />
+                    <span className="text-xs font-medium text-slate-500">{summary.duration} de sesión</span>
+                  </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Cliente</p>
-                  <p className="text-sm font-medium text-slate-700">{state.customerName}</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</p>
+                  <p className="text-2xl font-black text-slate-900 tracking-tighter">{summary.price}</p>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+
+              {/* Date & Time Section */}
+              <div className="grid grid-cols-2 gap-8 border-b pb-6">
+                <div className="space-y-1 border-r border-slate-100">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fecha</p>
+                  <p className="text-lg font-bold text-slate-900 capitalize">{summary.date}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Horario</p>
+                  <p className="text-lg font-bold text-slate-900">{summary.time}</p>
+                </div>
+              </div>
+
+              {/* Reference Info */}
+              <div className="flex items-center justify-between py-4 px-6 bg-slate-50 rounded-xl border border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white rounded-lg border shadow-sm">
+                    <Tag className="w-4 h-4 text-slate-400" />
+                  </div>
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID de Reserva</p>
+                    <p className="text-sm font-black text-slate-900 font-mono tracking-wider">{shortId}</p>
+                  </div>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => window.print()} className="text-slate-500 hover:text-slate-900 text-xs font-bold gap-2">
+                  Imprimir
+                </Button>
+              </div>
+            </div>
+
+            {/* Bottom Message */}
+            <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100/50 flex items-start gap-4">
+               <div className="mt-1"><AlertCircle className="w-5 h-5 text-blue-600" /></div>
+               <div className="space-y-1">
+                 <p className="text-sm font-bold text-blue-900">Tu cita está lista</p>
+                 <p className="text-xs text-blue-700 leading-relaxed">
+                   Te recomendamos llegar 5 minutos antes. Hemos enviado un comprobante a tu correo para que lo tengas a mano.
+                 </p>
+               </div>
+            </div>
+
+            {/* Uber-like Button */}
+            <div className="pt-4">
+              <Button 
+                onClick={handleReset} 
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-none h-14 text-lg font-bold transition-all shadow-lg active:scale-[0.98]"
+              >
+                Volver al inicio
+              </Button>
+            </div>
+          </div>
         )}
-
-        <Alert className="bg-blue-50 border-blue-200">
-          <AlertCircle className="h-4 w-4 text-slate-900" />
-          <AlertDescription className="text-blue-900">
-            Se ha enviado un email de confirmación a <strong>{state.customerEmail}</strong>
-          </AlertDescription>
-        </Alert>
-
-        <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-700 space-y-2">
-          <p>
-            <strong>Ticket ID:</strong> {shortId}
-          </p>
-          <p>
-            <strong>ID de sistema:</strong> {confirmationId?.slice(0, 8).toUpperCase()}
-          </p>
-          <p>Por favor llega 10 minutos antes de tu cita.</p>
-        </div>
-
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={handleReset} className="flex-1">
-            Hacer otra reserva
-          </Button>
-          <Button onClick={() => window.print()} className="flex-1">
-            Imprimir comprobante
-          </Button>
-        </div>
       </div>
     );
   };

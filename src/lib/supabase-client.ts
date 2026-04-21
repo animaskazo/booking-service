@@ -99,17 +99,23 @@ export const queryClient = new QueryClient({
  * Obtiene todos los servicios disponibles
  */
 export const useServices = () => {
+  const { user } = useAuth();
+  
   return useQuery({
-    queryKey: ['services'],
+    queryKey: ['services', user?.id],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('services')
-        .select('*')
-        .order('name');
+      let query = supabase.from('services').select('*');
+      
+      // Si hay un usuario logueado (Admin), filtramos estrictamente por su ID
+      if (user) {
+        query = query.eq('user_id', user.id);
+      }
+      
+      const { data, error } = await query.order('name');
 
       if (error) throw error;
       return data as ServiceWithAvailability[];
-    },
+    }
   });
 };
 
@@ -145,14 +151,23 @@ export const useAppointmentsByDateRange = (
   startDate: Date | null,
   endDate: Date | null
 ) => {
+  const { user } = useAuth();
+  
   return useQuery({
-    queryKey: ['appointments', 'global_range', startDate?.toISOString(), endDate?.toISOString()],
+    queryKey: ['appointments', 'global_range', startDate?.toISOString(), endDate?.toISOString(), user?.id],
     queryFn: async () => {
       if (!startDate || !endDate) return [];
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('appointments')
-        .select('*, service:services(*)')
+        .select('*, service:services!inner(*)');
+
+      // Si es admin, filtrar solo sus citas
+      if (user) {
+        query = query.eq('service.user_id', user.id);
+      }
+
+      const { data, error } = await query
         .gte('start_time', startDate.toISOString())
         .lte('start_time', endDate.toISOString());
 
@@ -259,24 +274,29 @@ export const useCancelAppointment = () => {
  * Obtiene la configuración global del negocio
  */
 export const useBusinessSettings = () => {
+  const { user } = useAuth();
+  
   return useQuery({
-    queryKey: ['business_settings'],
+    queryKey: ['business_settings', user?.id],
     queryFn: async () => {
+      if (!user) return null;
+      
       const { data, error } = await supabase
         .from('business_settings')
         .select('*')
-        .eq('id', 'global')
+        .eq('user_id', user.id)
         .single();
 
       if (error && error.code !== 'PGRST116') throw error;
       return data || { 
-        id: 'global', 
+        user_id: user.id, 
         slot_interval: 30,
         lunch_start: '13:00',
         lunch_end: '14:00',
         has_lunch_break: true
       };
     },
+    enabled: !!user,
   });
 };
 
@@ -285,6 +305,8 @@ export const useBusinessSettings = () => {
  */
 export const useUpdateBusinessSettings = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  
   return useMutation({
     mutationFn: async (settings: { 
       slot_interval?: number, 
@@ -292,9 +314,11 @@ export const useUpdateBusinessSettings = () => {
       lunch_end?: string, 
       has_lunch_break?: boolean 
     }) => {
+      if (!user) throw new Error("Debes estar logueado");
+      
       const { data, error } = await supabase
         .from('business_settings')
-        .upsert({ id: 'global', ...settings, updated_at: new Date().toISOString() })
+        .upsert({ user_id: user.id, ...settings, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
         .select()
         .single();
 
@@ -312,9 +336,13 @@ export const useUpdateBusinessSettings = () => {
  */
 export const useCreateService = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  
   return useMutation({
     mutationFn: async (service: Omit<ServiceWithAvailability, 'id'>) => {
-      const { data, error } = await supabase.from('services').insert([service]).select().single();
+      if (!user) throw new Error("Debes estar logueado");
+      
+      const { data, error } = await supabase.from('services').insert([{ ...service, user_id: user.id }]).select().single();
       if (error) throw error;
       return data;
     },
@@ -329,9 +357,20 @@ export const useCreateService = () => {
  */
 export const useUpdateService = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+
   return useMutation({
     mutationFn: async ({ id, ...service }: Partial<ServiceWithAvailability> & { id: string }) => {
-      const { data, error } = await supabase.from('services').update(service).eq('id', id).select().single();
+      if (!user) throw new Error("Debes estar logueado");
+      
+      const { data, error } = await supabase
+        .from('services')
+        .update(service)
+        .eq('id', id)
+        .eq('user_id', user.id) // Protección extra
+        .select()
+        .single();
+      
       if (error) throw error;
       return data;
     },
@@ -346,9 +385,18 @@ export const useUpdateService = () => {
  */
 export const useDeleteService = () => {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('services').delete().eq('id', id);
+      if (!user) throw new Error("Debes estar logueado");
+      
+      const { error } = await supabase
+        .from('services')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', user.id); // Protección extra
+        
       if (error) throw error;
     },
     onSuccess: () => {
@@ -437,24 +485,31 @@ export const checkSlotAvailability = async (
  * Obtiene todas las citas para la vista de administración
  */
 export const useAppointmentsAdmin = () => {
+  const { user } = useAuth();
+  
   return useQuery({
-    queryKey: ['appointments', 'admin'],
+    queryKey: ['appointments', 'admin', user?.id],
     queryFn: async () => {
+      if (!user) return [];
+      
       const { data, error } = await supabase
         .from('appointments')
         .select(`
           *,
-          service:service_id (
+          service:service_id!inner (
             name,
             color,
-            category
+            category,
+            user_id
           )
         `)
+        .eq('service.user_id', user.id) // Solo citas cuyos servicios pertenecen al usuario
         .order('start_time', { ascending: false });
 
       if (error) throw error;
       return data as any[];
     },
+    enabled: !!user,
   });
 };
 
@@ -471,7 +526,6 @@ export const useUpdateAppointmentStatus = () => {
         .eq('id', id)
         .select()
         .single();
-
       if (error) throw error;
       return data;
     },
@@ -499,4 +553,32 @@ export const useDeleteAppointment = () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
     },
   });
+};
+
+/**
+ * Invoca la Edge Function para enviar el email de confirmación
+ */
+export const sendBookingEmail = async (bookingData: {
+  customerName: string;
+  customerEmail: string;
+  serviceName: string;
+  date: string;
+  time: string;
+  shortId: string;
+  notes?: string;
+  techSupportEmail?: string;
+}) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('send-booking-email', {
+      body: bookingData,
+    });
+
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error('Error al enviar el email:', err);
+    // No lanzamos error para no romper el flujo de UI del usuario,
+    // pero lo registramos en consola.
+    return null;
+  }
 };
