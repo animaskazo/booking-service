@@ -40,54 +40,105 @@ serve(async (req) => {
         to: [customerEmail],
         cc: [techSupportEmail], // Copia al servicio técnico
         subject: `Confirmación de Reserva - ${serviceName} #${shortId}`,
-        html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
-            <div style="background-color: #0f172a; padding: 32px; text-align: center; color: white;">
-              <h1 style="margin: 0; font-size: 24px;">¡Reserva Confirmada!</h1>
-              <p style="opacity: 0.8; margin-top: 8px;">Hola ${customerName}, tu cita ha sido agendada con éxito.</p>
-            </div>
-            
-            <div style="padding: 32px; background-color: white;">
-              <div style="background-color: #f8fafc; padding: 24px; border-radius: 8px; margin-bottom: 24px;">
-                <h2 style="margin: 0 0 16px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b;">Detalles de la Cita</h2>
-                
-                <table style="width: 100%; border-collapse: collapse;">
-                  <tr>
-                    <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Servicio</td>
-                    <td style="padding: 8px 0; font-weight: bold; text-align: right; color: #0f172a;">${serviceName}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Fecha</td>
-                    <td style="padding: 8px 0; font-weight: bold; text-align: right; color: #0f172a;">${date}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Horario</td>
-                    <td style="padding: 8px 0; font-weight: bold; text-align: right; color: #0f172a;">${time}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 8px 0; color: #64748b; font-size: 14px;">Código de Orden</td>
-                    <td style="padding: 8px 0; font-weight: bold; text-align: right; color: #0f172a; font-family: monospace;">${shortId}</td>
-                  </tr>
-                </table>
-              </div>
+        html: `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Confirmación de Reserva</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+
+  <!-- Wrapper -->
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f4f5;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;">
+
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#0f172a;border-radius:12px 12px 0 0;padding:40px 48px;text-align:center;">
+              <div style="display:inline-block;background-color:rgba(255,255,255,0.1);border-radius:50%;width:52px;height:52px;line-height:52px;text-align:center;margin-bottom:20px;font-size:24px;">✓</div>
+              <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.5px;">Reserva Confirmada</h1>
+              <p style="margin:10px 0 0;color:#94a3b8;font-size:15px;line-height:1.5;">Hola <strong style="color:#e2e8f0;">${customerName}</strong>, tu cita está agendada.</p>
+            </td>
+          </tr>
+
+          <!-- Booking ID Badge -->
+          <tr>
+            <td style="background-color:#1e293b;padding:16px 48px;text-align:center;">
+              <span style="display:inline-block;background-color:#0f172a;border:1px solid #334155;border-radius:6px;color:#94a3b8;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:6px 14px;">Código de reserva</span>
+              &nbsp;
+              <span style="display:inline-block;background-color:#2563eb;border-radius:6px;color:#ffffff;font-size:13px;font-weight:700;letter-spacing:0.12em;font-family:monospace;padding:6px 16px;">${shortId}</span>
+            </td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="background-color:#ffffff;padding:40px 48px;border-radius:0 0 12px 12px;">
+
+              <!-- Section Title -->
+              <p style="margin:0 0 20px;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">Detalles de la cita</p>
+
+              <!-- Detail rows -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="padding:14px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;width:40%;">Servicio</td>
+                  <td style="padding:14px 0;border-bottom:1px solid #f1f5f9;color:#0f172a;font-size:14px;font-weight:600;text-align:right;">${serviceName}</td>
+                </tr>
+                <tr>
+                  <td style="padding:14px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;">Fecha</td>
+                  <td style="padding:14px 0;border-bottom:1px solid #f1f5f9;color:#0f172a;font-size:14px;font-weight:600;text-align:right;">${date}</td>
+                </tr>
+                <tr>
+                  <td style="padding:14px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;">Horario</td>
+                  <td style="padding:14px 0;border-bottom:1px solid #f1f5f9;color:#0f172a;font-size:14px;font-weight:600;text-align:right;">${time}</td>
+                </tr>
+                <tr>
+                  <td style="padding:14px 0;color:#64748b;font-size:14px;">Cliente</td>
+                  <td style="padding:14px 0;color:#0f172a;font-size:14px;font-weight:600;text-align:right;">${customerName}</td>
+                </tr>
+              </table>
 
               ${notes ? `
-              <div style="margin-bottom: 24px;">
-                <h3 style="font-size: 12px; margin-bottom: 8px; color: #64748b; text-transform: uppercase;">Notas adicionales</h3>
-                <p style="margin: 0; font-size: 14px; color: #334155; font-style: italic; border-left: 3px solid #e2e8f0; padding-left: 12px;">"${notes}"</p>
+              <!-- Notes -->
+              <div style="margin-top:28px;background-color:#f8fafc;border-left:3px solid #2563eb;border-radius:0 8px 8px 0;padding:16px 20px;">
+                <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;">Notas</p>
+                <p style="margin:0;font-size:14px;color:#334155;line-height:1.6;font-style:italic;">"${notes}"</p>
               </div>
               ` : ''}
 
-              <div style="text-align: center; border-top: 1px solid #e2e8f0; padding-top: 24px; margin-top: 24px;">
-                <p style="font-size: 12px; color: #94a3b8; margin: 0;">Si necesitas cancelar o reprogramar, por favor contáctanos respondiendo a este correo.</p>
+              <!-- Reminder box -->
+              <div style="margin-top:32px;background-color:#eff6ff;border-radius:8px;padding:20px 24px;text-align:center;">
+                <p style="margin:0;font-size:14px;color:#1d4ed8;line-height:1.6;">📅 &nbsp;Te recomendamos llegar <strong>5 minutos antes</strong>.<br/>Guarda este correo como comprobante.</p>
               </div>
-            </div>
-            
-            <div style="background-color: #f1f5f9; padding: 16px; text-align: center; font-size: 11px; color: #64748b;">
-              &copy; ${new Date().getFullYear()} Sistema de Reservas. Todos los derechos reservados.
-            </div>
-          </div>
-        `,
+
+              <!-- Divider -->
+              <div style="border-top:1px solid #f1f5f9;margin:32px 0;"></div>
+
+              <!-- Footer message -->
+              <p style="margin:0;font-size:13px;color:#94a3b8;text-align:center;line-height:1.6;">¿Necesitas cancelar o reprogramar? Responde este correo y te ayudaremos.</p>
+
+            </td>
+          </tr>
+
+          <!-- Legal Footer -->
+          <tr>
+            <td style="padding:24px 48px;text-align:center;">
+              <p style="margin:0;font-size:11px;color:#94a3b8;line-height:1.8;">
+                © ${new Date().getFullYear()} Sistema de Reservas · Todos los derechos reservados<br/>
+                Este mensaje fue generado automáticamente, por favor no respondas directamente.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>`,
       }),
     })
 

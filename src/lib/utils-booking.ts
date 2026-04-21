@@ -178,8 +178,15 @@ export const calculateAvailableSlots = (
     }
   }
 
-  // Ordenar slots por tiempo y filtrar solo los disponibles
+  // Filtrar duplicados por tiempo de inicio y ordenar
+  const seen = new Set();
   return slots
+    .filter((slot) => {
+      const time = slot.start.getTime();
+      if (seen.has(time)) return false;
+      seen.add(time);
+      return true;
+    })
     .sort((a, b) => a.start.getTime() - b.start.getTime())
     .filter((slot) => slot.available && isAfter(slot.start, new Date()));
 };

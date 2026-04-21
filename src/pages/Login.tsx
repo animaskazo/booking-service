@@ -91,14 +91,14 @@ export default function Login() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full h-11 font-bold shadow-lg" type="submit" disabled={loading}>
+            <Button className="w-full bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95 disabled:opacity-30" type="submit" disabled={loading}>
               {loading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Iniciando sesión...
+                  INICIANDO SESIÓN...
                 </>
               ) : (
-                'Iniciar Sesión'
+                'INICIAR SESIÓN'
               )}
             </Button>
           </CardFooter>

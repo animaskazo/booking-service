@@ -85,7 +85,7 @@ export default function AdminServices() {
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Administrar Servicios</h1>
           <p className="text-slate-500">Configura tus servicios y horarios de atención</p>
         </div>
-        <Button onClick={() => setIsAddingService(true)} className="shadow-lg">
+        <Button onClick={() => setIsAddingService(true)} className="bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold shadow-lg transition-all active:scale-95 uppercase text-xs tracking-widest px-6">
           <Plus className="w-4 h-4 mr-2" />
           Nuevo Servicio
         </Button>
@@ -135,7 +135,7 @@ export default function AdminServices() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="text-slate-400 hover:text-white"
+                          className="text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all h-9 w-9"
                           onClick={(e) => handleDeleteService(service.id, e)}
                         >
                           <Trash2 className="w-4 h-4" />
@@ -194,8 +194,12 @@ export default function AdminServices() {
                     </div>
                   </div>
                   <div className="pt-4 flex gap-3">
-                    <Button type="submit" className="flex-1">Crear Servicio</Button>
-                    <Button type="button" variant="outline" onClick={() => setIsAddingService(false)} className="flex-1">Cancelar</Button>
+                    <Button type="submit" className="flex-[2] bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95">
+                      CREAR SERVICIO
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => setIsAddingService(false)} className="flex-1 h-12 font-bold border-slate-200 hover:bg-slate-50 uppercase tracking-widest text-xs transition-all active:scale-95">
+                      CANCELAR
+                    </Button>
                   </div>
                 </form>
               </CardContent>
@@ -288,18 +292,18 @@ function ServiceDetailsSection({ service }: { service: ServiceWithAvailability }
               </div>
             </div>
 
-            <div className="pt-4 border-t flex items-center justify-between">
-              <p className="text-xs text-slate-400">Los cambios se aplicarán a las nuevas reservas inmediatamente.</p>
-              <Button type="submit" className="bg-slate-900 px-8 h-11 shadow-lg" disabled={updateServiceMutation.isPending}>
+            <div className="pt-4 border-t flex items-center justify-between gap-4">
+              <p className="text-xs text-slate-400 hidden sm:block">Los cambios se aplicarán de inmediato.</p>
+              <Button type="submit" className="flex-1 sm:flex-none sm:px-10 bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95" disabled={updateServiceMutation.isPending}>
                 {updateServiceMutation.isPending ? (
                   <>
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Guardando...
+                    GUARDANDO...
                   </>
                 ) : (
                   <>
                     <Save className="w-4 h-4 mr-2" />
-                    Actualizar Servicio
+                    ACTUALIZAR SERVICIO
                   </>
                 )}
               </Button>

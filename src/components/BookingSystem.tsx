@@ -381,28 +381,30 @@ export const BookingSystemMVP: React.FC = () => {
       <Button
         onClick={() => setCurrentStep('date')}
         disabled={!state.selectedService}
-        className="w-full"
-        size="lg"
+        className="w-full bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95 disabled:opacity-30"
       >
-        Continuar
+        CONTINUAR
       </Button>
     </div>
   );
 
   const renderStepDateTime = () => (
-    <div className="space-y-8">
-      <div>
-        <h2 className="text-2xl font-bold mb-2">Fecha y Horario</h2>
-        <p className="text-gray-600">
-          {state.selectedDate 
-            ? `Horarios disponibles para el ${formatDateForDisplay(state.selectedDate)}`
-            : 'Selecciona una fecha para ver horarios'}
-        </p>
+    <div className="space-y-10 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-black text-slate-900 tracking-tight">Fecha y Horario</h2>
+          <p className="text-slate-500 font-medium">Selecciona el momento ideal para tu cita</p>
+        </div>
+        {state.selectedDate && (
+          <Badge variant="outline" className="w-fit bg-slate-50 text-slate-600 border-slate-200 px-4 py-1.5 rounded-full font-bold">
+            {formatDateForDisplay(state.selectedDate)}
+          </Badge>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-        {/* Lado Izquierdo: Calendario */}
-        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+        {/* Lado Izquierdo: Calendario (Más ancho) */}
+        <div className="lg:col-span-7 bg-white rounded-3xl border border-slate-100 p-6 shadow-xl shadow-slate-200/40">
           <CalendarComponent
             mode="single"
             selected={state.selectedDate || undefined}
@@ -417,77 +419,109 @@ export const BookingSystemMVP: React.FC = () => {
               );
             }}
             locale={es}
-            className="flex justify-center"
+            className="w-full"
+            classNames={{
+              months: "w-full space-y-4",
+              month: "w-full space-y-4",
+              caption: "flex justify-center pt-1 relative items-center mb-4",
+              caption_label: "text-lg font-bold text-slate-900",
+              nav: "space-x-1 flex items-center",
+              nav_button: "h-9 w-9 bg-transparent p-0 opacity-50 hover:opacity-100 transition-opacity",
+              table: "w-full border-collapse space-y-1",
+              head_row: "flex w-full justify-between",
+              head_cell: "text-slate-400 rounded-md w-12 font-bold text-[10px] uppercase tracking-widest",
+              row: "flex w-full mt-2 justify-between",
+              cell: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20",
+              day: "h-12 w-12 p-0 font-bold aria-selected:opacity-100 hover:bg-slate-100 rounded-xl transition-all",
+              day_selected: "bg-slate-900 text-white hover:bg-slate-900 hover:text-white focus:bg-slate-900 focus:text-white shadow-lg shadow-slate-900/20",
+              day_today: "bg-slate-100 text-slate-900",
+              day_outside: "text-slate-400 opacity-50",
+              day_disabled: "text-slate-400 opacity-20 hover:bg-transparent cursor-not-allowed",
+            }}
           />
         </div>
 
-        {/* Lado Derecho: Slots */}
-        <div className="space-y-4">
+        {/* Lado Derecho: Slots (Más compacto y estilizado) */}
+        <div className="lg:col-span-5 space-y-6">
           {!state.selectedDate ? (
-            <div className="h-full min-h-[300px] flex flex-col items-center justify-center text-slate-400 bg-slate-50 rounded-xl border border-dashed p-6 text-center">
-              <CalendarIcon className="w-12 h-12 mb-3 opacity-20" />
-              <p className="text-sm">Selecciona un día para ver los turnos</p>
+            <div className="h-full min-h-[350px] flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-200 p-8 text-center space-y-4">
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm">
+                <CalendarIcon className="w-8 h-8 opacity-20" />
+              </div>
+              <div className="space-y-1">
+                <p className="font-bold text-slate-600">Elige un día</p>
+                <p className="text-xs text-slate-400">Verás los horarios disponibles para ese día.</p>
+              </div>
             </div>
           ) : (
-            <>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-bold text-slate-700 flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-blue-500" />
-                  Turnos {format(state.selectedDate, 'dd/MM')}
+            <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="h-8 w-1 bg-slate-900 rounded-full" />
+                <h3 className="font-black text-slate-900 uppercase text-xs tracking-widest">
+                  Horarios Disponibles
                 </h3>
               </div>
 
               {availableSlots.length === 0 ? (
-                <Alert className="bg-amber-50 border-amber-200">
-                  <AlertCircle className="h-4 w-4 text-amber-600" />
-                  <AlertDescription className="text-amber-800">
-                    No hay horarios disponibles.
-                  </AlertDescription>
-                </Alert>
+                <div className="p-10 text-center bg-amber-50/50 rounded-3xl border border-amber-100 space-y-2">
+                  <AlertCircle className="w-8 h-8 text-amber-500 mx-auto opacity-50" />
+                  <p className="text-sm font-bold text-amber-800">No hay turnos hoy</p>
+                  <p className="text-xs text-amber-600">Intenta con otra fecha cercana.</p>
+                </div>
               ) : (
-                <ScrollArea className="h-[280px] pr-2">
-                  <div className="grid grid-cols-2 gap-2">
+                <ScrollArea className="h-[400px] pr-4">
+                  <div className="grid grid-cols-2 gap-3">
                     {availableSlots.map((slot, idx) => (
-                      <Button
+                      <button
                         key={idx}
-                        variant={
-                          state.selectedSlot?.start.getTime() === slot.start.getTime()
-                            ? 'default'
-                            : 'outline'
-                        }
                         onClick={() => handleSelectSlot(slot.start, slot.end)}
-                        className="h-11 text-sm font-semibold transition-all"
+                        className={`
+                          h-14 rounded-2xl font-bold transition-all border-2
+                          ${state.selectedSlot?.start.getTime() === slot.start.getTime()
+                            ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-600/20 scale-[0.98]'
+                            : 'bg-white border-slate-100 text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600'
+                          }
+                        `}
                       >
                         {format(slot.start, 'HH:mm')}
-                      </Button>
+                      </button>
                     ))}
                   </div>
                 </ScrollArea>
               )}
 
               {state.selectedSlot && (
-                <div className="bg-green-50 p-3 rounded-lg border border-green-200 animate-in fade-in slide-in-from-top-1">
-                  <p className="text-green-900 text-xs font-semibold flex items-center gap-2">
-                    <CheckCircle2 className="w-3 h-3" />
-                    Seleccionado: {formatTimeRange(state.selectedSlot.start, state.selectedSlot.end)}
-                  </p>
+                <div className="bg-slate-900 text-white p-5 rounded-2xl shadow-xl animate-in zoom-in-95 duration-300 flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <p className="text-[10px] font-bold opacity-60 uppercase tracking-widest">Turno Seleccionado</p>
+                    <p className="text-sm font-bold flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-slate-400" />
+                      {formatTimeRange(state.selectedSlot.start, state.selectedSlot.end)}
+                    </p>
+                  </div>
+                  <CheckCircle2 className="w-6 h-6 text-emerald-400" />
                 </div>
               )}
-            </>
+            </div>
           )}
         </div>
       </div>
 
-      <div className="flex gap-3 pt-6 border-t border-slate-100">
-        <Button variant="outline" onClick={() => setCurrentStep('service')} className="flex-1 rounded-xl">
-          Atrás
+      {/* Sticky Navigation Footer */}
+      <div className="sticky bottom-0 -mx-6 -mb-8 mt-10 p-6 bg-white/80 backdrop-blur-md border-t border-slate-100 flex gap-4 z-30">
+        <Button 
+          variant="outline" 
+          onClick={() => setCurrentStep('service')} 
+          className="flex-1 h-12 font-bold uppercase tracking-widest text-xs border-slate-200 hover:bg-slate-50 transition-all active:scale-95"
+        >
+          ATRÁS
         </Button>
         <Button
           onClick={() => setCurrentStep('details')}
           disabled={!state.selectedSlot}
-          className="flex-1"
+          className="flex-[2] bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95 disabled:opacity-30"
         >
-          Continuar
+          CONTINUAR
         </Button>
       </div>
     </div>
@@ -579,22 +613,27 @@ export const BookingSystemMVP: React.FC = () => {
         </Alert>
       )}
 
-      <div className="flex gap-3">
-        <Button variant="outline" onClick={() => setCurrentStep('date')} className="flex-1">
-          Atrás
+      {/* Sticky Navigation Footer */}
+      <div className="sticky bottom-0 -mx-6 -mb-8 mt-10 p-6 bg-white/80 backdrop-blur-md border-t border-slate-100 flex gap-4 z-30">
+        <Button 
+          variant="outline" 
+          onClick={() => setCurrentStep('date')} 
+          className="flex-1 h-12 font-bold uppercase tracking-widest text-xs border-slate-200 hover:bg-slate-50 transition-all active:scale-95"
+        >
+          ATRÁS
         </Button>
         <Button
           onClick={handleConfirmBooking}
           disabled={!state.customerName || !state.customerEmail || !state.customerPhone || createAppointment.isPending}
-          className="flex-1"
+          className="flex-[2] bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95 disabled:opacity-30"
         >
           {createAppointment.isPending ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              Procesando...
+              PROCESANDO...
             </>
           ) : (
-            'Confirmar reserva'
+            'CONFIRMAR RESERVA'
           )}
         </Button>
       </div>
@@ -661,7 +700,7 @@ export const BookingSystemMVP: React.FC = () => {
                     <p className="text-sm font-black text-slate-900 font-mono tracking-wider">{shortId}</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => window.print()} className="text-slate-500 hover:text-slate-900 text-xs font-bold gap-2">
+                <Button variant="ghost" size="sm" onClick={() => window.print()} className="text-slate-500 hover:text-slate-900 text-xs font-bold uppercase tracking-widest">
                   Imprimir
                 </Button>
               </div>
@@ -682,9 +721,9 @@ export const BookingSystemMVP: React.FC = () => {
             <div className="pt-4">
               <Button 
                 onClick={handleReset} 
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white rounded-none h-14 text-lg font-bold transition-all shadow-lg active:scale-[0.98]"
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95"
               >
-                Volver al inicio
+                VOLVER AL INICIO
               </Button>
             </div>
           </div>

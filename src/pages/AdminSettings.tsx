@@ -81,9 +81,9 @@ export default function AdminSettings() {
                   <CardDescription>Los turnos de todos los servicios se generarán dentro de estos rangos</CardDescription>
                 </div>
                 {!showAdd && (
-                  <Button onClick={() => setShowAdd(true)} size="sm" className="bg-slate-900">
+                  <Button onClick={() => setShowAdd(true)} className="bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95 px-6">
                     <Plus className="w-4 h-4 mr-2" />
-                    Añadir Rango
+                    AÑADIR RANGO
                   </Button>
                 )}
               </div>
@@ -125,11 +125,11 @@ export default function AdminSettings() {
                     </div>
 
                     <div className="flex gap-2">
-                      <Button type="submit" disabled={createAvailability.isPending}>
-                        {createAvailability.isPending ? 'Guardando...' : 'Guardar Horario'}
+                      <Button type="submit" disabled={createAvailability.isPending} className="bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95 disabled:opacity-30">
+                        {createAvailability.isPending ? 'GUARDANDO...' : 'GUARDAR HORARIO'}
                       </Button>
-                      <Button type="button" variant="ghost" onClick={() => setShowAdd(false)}>
-                        Cancelar
+                      <Button type="button" variant="outline" onClick={() => setShowAdd(false)} className="h-12 font-bold border-slate-200 hover:bg-slate-50 uppercase tracking-widest text-xs transition-all active:scale-95">
+                        CANCELAR
                       </Button>
                     </div>
                   </form>

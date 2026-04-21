@@ -212,8 +212,8 @@ export default function AdminAppointments() {
           {/* Calendar Navigation */}
           <div className="flex flex-col md:flex-row items-center justify-between bg-white p-4 rounded-xl border gap-4">
             <div className="flex items-center gap-2 md:gap-4 w-full md:w-auto justify-between md:justify-start">
-              <Button variant="outline" size="icon" onClick={handlePrevPeriod} className="rounded-lg h-10 w-10">
-                <ChevronLeft className="w-5 h-5" />
+              <Button variant="outline" size="icon" onClick={handlePrevPeriod} className="h-10 w-10 border-slate-200">
+                <ChevronLeft className="w-5 h-5 text-slate-700" />
               </Button>
               <div className="flex flex-col items-center">
                 <h2 className="text-lg font-bold text-slate-900 capitalize leading-none">
@@ -223,15 +223,15 @@ export default function AdminAppointments() {
                   <p className="text-[10px] text-slate-400 font-black uppercase tracking-widest mt-1">Vista Semanal</p>
                 )}
               </div>
-              <Button variant="outline" size="icon" onClick={handleNextPeriod} className="rounded-lg h-10 w-10">
-                <ChevronRight className="w-5 h-5" />
+              <Button variant="outline" size="icon" onClick={handleNextPeriod} className="h-10 w-10 border-slate-200">
+                <ChevronRight className="w-5 h-5 text-slate-700" />
               </Button>
             </div>
 
             <div className="flex items-center gap-2 w-full md:w-auto">
               <Button
-                variant="ghost"
-                className="flex-1 md:flex-none font-bold text-slate-600 bg-slate-50 hover:bg-slate-100 rounded-lg px-6"
+                variant="outline"
+                className="flex-1 md:flex-none font-bold text-slate-700 bg-white border-slate-200 h-10 px-6 uppercase text-[10px] tracking-widest"
                 onClick={handleToday}
               >
                 Hoy
@@ -562,17 +562,17 @@ export default function AdminAppointments() {
               <div className="p-8 bg-slate-50 border-t flex flex-row-reverse gap-4">
                 <Button
                   type="submit"
-                  className="flex-1 bg-slate-900 hover:bg-slate-800 text-white rounded-xl h-14 shadow-xl shadow-slate-900/20 font-bold transition-transform active:scale-95"
+                  className="flex-1 bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95"
                   disabled={createAppointmentMutation.isPending}
                 >
                   {createAppointmentMutation.isPending ? (
                     <div className="flex items-center gap-2">
-                      <Loader2 className="w-5 h-5 animate-spin" /> Creando...
+                      <Loader2 className="w-4 h-4 animate-spin" /> PROCESANDO...
                     </div>
-                  ) : 'Confirmar Reserva Manual'}
+                  ) : 'CONFIRMAR RESERVA'}
                 </Button>
-                <Button type="button" variant="outline" className="rounded-xl h-14 px-6 border-slate-200 font-bold hover:bg-white" onClick={() => setSelectedSlot(null)}>
-                  Cancelar
+                <Button type="button" variant="outline" className="h-12 px-6 border-slate-200 font-bold hover:bg-white uppercase tracking-widest text-xs transition-all active:scale-95" onClick={() => setSelectedSlot(null)}>
+                  CANCELAR
                 </Button>
               </div>
             </form>
@@ -649,26 +649,26 @@ export default function AdminAppointments() {
               <div className="flex flex-row-reverse gap-3">
                 {selectedApp.status === 'pending' && (
                   <Button
-                    className="flex-1 h-12 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition-colors"
+                    className="flex-1 bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95"
                     onClick={() => { handleStatusUpdate(selectedApp.id, 'confirmed'); setSelectedApp(null); }}
                   >
-                    Confirmar Cita
+                    CONFIRMAR CITA
                   </Button>
                 )}
                 {selectedApp.status === 'confirmed' && (
                   <Button
-                    className="flex-1 h-12 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold"
+                    className="flex-1 bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95"
                     onClick={() => { handleStatusUpdate(selectedApp.id, 'completed'); setSelectedApp(null); }}
                   >
-                    Marcar como Realizada
+                    MARCAR COMO REALIZADA
                   </Button>
                 )}
                 <Button
                   variant="outline"
-                  className="h-12 w-12 rounded-xl border-slate-200 text-red-500 hover:bg-red-50 hover:border-red-100"
+                  className="h-12 w-12 border-slate-200 text-red-500 hover:bg-red-50 hover:border-red-100 transition-all active:scale-95"
                   onClick={() => { handleDelete(selectedApp.id); setSelectedApp(null); }}
                 >
-                  <Trash2 className="w-5 h-5" />
+                  <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
             </CardContent>
