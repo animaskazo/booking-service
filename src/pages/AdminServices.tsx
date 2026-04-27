@@ -48,12 +48,26 @@ export default function AdminServices() {
   const handleCreateService = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+    const durationVal = formData.get('duration');
+    let finalDuration = 30;
+    if (durationVal) {
+      const parsedD = parseInt(durationVal.toString(), 10);
+      if (!isNaN(parsedD) && parsedD > 0) finalDuration = parsedD;
+    }
+
+    const priceVal = formData.get('price');
+    let finalPrice = 0;
+    if (priceVal) {
+      const parsedP = parseFloat(priceVal.toString());
+      if (!isNaN(parsedP) && parsedP >= 0) finalPrice = parsedP;
+    }
+
     const newService = {
-      name: formData.get('name') as string,
-      description: formData.get('description') as string,
-      duration_min: parseInt(formData.get('duration') as string),
-      price: parseFloat(formData.get('price') as string),
-      color: formData.get('color') as string || '#3B82F6',
+      name: (formData.get('name') as string) || 'Sin Nombre',
+      description: (formData.get('description') as string) || '',
+      duration_min: finalDuration,
+      price: finalPrice,
+      color: (formData.get('color') as string) || '#3B82F6',
       category: formData.get('category') as string || 'General',
     };
 
@@ -231,13 +245,27 @@ function ServiceDetailsSection({ service }: { service: ServiceWithAvailability }
   const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+    const durationVal = formData.get('duration');
+    let finalDuration = service.duration_min || 30;
+    if (durationVal) {
+      const parsedD = parseInt(durationVal.toString(), 10);
+      if (!isNaN(parsedD) && parsedD > 0) finalDuration = parsedD;
+    }
+
+    const priceVal = formData.get('price');
+    let finalPrice = service.price || 0;
+    if (priceVal) {
+      const parsedP = parseFloat(priceVal.toString());
+      if (!isNaN(parsedP) && parsedP >= 0) finalPrice = parsedP;
+    }
+
     try {
       await updateServiceMutation.mutateAsync({
         id: service.id,
-        name: formData.get('name') as string,
-        description: formData.get('description') as string,
-        duration_min: 30, // Default, will be ignored by logic
-        price: parseFloat(formData.get('price') as string),
+        name: (formData.get('name') as string) || 'Sin Nombre',
+        description: (formData.get('description') as string) || '',
+        duration_min: finalDuration,
+        price: finalPrice,
         color: formData.get('color') as string,
         category: formData.get('category') as string || 'General',
       });
