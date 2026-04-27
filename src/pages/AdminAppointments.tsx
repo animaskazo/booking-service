@@ -14,7 +14,8 @@ import {
   Mail,
   Phone,
   Tag,
-  AlertCircle
+  AlertCircle,
+  X,
 } from 'lucide-react';
 import {
   useAppointmentsByDateRange,
@@ -323,7 +324,7 @@ export default function AdminAppointments() {
                             return (
                               <div
                                 key={app.id}
-                                className={`absolute left-1 right-1 rounded-sm p-2 md:p-3 text-[10px] md:text-[11px] font-bold overflow-hidden z-10 border-none cursor-pointer flex flex-col justify-between shadow-sm transition-all duration-300 hover:brightness-105 hover:shadow-md
+                                className={`group absolute left-1 right-1 rounded-sm p-1.5 md:p-2 text-[10px] md:text-[11px] font-bold overflow-visible z-10 border-none cursor-pointer flex flex-col justify-center shadow-sm transition-all duration-300 hover:brightness-105 hover:shadow-md
                                   ${isPending ? 'border-dashed' : 'border-solid'}
                                 `}
                                 style={{
@@ -338,20 +339,25 @@ export default function AdminAppointments() {
                                   setSelectedApp(app);
                                 }}
                               >
-                                <div>
-                                  <p className="truncate leading-tight uppercase tracking-tighter flex items-center gap-1.5">
-                                    {app.customer_name.split(' ')[0]}
-                                  </p>
-                                  {isMobile && duration > 30 && (
-                                    <p className="text-[10px] opacity-60 font-medium truncate mt-0.5">{app.service?.name}</p>
-                                  )}
+                                {/* Tooltip Flotante */}
+                                <div className="invisible group-hover:visible absolute bottom-full left-0 mb-2 z-[200] w-48 p-3 bg-slate-900 text-white rounded-xl shadow-2xl pointer-events-none animate-in fade-in zoom-in-95 duration-200">
+                                  <div className="space-y-1">
+                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Reserva #{app.short_id || app.id.slice(0, 5)}</p>
+                                    <p className="text-sm font-bold truncate text-white">{app.customer_name}</p>
+                                    <p className="text-[10px] text-slate-300 flex items-center gap-1.5 font-medium">
+                                      <Tag className="w-3 h-3" /> {app.service?.name}
+                                    </p>
+                                    <p className="text-[10px] text-slate-300 flex items-center gap-1.5 font-medium">
+                                      <Clock className="w-3 h-3" /> {format(parseISO(app.start_time), 'HH:mm')} - {format(parseISO(app.end_time), 'HH:mm')}
+                                    </p>
+                                  </div>
+                                  <div className="absolute top-full left-4 w-2 h-2 bg-slate-900 rotate-45 -translate-y-1" />
                                 </div>
 
-                                <div className="flex justify-between items-end">
-                                  <p className="opacity-100 text-[8px] md:text-[12px] font-weight-100 leading-none">{format(parseISO(app.start_time), 'HH:mm')}</p>
-                                  <div className="flex gap-1 items-center">
-                                    <Badge variant="outline" className="px-1 py-0.5 text-[9px] border-current opacity-50 tracking-tighter truncate max-w-[48px]">{app.short_id}</Badge>
-                                  </div>
+                                <div className="flex flex-col items-center justify-center">
+                                  <p className="truncate leading-tight font-black text-center tracking-tight">
+                                    #{app.short_id || app.id.slice(0, 5)}
+                                  </p>
                                 </div>
                               </div>
                             );
@@ -440,6 +446,9 @@ export default function AdminAppointments() {
                         </td>
                         <td className="p-4">
                           <div className="flex items-center gap-1">
+                            <Button size="icon" variant="ghost" className="text-blue-600 h-8 w-8" title="Ver Detalles" onClick={() => setSelectedApp(app)}>
+                              <Search className="w-4 h-4" />
+                            </Button>
                             {app.status === 'pending' && (
                               <Button size="icon" variant="ghost" className="text-green-600 h-8 w-8" title="Confirmar" onClick={() => handleStatusUpdate(app.id, 'confirmed')}>
                                 <CheckCircle className="w-4 h-4" />
@@ -590,8 +599,8 @@ export default function AdminAppointments() {
 
       {/* Modal Detalle de Cita */}
       {selectedApp && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in transition-all">
-          <Card className="w-full max-w-lg shadow-2xl border-t-8 border-slate-900 overflow-hidden">
+        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[999] flex items-center justify-center p-4 animate-in fade-in duration-300" onClick={() => setSelectedApp(null)}>
+          <Card className="w-full max-w-lg shadow-2xl border-t-8 border-slate-900 overflow-hidden animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
             <CardHeader className="bg-slate-50/80 border-b">
               <div className="flex justify-between items-center">
                 <div>
@@ -654,30 +663,37 @@ export default function AdminAppointments() {
                 </div>
               )}
 
-              <div className="flex flex-row-reverse gap-3">
+              <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-slate-100">
+
+                <Button
+                  variant="outline"
+                  className="flex-1 h-12 border-red-100 text-red-500 hover:bg-red-50 hover:border-red-200 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center justify-center gap-2"
+                  onClick={() => { handleDelete(selectedApp.id); setSelectedApp(null); }}
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Eliminar
+                </Button>
+
                 {selectedApp.status === 'pending' && (
                   <Button
-                    className="flex-1 bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95"
+                    className="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white h-12 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center justify-center gap-2"
                     onClick={() => { handleStatusUpdate(selectedApp.id, 'confirmed'); setSelectedApp(null); }}
                   >
-                    CONFIRMAR CITA
+                    <CheckCircle className="w-4 h-4" />
+                    Confirmar Cita
                   </Button>
                 )}
                 {selectedApp.status === 'confirmed' && (
                   <Button
-                    className="flex-1 bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95"
+                    className="flex-[2] bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center justify-center gap-2"
                     onClick={() => { handleStatusUpdate(selectedApp.id, 'completed'); setSelectedApp(null); }}
                   >
-                    MARCAR COMO REALIZADA
+                    <CheckCircle className="w-4 h-4" />
+                    Finalizar Cita
                   </Button>
                 )}
-                <Button
-                  variant="outline"
-                  className="h-12 w-12 border-slate-200 text-red-500 hover:bg-red-50 hover:border-red-100 transition-all active:scale-95"
-                  onClick={() => { handleDelete(selectedApp.id); setSelectedApp(null); }}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </Button>
+
+
               </div>
             </CardContent>
           </Card>

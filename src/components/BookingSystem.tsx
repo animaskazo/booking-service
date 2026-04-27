@@ -450,7 +450,7 @@ export const BookingSystemMVP: React.FC = () => {
                   <p className="text-xs text-amber-600">Intenta con otra fecha cercana.</p>
                 </div>
               ) : (
-                <ScrollArea className="flex-1 min-h-[300px] pr-4">
+                <ScrollArea className="h-[300px] pr-4">
                   <div className="grid grid-cols-2 gap-3 pb-2">
                     {availableSlots.map((slot, idx) => (
                       <button
@@ -735,11 +735,6 @@ export const BookingSystemMVP: React.FC = () => {
             {bookingConfirmed && renderStepConfirmation()}
           </CardContent>
         </Card>
-
-        {/* Footer */}
-        <div className="text-center mt-8 text-sm text-gray-500">
-          <p>¿Preguntas? Contáctanos en hola@digital-solutions.work</p>
-        </div>
       </div>
     </div>
   );
