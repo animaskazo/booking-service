@@ -243,6 +243,7 @@ export default function AdminServices() {
 
 function ServiceDetailsSection({ service }: { service: ServiceWithAvailability }) {
   const updateServiceMutation = useUpdateService();
+  const { data: settings = { slot_interval: 30 } } = useBusinessSettings();
   const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
