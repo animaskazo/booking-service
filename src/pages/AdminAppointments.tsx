@@ -15,7 +15,6 @@ import {
   Phone,
   Tag,
   AlertCircle,
-  X,
 } from 'lucide-react';
 import {
   useAppointmentsByDateRange,
