@@ -32,7 +32,7 @@ export default function AdminSettings() {
   const [showAdd, setShowAdd] = useState(false);
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
 
-  const { showAlert } = useDialog();
+  const { showAlert, showConfirm } = useDialog();
 
   const handleAddGlobalHours = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -200,7 +200,13 @@ export default function AdminSettings() {
                   {[15, 20, 30, 45, 60].map((duration) => (
                     <button
                       key={duration}
-                      onClick={() => updateSettings.mutate({ slot_interval: duration })}
+                      onClick={() => {
+                        showConfirm(
+                          'Cambiar Intervalo de Citas',
+                          `¿Estás seguro que deseas cambiar el intervalo predeterminado a ${duration} minutos? Esto afectará cómo se visualiza el calendario.`,
+                          () => updateSettings.mutate({ slot_interval: duration })
+                        );
+                      }}
                       className={`
                         flex-1 h-10 rounded-lg border transition-all duration-300 flex items-center justify-center text-xs font-bold
                         ${settings.slot_interval === duration
