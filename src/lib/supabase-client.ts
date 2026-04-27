@@ -5,7 +5,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
-import { ServiceWithAvailability, AppointmentRecord, AvailabilityRecord, prepareAppointmentData } from './utils-booking';
+import { ServiceWithAvailability, AppointmentRecord, AvailabilityRecord } from './utils-booking';
 
 // ============================================================================
 // INICIALIZAR CLIENTE SUPABASE
@@ -606,7 +606,7 @@ export const useUpdateProfile = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Clock,
+
   Plus,
   Trash2,
   Loader2,
@@ -8,8 +8,7 @@ import {
   Settings,
   User,
   Link as LinkIcon,
-  MapPin,
-  Phone as PhoneIcon,
+
   Save,
   Coffee,
   Scissors,
