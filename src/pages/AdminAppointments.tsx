@@ -148,7 +148,7 @@ export default function AdminAppointments() {
     startTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
 
     const endTime = new Date(startTime);
-    endTime.setMinutes(startTime.getMinutes() + (bSettings.slot_interval || 30));
+    endTime.setMinutes(startTime.getMinutes() + (service.duration_min || bSettings.slot_interval || 30));
 
     // Validar colisión (cruzar contra todas las citas de la semana)
     if (isSlotOccupied(startTime, endTime, appointments)) {

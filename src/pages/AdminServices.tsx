@@ -46,8 +46,8 @@ export default function AdminServices() {
     const newService = {
       name: formData.get('name') as string,
       description: formData.get('description') as string,
-      duration_min: parseInt(formData.get('duration') as string),
-      price: parseFloat(formData.get('price') as string),
+      duration_min: parseInt(formData.get('duration') as string) || 30,
+      price: parseFloat(formData.get('price') as string) || 0,
       color: formData.get('color') as string || '#3B82F6',
       category: 'General',
     };
@@ -207,8 +207,8 @@ function ServiceDetailsSection({ service }: { service: ServiceWithAvailability }
         id: service.id,
         name: formData.get('name') as string,
         description: formData.get('description') as string,
-        duration_min: parseInt(formData.get('duration') as string),
-        price: parseFloat(formData.get('price') as string),
+        duration_min: parseInt(formData.get('duration') as string) || 30,
+        price: parseFloat(formData.get('price') as string) || 0,
         color: formData.get('color') as string,
         category: 'General',
       });
