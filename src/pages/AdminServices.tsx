@@ -37,7 +37,8 @@ const CATEGORIES = [
 
 export default function AdminServices() {
   const { data: services = [], isLoading: loadingServices } = useServices();
-  const { data: settings = { slot_interval: 30 } } = useBusinessSettings();
+  const { data: bSettings } = useBusinessSettings();
+  const settings = bSettings || { slot_interval: 30 };
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [isAddingService, setIsAddingService] = useState(false);
 
@@ -243,7 +244,8 @@ export default function AdminServices() {
 
 function ServiceDetailsSection({ service }: { service: ServiceWithAvailability }) {
   const updateServiceMutation = useUpdateService();
-  const { data: settings = { slot_interval: 30 } } = useBusinessSettings();
+  const { data: bSettings } = useBusinessSettings();
+  const settings = bSettings || { slot_interval: 30 };
   const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
