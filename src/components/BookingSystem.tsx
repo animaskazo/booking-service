@@ -401,9 +401,9 @@ export const BookingSystemMVP: React.FC = () => {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-stretch">
         {/* Lado Izquierdo: Calendario (Más ancho) */}
-        <div className="lg:col-span-7 bg-white rounded-3xl border border-slate-100 p-6 shadow-xl shadow-slate-200/40">
+        <div className="lg:col-span-7 bg-white rounded-3xl border border-slate-100 p-6 shadow-xl shadow-slate-200/40 flex flex-col">
           <CalendarComponent
             mode="single"
             selected={state.selectedDate || undefined}
@@ -423,9 +423,9 @@ export const BookingSystemMVP: React.FC = () => {
         </div>
 
         {/* Lado Derecho: Slots (Más compacto y estilizado) */}
-        <div className="lg:col-span-5 space-y-6">
+        <div className="lg:col-span-5 flex flex-col h-full bg-white rounded-3xl border border-slate-100 p-6 shadow-xl shadow-slate-200/40">
           {!state.selectedDate ? (
-            <div className="h-full min-h-[350px] flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-200 p-8 text-center space-y-4">
+            <div className="flex-1 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 p-8 text-center space-y-4">
               <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm">
                 <CalendarIcon className="w-8 h-8 opacity-20" />
               </div>
@@ -435,8 +435,8 @@ export const BookingSystemMVP: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="animate-in fade-in slide-in-from-right-4 duration-300 space-y-6">
-              <div className="flex items-center gap-3">
+            <div className="animate-in fade-in slide-in-from-right-4 duration-300 flex flex-col h-full space-y-6">
+              <div className="flex items-center gap-3 flex-none">
                 <div className="h-8 w-1 bg-slate-900 rounded-full" />
                 <h3 className="font-black text-slate-900 uppercase text-xs tracking-widest">
                   Horarios Disponibles
@@ -444,14 +444,14 @@ export const BookingSystemMVP: React.FC = () => {
               </div>
 
               {availableSlots.length === 0 ? (
-                <div className="p-10 text-center bg-amber-50/50 rounded-3xl border border-amber-100 space-y-2">
+                <div className="flex-1 flex flex-col items-center justify-center p-10 text-center bg-amber-50/50 rounded-2xl border border-amber-100 space-y-2">
                   <AlertCircle className="w-8 h-8 text-amber-500 mx-auto opacity-50" />
                   <p className="text-sm font-bold text-amber-800">No hay turnos hoy</p>
                   <p className="text-xs text-amber-600">Intenta con otra fecha cercana.</p>
                 </div>
               ) : (
-                <ScrollArea className="h-[400px] pr-4">
-                  <div className="grid grid-cols-2 gap-3">
+                <ScrollArea className="flex-1 min-h-[300px] pr-4">
+                  <div className="grid grid-cols-2 gap-3 pb-2">
                     {availableSlots.map((slot, idx) => (
                       <button
                         key={idx}
@@ -459,8 +459,8 @@ export const BookingSystemMVP: React.FC = () => {
                         className={`
                           h-14 rounded-2xl font-bold transition-all border-2
                           ${state.selectedSlot?.start.getTime() === slot.start.getTime()
-                            ? 'bg-blue-600 border-blue-600 text-white shadow-xl shadow-blue-600/20 scale-[0.98]'
-                            : 'bg-white border-slate-100 text-slate-600 hover:border-blue-200 hover:bg-blue-50 hover:text-blue-600'
+                            ? 'bg-slate-900 border-slate-900 text-white shadow-xl shadow-slate-900/20 scale-[0.98]'
+                            : 'bg-white border-slate-100 text-slate-600 hover:border-slate-900 hover:bg-slate-50 hover:text-slate-900'
                           }
                         `}
                       >
@@ -469,19 +469,6 @@ export const BookingSystemMVP: React.FC = () => {
                     ))}
                   </div>
                 </ScrollArea>
-              )}
-
-              {state.selectedSlot && (
-                <div className="bg-slate-900 text-white p-5 rounded-2xl shadow-xl animate-in zoom-in-95 duration-300 flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <p className="text-[10px] font-bold opacity-60 uppercase tracking-widest">Turno Seleccionado</p>
-                    <p className="text-sm font-bold flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-slate-400" />
-                      {formatTimeRange(state.selectedSlot.start, state.selectedSlot.end)}
-                    </p>
-                  </div>
-                  <CheckCircle2 className="w-6 h-6 text-emerald-400" />
-                </div>
               )}
             </div>
           )}
