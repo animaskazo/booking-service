@@ -339,6 +339,15 @@ export const useUpdateBusinessSettings = () => {
       }
 
       if (res.error) throw res.error;
+
+      // Si se actualizó el intervalo, sincronizar todos los servicios
+      if (settings.slot_interval) {
+        await supabase
+          .from('services')
+          .update({ duration_min: settings.slot_interval })
+          .eq('user_id', user.id);
+      }
+
       return res.data;
     },
     onSuccess: () => {

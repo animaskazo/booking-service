@@ -15,6 +15,7 @@ import {
   useCreateService,
   useUpdateService,
   useDeleteService,
+  useBusinessSettings,
 } from '../lib/supabase-client';
 import { ServiceWithAvailability } from '../lib/utils-booking';
 
@@ -36,6 +37,7 @@ const CATEGORIES = [
 
 export default function AdminServices() {
   const { data: services = [], isLoading: loadingServices } = useServices();
+  const { data: settings = { slot_interval: 30 } } = useBusinessSettings();
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
   const [isAddingService, setIsAddingService] = useState(false);
 
@@ -48,12 +50,7 @@ export default function AdminServices() {
   const handleCreateService = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const durationVal = formData.get('duration');
-    let finalDuration = 30;
-    if (durationVal) {
-      const parsedD = parseInt(durationVal.toString(), 10);
-      if (!isNaN(parsedD) && parsedD > 0) finalDuration = parsedD;
-    }
+    const finalDuration = settings.slot_interval || 30;
 
     const priceVal = formData.get('price');
     let finalPrice = 0;
@@ -212,9 +209,13 @@ export default function AdminServices() {
                     <div className="space-y-2 col-span-1">
                       <Label htmlFor="price">Precio ($)</Label>
                       <Input id="price" name="price" type="number" required min="0" step="0.01" defaultValue="0" />
-                      <p className="text-[10px] text-slate-500 font-medium">💡 Pon 0 para que figure como <strong className="text-emerald-600">Gratis</strong></p>
+                    </div>
+                    <div className="space-y-2 col-span-1">
+                      <Label htmlFor="duration" className="opacity-50">Duración Global (min)</Label>
+                      <Input id="duration" name="duration" type="number" readOnly value={settings.slot_interval} className="bg-slate-50 text-slate-500 border-dashed" />
                     </div>
                   </div>
+                  <p className="text-[10px] text-slate-500 font-medium">💡 Pon 0 para que figure como <strong className="text-emerald-600">Gratis</strong></p>
                   <div className="pt-4 flex gap-3">
                     <Button type="submit" className="flex-[2] bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95">
                       CREAR SERVICIO
@@ -245,12 +246,7 @@ function ServiceDetailsSection({ service }: { service: ServiceWithAvailability }
   const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const durationVal = formData.get('duration');
-    let finalDuration = service.duration_min || 30;
-    if (durationVal) {
-      const parsedD = parseInt(durationVal.toString(), 10);
-      if (!isNaN(parsedD) && parsedD > 0) finalDuration = parsedD;
-    }
+    const finalDuration = settings.slot_interval || 30;
 
     const priceVal = formData.get('price');
     let finalPrice = service.price || 0;
@@ -318,14 +314,21 @@ function ServiceDetailsSection({ service }: { service: ServiceWithAvailability }
                 <Label htmlFor="edit-desc" className="text-slate-700 font-bold">Descripción (opcional)</Label>
                 <Input id="edit-desc" name="description" defaultValue={service.description} className="h-11" placeholder="Ej: Servicio de mantenimiento preventivo para equipos Apple" />
               </div>
-              <div className="space-y-2 col-span-2">
+              <div className="space-y-2 col-span-2 sm:col-span-1">
                 <Label htmlFor="edit-price" className="text-slate-700 font-bold">Precio del Servicio ($)</Label>
                 <div className="relative">
                   <DollarSign className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
                   <Input id="edit-price" name="price" type="number" defaultValue={service.price} step="0.01" required className="pl-10 h-11" />
                 </div>
-                <p className="text-[10px] text-slate-500 font-medium">💡 Ingrese 0 para mostrar la etiqueta <strong className="text-emerald-600">Gratis</strong> al cliente</p>
               </div>
+              <div className="space-y-2 col-span-2 sm:col-span-1">
+                <Label htmlFor="edit-duration" className="text-slate-400 font-bold">Duración Global (fija)</Label>
+                <div className="relative">
+                  <Clock className="absolute left-3 top-3 w-4 h-4 text-slate-300" />
+                  <Input id="edit-duration" name="duration" type="number" value={settings.slot_interval} readOnly className="pl-10 h-11 bg-slate-50 text-slate-400 border-dashed" />
+                </div>
+              </div>
+              <p className="text-[10px] text-slate-500 font-medium col-span-2">💡 Ingrese 0 para mostrar la etiqueta <strong className="text-emerald-600">Gratis</strong> al cliente</p>
             </div>
 
             <div className="pt-4 border-t flex items-center justify-between gap-4">
