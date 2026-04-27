@@ -14,13 +14,14 @@ interface DialogConfig {
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  isDanger?: boolean;
   onConfirm?: () => void;
   onCancel?: () => void;
 }
 
 interface DialogContextValue {
   showAlert: (title: string, message: string) => void;
-  showConfirm: (title: string, message: string, onConfirm: () => void, confirmLabel?: string) => void;
+  showConfirm: (title: string, message: string, onConfirm: () => void, confirmLabel?: string, isDanger?: boolean) => void;
   showError: (title: string, message: string) => void;
 }
 
@@ -40,11 +41,18 @@ export function useDialog(): DialogContextValue {
 // ICON PER TYPE
 // ============================================================================
 
-function DialogIcon({ type }: { type: DialogType }) {
+function DialogIcon({ type, isDanger }: { type: DialogType, isDanger?: boolean }) {
   if (type === 'confirm') {
+    if (isDanger) {
+      return (
+        <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0">
+          <Trash2 className="w-5 h-5 text-red-500" />
+        </div>
+      );
+    }
     return (
-      <div className="w-12 h-12 rounded-full bg-red-50 flex items-center justify-center flex-shrink-0">
-        <Trash2 className="w-5 h-5 text-red-500" />
+      <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center flex-shrink-0">
+        <CheckCircle2 className="w-5 h-5 text-slate-600" />
       </div>
     );
   }
@@ -88,12 +96,15 @@ function DialogModal({ config, onClose }: { config: DialogConfig; onClose: () =>
       {/* Modal */}
       <div className="relative z-10 bg-white w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
         {/* Top accent bar */}
-        <div className={`h-1 w-full ${config.type === 'confirm' || config.type === 'error' ? 'bg-red-500' : 'bg-blue-500'}`} />
+        <div className={`h-1 w-full ${
+          config.type === 'error' ? 'bg-red-500' : 
+          (config.type === 'confirm' && config.isDanger) ? 'bg-red-500' : 'bg-slate-900'
+        }`} />
 
         <div className="p-6 space-y-4">
           {/* Header */}
           <div className="flex items-start gap-4">
-            <DialogIcon type={config.type} />
+            <DialogIcon type={config.type} isDanger={config.isDanger} />
             <div className="flex-1 pt-1">
               <h2 className="font-bold text-slate-900 text-base leading-tight">{config.title}</h2>
               <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">{config.message}</p>
@@ -105,7 +116,7 @@ function DialogModal({ config, onClose }: { config: DialogConfig; onClose: () =>
             {config.type === 'confirm' && (
               <Button
                 onClick={handleConfirm}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                className={`flex-1 text-white ${config.isDanger ? 'bg-red-600 hover:bg-red-700' : 'bg-slate-900 hover:bg-slate-800'}`}
               >
                 {config.confirmLabel ?? 'ELIMINAR'}
               </Button>
@@ -148,8 +159,9 @@ export function DialogProvider({ children }: { children: ReactNode }) {
     message: string,
     onConfirm: () => void,
     confirmLabel?: string,
+    isDanger: boolean = true
   ) => {
-    setDialog({ type: 'confirm', title, message, onConfirm, confirmLabel });
+    setDialog({ type: 'confirm', title, message, onConfirm, confirmLabel, isDanger });
   }, []);
 
   return (

@@ -204,7 +204,9 @@ export default function AdminSettings() {
                         showConfirm(
                           'Cambiar Intervalo de Citas',
                           `¿Estás seguro que deseas cambiar el intervalo predeterminado a ${duration} minutos? Esto afectará cómo se visualiza el calendario.`,
-                          () => updateSettings.mutate({ slot_interval: duration })
+                          () => updateSettings.mutate({ slot_interval: duration }),
+                          'Confirmar',
+                          false
                         );
                       }}
                       className={`

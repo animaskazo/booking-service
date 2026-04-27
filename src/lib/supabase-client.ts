@@ -316,14 +316,30 @@ export const useUpdateBusinessSettings = () => {
     }) => {
       if (!user) throw new Error("Debes estar logueado");
       
-      const { data, error } = await supabase
+      const { data: existing } = await supabase
         .from('business_settings')
-        .upsert({ user_id: user.id, ...settings, updated_at: new Date().toISOString() }, { onConflict: 'user_id' })
-        .select()
-        .single();
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      if (error) throw error;
-      return data;
+      let res;
+      if (existing) {
+        res = await supabase
+          .from('business_settings')
+          .update({ ...settings, updated_at: new Date().toISOString() })
+          .eq('user_id', user.id)
+          .select()
+          .single();
+      } else {
+        res = await supabase
+          .from('business_settings')
+          .insert([{ user_id: user.id, ...settings }])
+          .select()
+          .single();
+      }
+
+      if (res.error) throw res.error;
+      return res.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['business_settings'] });
