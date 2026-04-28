@@ -14,6 +14,7 @@ export default function TicketMobileUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [description, setDescription] = useState('');
   const [base64Image, setBase64Image] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [uploadSuccess, setUploadSuccess] = useState(false);
 
   useEffect(() => {
@@ -37,9 +38,58 @@ export default function TicketMobileUpload() {
     loadTicket();
   }, [id]);
 
+  const compressImage = (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          const MAX_WIDTH = 1024;
+          const MAX_HEIGHT = 1024;
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            } else {
+              resolve(file);
+            }
+          }, 'image/jpeg', 0.7);
+        };
+      };
+    });
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setSelectedFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
         setBase64Image(reader.result as string);
@@ -49,22 +99,46 @@ export default function TicketMobileUpload() {
   };
 
   const handleUpload = async () => {
-    if (!id || !base64Image) return;
+    if (!id || !selectedFile) return;
     setIsUploading(true);
     try {
+      // 1. Comprimir imagen
+      const compressedFile = await compressImage(selectedFile);
+      
+      // 2. Subir a Supabase Storage
+      const fileExt = compressedFile.name.split('.').pop() || 'jpg';
+      const fileName = `${id}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+      
+      try {
+        await supabase.storage.createBucket('tickets', { public: true });
+      } catch (e) {
+        // Ignorar si el bucket ya existe
+      }
+
+      const { error: uploadError } = await supabase.storage
+        .from('tickets')
+        .upload(fileName, compressedFile);
+
+      if (uploadError) throw uploadError;
+
+      // 3. Obtener URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('tickets')
+        .getPublicUrl(fileName);
+
+      // 4. Guardar en base de datos
       const { error } = await supabase
         .from('ticket_history')
         .insert([
           {
             ticket_id: id,
             description: description || 'Evidencia cargada desde dispositivo móvil',
-            evidence_url: base64Image
+            evidence_url: publicUrl
           }
         ]);
 
       if (error) throw error;
 
-      // Si el ticket está en estado 'accepted', pasarlo a 'repairing'
       if (ticket && ticket.status === 'accepted') {
         await supabase
           .from('tickets')

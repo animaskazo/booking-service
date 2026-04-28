@@ -451,14 +451,27 @@ export default function AdminTicketDetail() {
                         </div>
                         <p className="text-sm text-slate-600 leading-relaxed">{item.description}</p>
                         {item.evidence_url && (
-                          <a 
-                            href={item.evidence_url} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-2 mt-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition-colors"
-                          >
-                            <ImageIcon className="w-3 h-3" /> VER EVIDENCIA
-                          </a>
+                          <div className="mt-3">
+                            {(item.evidence_url.startsWith('data:image/') || item.evidence_url.match(/\.(jpeg|jpg|gif|png|webp)/i)) ? (
+                              <div className="max-w-[250px] rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-slate-50 relative group transition-all duration-300 hover:shadow-md">
+                                <img 
+                                  src={item.evidence_url} 
+                                  alt="Evidencia fotográfica" 
+                                  className="w-full h-auto object-cover max-h-[200px] cursor-pointer"
+                                  onClick={() => window.open(item.evidence_url, '_blank')}
+                                />
+                              </div>
+                            ) : (
+                              <a 
+                                href={item.evidence_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-3 py-1.5 bg-blue-50 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-100 transition-colors"
+                              >
+                                <ImageIcon className="w-3 h-3" /> VER EVIDENCIA
+                              </a>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
