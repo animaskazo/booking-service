@@ -748,7 +748,7 @@ export const BookingSystemMVP: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/50 py-8 px-4 sm:px-6 flex items-center justify-center">
+    <div className="min-h-screen bg-white py-8 px-4 sm:px-6 flex items-center justify-center">
       <div className="w-full max-w-4xl mx-auto">
         {/* Main Card: flex-col with fixed footer */}
         <Card className="shadow-xl border-slate-200/60 relative rounded-3xl bg-white h-[700px] flex flex-col overflow-hidden">
