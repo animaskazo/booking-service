@@ -7,7 +7,8 @@ import {
   LogOut, 
   Menu, 
   X,
-  ChevronRight
+  ChevronRight,
+  FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase, useAuth } from '../lib/supabase-client';
@@ -15,6 +16,7 @@ import { supabase, useAuth } from '../lib/supabase-client';
 const sidebarItems = [
   { name: 'Calendario', path: '/admin', icon: Calendar },
   { name: 'Servicios', path: '/admin/services', icon: Briefcase },
+  { name: 'Tickets Soporte', path: '/admin/tickets', icon: FileText },
   { name: 'Configuración', path: '/admin/settings', icon: Settings },
 ];
 

@@ -15,6 +15,7 @@ import {
   Phone,
   Tag,
   AlertCircle,
+  FileText
 } from 'lucide-react';
 import {
   useAppointmentsByDateRange,
@@ -24,11 +25,17 @@ import {
   useBusinessSettings,
   useServices,
   useCreateAppointment,
-  sendBookingEmail
+  useTickets,
+  sendBookingEmail,
+  useCreateTicket,
+  useTicketByAppointment,
+  useUpdateTicket
 } from '../lib/supabase-client';
 import { isSlotOccupied, generateShortId, formatPrice, formatDateForDisplay, formatTimeRange } from '../lib/utils-booking';
 import { format, startOfWeek, addDays, isSameDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { useNavigate } from 'react-router-dom';
+import { ChevronRight as ChevronRightIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { useDialog } from '@/components/ui/dialog-provider';
@@ -44,6 +51,12 @@ export default function AdminAppointments() {
   const [selectedSlot, setSelectedSlot] = useState<{ date: Date, time: string } | null>(null);
   const [selectedApp, setSelectedApp] = useState<any | null>(null);
   const [isMobile, setIsMobile] = React.useState(false);
+  const navigate = useNavigate();
+  const { data: tickets = [] } = useTickets();
+
+  const { data: existingTicket } = useTicketByAppointment(selectedApp?.id);
+  const createTicketMutation = useCreateTicket();
+  const updateTicketMutation = useUpdateTicket();
 
   React.useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -420,7 +433,7 @@ export default function AdminAppointments() {
                       const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
                       return matchesSearch && matchesStatus;
                     })
-                    .sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime())
+                    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
                     .map(app => (
                       <tr key={app.id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="p-4">
@@ -437,8 +450,8 @@ export default function AdminAppointments() {
                           </div>
                         </td>
                         <td className="p-4">
-                          <div className="text-sm font-bold text-slate-700">{format(parseISO(app.start_time), 'dd MMM, yyyy', { locale: es })}</div>
-                          <div className="text-xs text-slate-500">{format(parseISO(app.start_time), 'HH:mm')} - {format(parseISO(app.end_time), 'HH:mm')}</div>
+                          <div className="text-sm font-bold text-slate-700">{format(parseISO(app.start_time), 'HH:mm')} - {format(parseISO(app.end_time), 'HH:mm')}</div>
+                          <div className="text-xs text-slate-500">{format(parseISO(app.start_time), 'dd MMM, yyyy', { locale: es })}</div>
                         </td>
                         <td className="p-4">
                           {getStatusBadge(app.status)}
@@ -448,6 +461,21 @@ export default function AdminAppointments() {
                             <Button size="icon" variant="ghost" className="text-blue-600 h-8 w-8" title="Ver Detalles" onClick={() => setSelectedApp(app)}>
                               <Search className="w-4 h-4" />
                             </Button>
+                            {(() => {
+                              const ticketForApp = tickets.find((t: any) => t.appointment_id === app.id);
+                              return ticketForApp ? (
+                                <Button size="icon" variant="ghost" className="text-emerald-600 h-8 w-8" title="Ver Ticket" onClick={() => navigate(`/admin/tickets/${ticketForApp.id}`)}>
+                                  <FileText className="w-4 h-4" />
+                                </Button>
+                              ) : app.status !== 'pending' ? (
+                                <Button size="icon" variant="ghost" className="text-blue-500 h-8 w-8" title="Iniciar Ticket" disabled={createTicketMutation.isPending} onClick={async () => {
+                                  const newTicket = await createTicketMutation.mutateAsync(app.id);
+                                  navigate(`/admin/tickets/${newTicket.id}`);
+                                }}>
+                                  <Plus className="w-4 h-4" />
+                                </Button>
+                              ) : null;
+                            })()}
                             {app.status === 'pending' && (
                               <Button size="icon" variant="ghost" className="text-green-600 h-8 w-8" title="Confirmar" onClick={() => handleStatusUpdate(app.id, 'confirmed')}>
                                 <CheckCircle className="w-4 h-4" />
@@ -654,6 +682,55 @@ export default function AdminAppointments() {
                   </div>
                 </div>
               </div>
+              
+              {existingTicket && (
+                <div className="bg-slate-900 rounded-2xl p-6 text-white space-y-4 shadow-xl">
+                  <div className="flex justify-between items-center border-b border-white/10 pb-4">
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ticket Técnico</p>
+                      <Badge className="bg-white/10 text-white border-none font-bold uppercase text-[10px] tracking-widest">
+                        {existingTicket.status === 'evaluating' ? 'Pendiente de Evaluación' : 
+                         existingTicket.status === 'quoted' ? 'En Presupuesto' :
+                         (existingTicket.status === 'accepted' || existingTicket.status === 'repairing') ? 'Reparación' :
+                         existingTicket.status === 'ready' ? 'Pendiente de Retiro' : 
+                         existingTicket.status === 'rejected' ? 'Rechazado' : 'Retirado'}
+                      </Badge>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total a Pagar</p>
+                      <p className="text-xl font-black">{formatPrice(existingTicket.total_budget || 0)}</p>
+                    </div>
+                  </div>
+
+                  {existingTicket.status === 'quoted' && (
+                    <div className="flex gap-3">
+                      <Button
+                        variant="outline"
+                        className="flex-1 bg-transparent border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 h-11 font-bold uppercase tracking-widest text-[10px] transition-all"
+                        onClick={() => updateTicketMutation.mutate({ id: existingTicket.id, status: 'rejected' })}
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Rechazar
+                      </Button>
+                      <Button
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white h-11 font-bold uppercase tracking-widest text-[10px] transition-all shadow-lg shadow-emerald-900/20"
+                        onClick={() => updateTicketMutation.mutate({ id: existingTicket.id, status: 'accepted' })}
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Aceptar
+                      </Button>
+                    </div>
+                  )}
+
+                  <Button
+                    variant="ghost"
+                    className="w-full justify-center text-slate-400 hover:text-white hover:bg-white/5 h-10 font-bold uppercase tracking-widest text-[10px] transition-all"
+                    onClick={() => navigate(`/admin/tickets/${existingTicket.id}`)}
+                  >
+                    Gestionar Detalles del Ticket <ChevronRightIcon className="w-4 h-4 ml-2" />
+                  </Button>
+                </div>
+              )}
 
               {selectedApp.notes && (
                 <div className="bg-slate-50 p-4 rounded-xl space-y-2">
@@ -666,11 +743,11 @@ export default function AdminAppointments() {
 
                 <Button
                   variant="outline"
-                  className="flex-1 h-12 border-red-100 text-red-500 hover:bg-red-50 hover:border-red-200 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center justify-center gap-2"
+                  className="flex-[1] h-12 border-red-100 text-red-500 hover:bg-red-50 hover:border-red-200 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center justify-center"
                   onClick={() => { handleDelete(selectedApp.id); setSelectedApp(null); }}
+                  title="Eliminar Cita"
                 >
                   <Trash2 className="w-4 h-4" />
-                  Eliminar
                 </Button>
 
                 {selectedApp.status === 'pending' && (
@@ -689,6 +766,41 @@ export default function AdminAppointments() {
                   >
                     <CheckCircle className="w-4 h-4" />
                     Finalizar Cita
+                  </Button>
+                )}
+
+                {existingTicket?.status === 'quoted' && (
+                  <div className="flex gap-4 w-full">
+                    <Button
+                      variant="outline"
+                      className="flex-1 border-red-200 text-red-600 hover:bg-red-50 h-12 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center justify-center gap-2"
+                      onClick={() => updateTicketMutation.mutate({ id: existingTicket.id, status: 'rejected' })}
+                    >
+                      <XCircle className="w-4 h-4" />
+                      Rechazar Pto.
+                    </Button>
+                    <Button
+                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white h-12 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center justify-center gap-2"
+                      onClick={() => updateTicketMutation.mutate({ id: existingTicket.id, status: 'accepted' })}
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                      Aceptar Pto.
+                    </Button>
+                  </div>
+                )}
+
+                {!existingTicket && selectedApp.status !== 'pending' && (
+                  <Button
+                    variant="outline"
+                    className="flex-[2] border-slate-200 text-slate-900 h-12 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center justify-center gap-2"
+                    disabled={createTicketMutation.isPending}
+                    onClick={async () => {
+                      const ticket = await createTicketMutation.mutateAsync(selectedApp.id);
+                      navigate(`/admin/tickets/${ticket.id}`);
+                    }}
+                  >
+                    <Plus className="w-4 h-4 text-blue-500" />
+                    Iniciar Ticket
                   </Button>
                 )}
 

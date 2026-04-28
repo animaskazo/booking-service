@@ -5,7 +5,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
-import { ServiceWithAvailability, AppointmentRecord, AvailabilityRecord, prepareAppointmentData } from './utils-booking';
+import { ServiceWithAvailability, AppointmentRecord, AvailabilityRecord, prepareAppointmentData, TicketRecord, TicketFinding, TicketHistoryItem } from './utils-booking';
 
 // ============================================================================
 // INICIALIZAR CLIENTE SUPABASE
@@ -68,6 +68,19 @@ export type Database = {
       appointments: {
         Row: AppointmentRecord;
         Insert: Omit<AppointmentRecord, 'id'>;
+      };
+      tickets: {
+        Row: any;
+        Insert: any;
+        Update: any;
+      };
+      ticket_findings: {
+        Row: any;
+        Insert: any;
+      };
+      ticket_history: {
+        Row: any;
+        Insert: any;
       };
     };
   };
@@ -581,6 +594,31 @@ export const useDeleteAppointment = () => {
 };
 
 /**
+ * Invoca la Edge Function para enviar el presupuesto por email
+ */
+export const sendBudgetEmail = async (budgetData: {
+  customerName: string;
+  customerEmail: string;
+  shortId: string;
+  totalAmount: number;
+  description: string;
+  findings: any[];
+  servicePrice: number;
+}) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('send-booking-email', {
+      body: { ...budgetData, type: 'budget' },
+    });
+
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error('Error al enviar el presupuesto:', err);
+    return null;
+  }
+};
+
+/**
  * Invoca la Edge Function para enviar el email de confirmación
  */
 export const sendBookingEmail = async (bookingData: {
@@ -604,6 +642,223 @@ export const sendBookingEmail = async (bookingData: {
     console.error('Error al enviar el email:', err);
     // No lanzamos error para no romper el flujo de UI del usuario,
     // pero lo registramos en consola.
-    return null;
   }
+};
+
+// ============================================================================
+// HOOKS - TICKETS (SERVICIO TÉCNICO)
+// ============================================================================
+
+/**
+ * Obtiene todos los tickets activos
+ */
+export const useTickets = () => {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['tickets', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('tickets')
+        .select('*, appointment:appointments(*, service:services(*))')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as TicketRecord[];
+    },
+    enabled: !!user,
+  });
+};
+
+/**
+ * Obtiene un ticket por su ID
+ */
+export const useTicketById = (id: string | undefined) => {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['ticket_detail', id],
+    queryFn: async () => {
+      if (!user || !id) return null;
+      const { data, error } = await supabase
+        .from('tickets')
+        .select('*, appointment:appointments(*, service:services(*))')
+        .eq('id', id)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data as TicketRecord | null;
+    },
+    staleTime: 0,
+    enabled: !!user && !!id,
+  });
+};
+
+/**
+ * Obtiene un ticket por su ID de reserva
+ */
+export const useTicketByAppointment = (appointmentId: string | undefined) => {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['ticket', appointmentId],
+    queryFn: async () => {
+      if (!user || !appointmentId) return null;
+      const { data, error } = await supabase
+        .from('tickets')
+        .select('*')
+        .eq('appointment_id', appointmentId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (error) throw error;
+      return data as TicketRecord | null;
+    },
+    staleTime: 0,
+    enabled: !!user && !!appointmentId,
+  });
+};
+
+/**
+ * Crea un nuevo ticket a partir de una reserva
+ */
+export const useCreateTicket = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+
+  return useMutation({
+    mutationFn: async (appointmentId: string) => {
+      if (!user) throw new Error("Debes estar logueado");
+      const { data, error } = await supabase
+        .from('tickets')
+        .insert([{ appointment_id: appointmentId, user_id: user.id }])
+        .select()
+        .single();
+      if (error) throw error;
+      return data as TicketRecord;
+    },
+    onSuccess: (_data, appointmentId) => {
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['ticket', appointmentId] });
+    },
+  });
+};
+
+/**
+ * Actualiza el estado o descripción de un ticket
+ */
+export const useUpdateTicket = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<TicketRecord> & { id: string }) => {
+      const { data, error } = await supabase
+        .from('tickets')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as TicketRecord;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      queryClient.invalidateQueries({ queryKey: ['ticket', data.appointment_id] });
+      queryClient.invalidateQueries({ queryKey: ['ticket_detail', data.id] });
+    },
+  });
+};
+
+/**
+ * Obtiene los hallazgos de un ticket
+ */
+export const useTicketFindings = (ticketId: string | undefined) => {
+  return useQuery({
+    queryKey: ['ticket_findings', ticketId],
+    queryFn: async () => {
+      if (!ticketId) return [];
+      const { data, error } = await supabase
+        .from('ticket_findings')
+        .select('*')
+        .eq('ticket_id', ticketId)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data as TicketFinding[];
+    },
+    enabled: !!ticketId,
+  });
+};
+
+/**
+ * Agrega un hallazgo al presupuesto
+ */
+export const useAddTicketFinding = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (finding: Omit<TicketFinding, 'id' | 'created_at'>) => {
+      const { data, error } = await supabase
+        .from('ticket_findings')
+        .insert([finding])
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, finding) => {
+      queryClient.invalidateQueries({ queryKey: ['ticket_findings', finding.ticket_id] });
+    },
+  });
+};
+
+/**
+ * Elimina un hallazgo
+ */
+export const useDeleteTicketFinding = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id }: { id: string, ticket_id: string }) => {
+      const { error } = await supabase.from('ticket_findings').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['ticket_findings', variables.ticket_id] });
+    },
+  });
+};
+
+/**
+ * Obtiene el historial de un ticket
+ */
+export const useTicketHistory = (ticketId: string | undefined) => {
+  return useQuery({
+    queryKey: ['ticket_history', ticketId],
+    queryFn: async () => {
+      if (!ticketId) return [];
+      const { data, error } = await supabase
+        .from('ticket_history')
+        .select('*')
+        .eq('ticket_id', ticketId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as TicketHistoryItem[];
+    },
+    enabled: !!ticketId,
+  });
+};
+
+/**
+ * Agrega un hito al historial de reparación
+ */
+export const useAddTicketHistory = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (historyItem: Omit<TicketHistoryItem, 'id' | 'created_at'>) => {
+      const { data, error } = await supabase
+        .from('ticket_history')
+        .insert([historyItem])
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, item) => {
+      queryClient.invalidateQueries({ queryKey: ['ticket_history', item.ticket_id] });
+    },
+  });
 };

@@ -50,6 +50,36 @@ export interface AvailabilityRecord {
   is_global: boolean;
 }
 
+export type TicketStatus = 'evaluating' | 'quoted' | 'accepted' | 'rejected' | 'repairing' | 'ready' | 'closed';
+
+export interface TicketRecord {
+  id: string;
+  appointment_id: string;
+  user_id: string;
+  status: TicketStatus;
+  description?: string;
+  total_budget: number;
+  created_at: string;
+  updated_at: string;
+  appointment?: AppointmentRecord;
+}
+
+export interface TicketFinding {
+  id: string;
+  ticket_id: string;
+  description: string;
+  price: number;
+  created_at: string;
+}
+
+export interface TicketHistoryItem {
+  id: string;
+  ticket_id: string;
+  description: string;
+  evidence_url?: string;
+  created_at: string;
+}
+
 // ============================================================================
 // UTILIDADES DE FECHA
 // ============================================================================
