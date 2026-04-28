@@ -7,7 +7,7 @@
 import React, { useState, useMemo } from 'react';
 import { format, addDays, startOfDay } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { Calendar, CalendarIcon, Clock, Loader2, AlertCircle, CheckCircle2, Tag } from 'lucide-react';
+import { CalendarIcon, Clock, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 import {
   calculateAvailableSlots,
@@ -37,7 +37,6 @@ import { Label } from '@/components/ui/label';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 
 // ============================================================================
@@ -276,7 +275,7 @@ export const BookingSystemMVP: React.FC = () => {
   // ========================================================================
 
   const renderStepIndicator = () => (
-    <div className="flex gap-2 justify-center flex-wrap">
+    <div className="flex gap-1.5 items-center justify-end flex-wrap">
       {(['service', 'date', 'details', 'confirmation'] as const).map((step, idx) => (
         <React.Fragment key={step}>
           <button
@@ -285,19 +284,20 @@ export const BookingSystemMVP: React.FC = () => {
                 handleGoToStep(step);
               }
             }}
+            disabled={bookingConfirmed}
             className={`
-              w-10 h-10 rounded-full font-semibold transition-all text-sm
+              w-6 h-6 rounded-full font-black transition-all text-[10px] flex items-center justify-center
               ${currentStep === step
-                ? 'bg-slate-900 text-white scale-110'
-                : bookingConfirmed || (['service', 'date', 'details'].includes(step) && state.selectedService)
-                  ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer'
-                  : 'bg-gray-200 text-gray-500'
+                ? 'bg-slate-900 text-white shadow-md'
+                : (bookingConfirmed || (['service', 'date', 'details'].includes(step) && state.selectedService))
+                  ? 'bg-slate-100 text-slate-700 hover:bg-slate-200 cursor-pointer border border-slate-200'
+                  : 'bg-slate-200/50 text-slate-400 border border-slate-100 cursor-not-allowed'
               }
             `}
           >
             {idx + 1}
           </button>
-          {idx < 3 && <div className="w-1 h-1 rounded-full bg-gray-300 self-center" />}
+          {idx < 3 && <div className="w-2.5 h-[2px] bg-slate-200 rounded-full" />}
         </React.Fragment>
       ))}
     </div>
@@ -377,13 +377,6 @@ export const BookingSystemMVP: React.FC = () => {
         </div>
       )}
 
-      <Button
-        onClick={() => setCurrentStep('date')}
-        disabled={!state.selectedService}
-        className="w-full bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95 disabled:opacity-30"
-      >
-        CONTINUAR
-      </Button>
     </div>
   );
 
@@ -403,7 +396,7 @@ export const BookingSystemMVP: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-stretch">
         {/* Lado Izquierdo: Calendario (Más ancho) */}
-        <div className="lg:col-span-7 bg-white rounded-3xl border border-slate-100 p-6 shadow-xl shadow-slate-200/40 flex flex-col">
+        <div className="lg:col-span-5 bg-white rounded-3xl border border-slate-100 p-4 shadow-xl shadow-slate-200/40 flex flex-col">
           <CalendarComponent
             mode="single"
             selected={state.selectedDate || undefined}
@@ -423,7 +416,7 @@ export const BookingSystemMVP: React.FC = () => {
         </div>
 
         {/* Lado Derecho: Slots (Más compacto y estilizado) */}
-        <div className="lg:col-span-5 flex flex-col h-full bg-white rounded-3xl border border-slate-100 p-6 shadow-xl shadow-slate-200/40">
+        <div className="lg:col-span-7 flex flex-col h-full bg-white rounded-3xl border border-slate-100 p-5 shadow-xl shadow-slate-200/40">
           {!state.selectedDate ? (
             <div className="flex-1 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 rounded-2xl border-2 border-dashed border-slate-200 p-8 text-center space-y-4">
               <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm">
@@ -450,48 +443,72 @@ export const BookingSystemMVP: React.FC = () => {
                   <p className="text-xs text-amber-600">Intenta con otra fecha cercana.</p>
                 </div>
               ) : (
-                <ScrollArea className="h-[300px] pr-4">
-                  <div className="grid grid-cols-2 gap-3 pb-2">
-                    {availableSlots.map((slot, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => handleSelectSlot(slot.start, slot.end)}
-                        className={`
-                          h-14 rounded-2xl font-bold transition-all border-2
-                          ${state.selectedSlot?.start.getTime() === slot.start.getTime()
-                            ? 'bg-slate-900 border-slate-900 text-white shadow-xl shadow-slate-900/20 scale-[0.98]'
-                            : 'bg-white border-slate-100 text-slate-600 hover:border-slate-900 hover:bg-slate-50 hover:text-slate-900'
-                          }
-                        `}
-                      >
-                        {format(slot.start, 'HH:mm')}
-                      </button>
-                    ))}
-                  </div>
-                </ScrollArea>
+                <div className="space-y-4">
+                  {/* Morning slots */}
+                  {availableSlots.filter(s => s.start.getHours() < 13).length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
+                        Mañana
+                      </p>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                        {availableSlots.filter(s => s.start.getHours() < 13).map((slot, idx) => (
+                          <button
+                            key={`am-${idx}`}
+                            onClick={() => handleSelectSlot(slot.start, slot.end)}
+                            className={`
+                              flex flex-col items-center justify-center py-2.5 px-2 rounded-xl font-bold transition-all border
+                              ${state.selectedSlot?.start.getTime() === slot.start.getTime()
+                                ? 'bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-900/20'
+                                : 'bg-white border-slate-200 text-slate-700 hover:border-slate-900 hover:bg-slate-50'
+                              }
+                            `}
+                          >
+                            <span className="text-sm font-black leading-none">{format(slot.start, 'HH:mm')}</span>
+                            <span className={`text-[9px] mt-0.5 font-medium leading-none ${state.selectedSlot?.start.getTime() === slot.start.getTime() ? 'text-slate-300' : 'text-slate-400'}`}>
+                              → {format(slot.end, 'HH:mm')}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {/* Afternoon slots */}
+                  {availableSlots.filter(s => s.start.getHours() >= 13).length > 0 && (
+                    <div>
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400" />
+                        Tarde
+                      </p>
+                      <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                        {availableSlots.filter(s => s.start.getHours() >= 13).map((slot, idx) => (
+                          <button
+                            key={`pm-${idx}`}
+                            onClick={() => handleSelectSlot(slot.start, slot.end)}
+                            className={`
+                              flex flex-col items-center justify-center py-2.5 px-2 rounded-xl font-bold transition-all border
+                              ${state.selectedSlot?.start.getTime() === slot.start.getTime()
+                                ? 'bg-slate-900 border-slate-900 text-white shadow-lg shadow-slate-900/20'
+                                : 'bg-white border-slate-200 text-slate-700 hover:border-slate-900 hover:bg-slate-50'
+                              }
+                            `}
+                          >
+                            <span className="text-sm font-black leading-none">{format(slot.start, 'HH:mm')}</span>
+                            <span className={`text-[9px] mt-0.5 font-medium leading-none ${state.selectedSlot?.start.getTime() === slot.start.getTime() ? 'text-slate-300' : 'text-slate-400'}`}>
+                              → {format(slot.end, 'HH:mm')}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           )}
         </div>
       </div>
 
-      {/* Sticky Navigation Footer */}
-      <div className="sticky bottom-0 -mx-6 -mb-8 mt-10 p-6 bg-white/80 backdrop-blur-md border-t border-slate-100 flex gap-4 z-30">
-        <Button
-          variant="outline"
-          onClick={() => setCurrentStep('service')}
-          className="flex-1 h-12 font-bold uppercase tracking-widest text-xs border-slate-200 hover:bg-slate-50 transition-all active:scale-95"
-        >
-          ATRÁS
-        </Button>
-        <Button
-          onClick={() => setCurrentStep('details')}
-          disabled={!state.selectedSlot}
-          className="flex-[2] bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95 disabled:opacity-30"
-        >
-          CONTINUAR
-        </Button>
-      </div>
     </div>
   );
 
@@ -521,49 +538,48 @@ export const BookingSystemMVP: React.FC = () => {
 
       <div className="space-y-4">
         <div>
-          <Label htmlFor="name">Nombre completo *</Label>
+          <Label htmlFor="name" className="text-xs font-bold text-slate-700">Nombre completo *</Label>
           <Input
             id="name"
             placeholder="Juan Pérez"
             value={state.customerName}
             onChange={handleInputChange('customerName')}
-            className="mt-2"
+            className="mt-1.5 h-10 border-slate-200"
           />
         </div>
 
         <div>
-          <Label htmlFor="email">Email *</Label>
+          <Label htmlFor="email" className="text-xs font-bold text-slate-700">Email *</Label>
           <Input
             id="email"
             type="email"
             placeholder="juan@ejemplo.com"
             value={state.customerEmail}
             onChange={handleInputChange('customerEmail')}
-            className="mt-2"
+            className="mt-1.5 h-10 border-slate-200"
           />
         </div>
 
         <div>
-          <Label htmlFor="phone">Teléfono *</Label>
+          <Label htmlFor="phone" className="text-xs font-bold text-slate-700">Teléfono *</Label>
           <Input
             id="phone"
             placeholder="+56 9 1234 5678"
             value={state.customerPhone}
             onChange={handleInputChange('customerPhone')}
-            className="mt-2"
+            className="mt-1.5 h-10 border-slate-200"
             required
           />
         </div>
 
         <div>
-          <Label htmlFor="notes">Notas adicionales</Label>
+          <Label htmlFor="notes" className="text-xs font-bold text-slate-700">Notas adicionales</Label>
           <textarea
             id="notes"
-            placeholder="Cuéntanos si tienes alguna solicitud especial..."
+            placeholder="Cuéntanos alguna observación..."
             value={state.notes}
             onChange={handleInputChange('notes')}
-            className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 mt-2"
-            rows={3}
+            className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 mt-1.5 bg-white resize-none h-12"
           />
         </div>
       </div>
@@ -580,31 +596,6 @@ export const BookingSystemMVP: React.FC = () => {
           </AlertDescription>
         </Alert>
       )}
-
-      {/* Sticky Navigation Footer */}
-      <div className="sticky bottom-0 -mx-6 -mb-8 mt-10 p-6 bg-white/80 backdrop-blur-md border-t border-slate-100 flex gap-4 z-30">
-        <Button
-          variant="outline"
-          onClick={() => setCurrentStep('date')}
-          className="flex-1 h-12 font-bold uppercase tracking-widest text-xs border-slate-200 hover:bg-slate-50 transition-all active:scale-95"
-        >
-          ATRÁS
-        </Button>
-        <Button
-          onClick={handleConfirmBooking}
-          disabled={!state.customerName || !state.customerEmail || !state.customerPhone || createAppointment.isPending}
-          className="flex-[2] bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95 disabled:opacity-30"
-        >
-          {createAppointment.isPending ? (
-            <>
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              PROCESANDO...
-            </>
-          ) : (
-            'CONFIRMAR RESERVA'
-          )}
-        </Button>
-      </div>
     </div>
   );
 
@@ -614,88 +605,70 @@ export const BookingSystemMVP: React.FC = () => {
       : null;
 
     return (
-      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 min-h-[500px] flex flex-col">
-        {/* Header Uber Style */}
-        <div className="bg-slate-900 text-white p-10 -mx-8 -mt-8 mb-8 text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-12 h-12 bg-white rounded-full">
-            <CheckCircle2 className="w-6 h-6 text-slate-900" />
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 min-h-[500px] flex flex-col items-center justify-center">
+        <div className="max-w-md w-full flex-1 flex flex-col justify-between">
+          <div>
+            {/* Header Uber Style */}
+            <div className="text-center space-y-2 pb-4 border-b border-slate-100 mb-6 mt-0 animate-in fade-in flex flex-col items-center">
+              <CheckCircle2 className="w-8 h-8 text-emerald-500 mb-1" />
+              <h2 className="text-xl font-black tracking-tight text-slate-900 uppercase">¡Reserva Lista!</h2>
+              <p className="text-slate-500 text-xs font-bold">Gracias por tu preferencia, {state.customerName.split(' ')[0]}</p>
+            </div>
+
+            {summary && (
+              <div className="space-y-6 px-2">
+                {/* Main Info Section */}
+                <div className="space-y-6">
+                  <div className="flex justify-between items-start border-b pb-6">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Servicio</p>
+                      <p className="text-xl font-bold text-slate-900">{summary.serviceName}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: summary.serviceColor }} />
+                        <span className="text-xs font-medium text-slate-500">{summary.duration} de sesión</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</p>
+                      <p className="text-xl font-black text-slate-900 tracking-tighter">{summary.price}</p>
+                    </div>
+                  </div>
+
+                  {/* Date, Time & ID Section */}
+                  <div className="grid grid-cols-3 gap-4 border-b pb-6 text-center">
+                    <div className="space-y-1 border-r border-slate-100">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fecha</p>
+                      <p className="text-xs font-bold text-slate-900 capitalize">{summary.date}</p>
+                    </div>
+                    <div className="space-y-1 border-r border-slate-100">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Horario</p>
+                      <p className="text-xs font-bold text-slate-900">{summary.time}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID Reserva</p>
+                      <p className="text-xs font-black text-slate-900 font-mono tracking-wider uppercase">{shortId}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Message */}
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
+                  <p className="text-xs text-slate-600 font-medium">Hemos enviado el comprobante a tu correo: <span className="font-bold text-slate-900">{state.customerEmail}</span></p>
+                </div>
+              </div>
+            )}
           </div>
-          <div className="space-y-1">
-            <h2 className="text-3xl font-bold tracking-tight">Reserva confirmada</h2>
-            <p className="text-slate-400 text-sm font-medium">Gracias por elegirnos, {state.customerName.split(' ')[0]}</p>
+
+          {/* Uber-like Button */}
+          <div className="sticky bottom-0 -mx-6 -mb-10 mt-auto pt-6 pb-4 px-6 bg-white border-t border-slate-100 z-30 w-[calc(100%+3rem)]">
+            <Button
+              onClick={handleReset}
+              className="w-full bg-slate-900 hover:bg-slate-800 text-white h-10 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95"
+            >
+              VOLVER AL INICIO
+            </Button>
           </div>
         </div>
-
-        {summary && (
-          <div className="flex-1 space-y-8 px-2">
-            {/* Main Info Section */}
-            <div className="space-y-6">
-              <div className="flex justify-between items-start border-b pb-6">
-                <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Servicio</p>
-                  <p className="text-2xl font-bold text-slate-900">{summary.serviceName}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: summary.serviceColor }} />
-                    <span className="text-xs font-medium text-slate-500">{summary.duration} de sesión</span>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</p>
-                  <p className="text-2xl font-black text-slate-900 tracking-tighter">{summary.price}</p>
-                </div>
-              </div>
-
-              {/* Date & Time Section */}
-              <div className="grid grid-cols-2 gap-8 border-b pb-6">
-                <div className="space-y-1 border-r border-slate-100">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fecha</p>
-                  <p className="text-lg font-bold text-slate-900 capitalize">{summary.date}</p>
-                </div>
-                <div className="space-y-1">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Horario</p>
-                  <p className="text-lg font-bold text-slate-900">{summary.time}</p>
-                </div>
-              </div>
-
-              {/* Reference Info */}
-              <div className="flex items-center justify-between py-4 px-6 bg-slate-50 rounded-xl border border-slate-100">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-white rounded-lg border shadow-sm">
-                    <Tag className="w-4 h-4 text-slate-400" />
-                  </div>
-                  <div>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID de Reserva</p>
-                    <p className="text-sm font-black text-slate-900 font-mono tracking-wider">{shortId}</p>
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm" onClick={() => window.print()} className="text-slate-500 hover:text-slate-900 text-xs font-bold uppercase tracking-widest">
-                  Imprimir
-                </Button>
-              </div>
-            </div>
-
-            {/* Bottom Message */}
-            <div className="bg-blue-50/50 p-6 rounded-2xl border border-blue-100/50 flex items-start gap-4">
-              <div className="mt-1"><AlertCircle className="w-5 h-5 text-blue-600" /></div>
-              <div className="space-y-1">
-                <p className="text-sm font-bold text-blue-900">Tu cita está lista</p>
-                <p className="text-xs text-blue-700 leading-relaxed">
-                  Te recomendamos llegar 5 minutos antes. Hemos enviado un comprobante a tu correo para que lo tengas a mano.
-                </p>
-              </div>
-            </div>
-
-            {/* Uber-like Button */}
-            <div className="pt-4">
-              <Button
-                onClick={handleReset}
-                className="w-full bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95"
-              >
-                VOLVER AL INICIO
-              </Button>
-            </div>
-          </div>
-        )}
       </div>
     );
   };
@@ -704,36 +677,100 @@ export const BookingSystemMVP: React.FC = () => {
   // RENDERIZADO PRINCIPAL
   // ========================================================================
 
-  return (
-    <div className="min-h-screen bg-slate-50/50 py-8 px-4 sm:px-6">
-      <div className="max-w-4xl mx-auto">
-        {/* Header & Step Indicator Unified */}
-        {!bookingConfirmed && (
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 bg-white p-6 rounded-2xl border border-slate-100 shadow-sm">
-            <div className="flex items-center gap-4">
-              <div className="bg-slate-900 text-white p-3 rounded-xl shadow-slate-200 shadow-lg">
-                <Calendar className="w-6 h-6" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900">Sistema de Reservas</h1>
-                <p className="text-sm text-slate-500">Agenda tu cita en pocos pasos</p>
-              </div>
-            </div>
+  // Render footer buttons based on current step
+  const renderFooter = () => {
+    if (bookingConfirmed) {
+      return (
+        <Button
+          onClick={handleReset}
+          className="w-full h-10 bg-slate-900 hover:bg-slate-800 text-white font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95"
+        >
+          VOLVER AL INICIO
+        </Button>
+      );
+    }
+    if (currentStep === 'service') {
+      return (
+        <div className="flex justify-end">
+          <Button
+            onClick={() => setCurrentStep('date')}
+            disabled={!state.selectedService}
+            className="px-10 h-10 bg-slate-900 hover:bg-slate-800 text-white font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 disabled:opacity-30"
+          >
+            CONTINUAR
+          </Button>
+        </div>
+      );
+    }
+    if (currentStep === 'date') {
+      return (
+        <div className="flex gap-3 justify-end">
+          <Button
+            variant="outline"
+            onClick={() => setCurrentStep('service')}
+            className="px-6 h-10 font-bold uppercase tracking-widest text-[10px] border-slate-200 hover:bg-slate-50 transition-all active:scale-95"
+          >
+            ATRÁS
+          </Button>
+          <Button
+            onClick={() => setCurrentStep('details')}
+            disabled={!state.selectedSlot}
+            className="px-10 h-10 bg-slate-900 hover:bg-slate-800 text-white font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 disabled:opacity-30"
+          >
+            CONTINUAR
+          </Button>
+        </div>
+      );
+    }
+    if (currentStep === 'details') {
+      return (
+        <div className="flex gap-3 justify-end">
+          <Button
+            variant="outline"
+            onClick={() => setCurrentStep('date')}
+            className="px-6 h-10 font-bold uppercase tracking-widest text-[10px] border-slate-200 hover:bg-slate-50 transition-all active:scale-95"
+          >
+            ATRÁS
+          </Button>
+          <Button
+            onClick={handleConfirmBooking}
+            disabled={!state.customerName || !state.customerEmail || !state.customerPhone || createAppointment.isPending}
+            className="px-10 h-10 bg-slate-900 hover:bg-slate-800 text-white font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 disabled:opacity-30"
+          >
+            {createAppointment.isPending ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />PROCESANDO...</>
+            ) : 'CONFIRMAR RESERVA'}
+          </Button>
+        </div>
+      );
+    }
+    return null;
+  };
 
-            <div className="flex items-center">
+  return (
+    <div className="min-h-screen bg-slate-50/50 py-8 px-4 sm:px-6 flex items-center justify-center">
+      <div className="w-full max-w-4xl mx-auto">
+        {/* Main Card: flex-col with fixed footer */}
+        <Card className="shadow-xl border-slate-200/60 relative rounded-3xl bg-white h-[700px] flex flex-col overflow-hidden">
+          {/* Step indicator */}
+          {!bookingConfirmed && (
+            <div className="absolute top-5 right-6 z-20">
               {renderStepIndicator()}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Main Card */}
-        <Card className="shadow-xl">
-          <CardContent className="p-6 sm:p-8">
+          {/* Content area — scrollable, takes all remaining space */}
+          <div className="flex-1 overflow-y-auto px-6 sm:px-10 pt-12 pb-4">
             {!bookingConfirmed && currentStep === 'service' && renderStepService()}
             {!bookingConfirmed && currentStep === 'date' && renderStepDateTime()}
             {!bookingConfirmed && currentStep === 'details' && renderStepDetails()}
             {bookingConfirmed && renderStepConfirmation()}
-          </CardContent>
+          </div>
+
+          {/* Footer — always at the bottom, never scrolls */}
+          <div className="flex-shrink-0 px-6 sm:px-10 py-4 border-t border-slate-100 bg-white">
+            {renderFooter()}
+          </div>
         </Card>
       </div>
     </div>

@@ -8,7 +8,8 @@ import {
   useDeleteTicketFinding, 
   useTicketHistory, 
   useAddTicketHistory,
-  sendBudgetEmail
+  sendBudgetEmail,
+  supabase
 } from '../lib/supabase-client';
 import { Button } from '@/components/ui/button';
 import { useDialog } from '@/components/ui/dialog-provider';
@@ -60,6 +61,7 @@ export default function AdminTicketDetail() {
   const [showSendModal, setShowSendModal] = useState(false);
   const [customEmail, setCustomEmail] = useState('');
   const [activeView, setActiveView] = useState<'presupuesto' | 'reparacion'>('presupuesto');
+  const [isUploadingLocal, setIsUploadingLocal] = useState(false);
   
   const { showAlert, showError } = useDialog();
 
@@ -142,6 +144,83 @@ export default function AdminTicketDetail() {
   const handleSaveDescription = () => {
     if (localDescription !== null) {
       updateTicketMutation.mutate({ id: ticket.id, description: localDescription });
+    }
+  };
+
+  const compressImage = (file: File): Promise<File> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = (event) => {
+        const img = new Image();
+        img.src = event.target?.result as string;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+
+          const MAX_WIDTH = 1024;
+          const MAX_HEIGHT = 1024;
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+
+          canvas.toBlob((blob) => {
+            if (blob) {
+              const compressedFile = new File([blob], file.name, {
+                type: 'image/jpeg',
+                lastModified: Date.now(),
+              });
+              resolve(compressedFile);
+            } else {
+              resolve(file);
+            }
+          }, 'image/jpeg', 0.7);
+        };
+      };
+    });
+  };
+
+  const handleLocalFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !ticket) return;
+    setIsUploadingLocal(true);
+    try {
+      const compressedFile = await compressImage(file);
+      const fileExt = compressedFile.name.split('.').pop() || 'jpg';
+      const fileName = `${ticket.id}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('tickets')
+        .upload(fileName, compressedFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('tickets')
+        .getPublicUrl(fileName);
+
+      setNewHistory(prev => ({ ...prev, evidence_url: publicUrl }));
+      showAlert('Foto Subida', 'La foto se ha guardado en el servidor y está lista para ser registrada.');
+    } catch (err) {
+      console.error(err);
+      showError('Error de Carga', 'No se pudo subir la foto local.');
+    } finally {
+      setIsUploadingLocal(false);
     }
   };
 
@@ -388,59 +467,74 @@ export default function AdminTicketDetail() {
                 
                 {/* Add History Form */}
                 {(ticket.status === 'accepted' || ticket.status === 'repairing') && (
-                  <div className="bg-slate-50 p-6 rounded-2xl space-y-4">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nuevo Avance</p>
-                    <textarea 
-                      className="w-full min-h-[80px] p-4 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm resize-none"
-                      placeholder="Describe qué trabajo se realizó hoy..."
-                      value={newHistory.description}
-                      onChange={(e) => setNewHistory({...newHistory, description: e.target.value})}
-                    />
-                    <div className="flex gap-3">
-                      <div className="flex-1 relative">
-                        <ImageIcon className="absolute left-3 top-3 w-4 h-4 text-slate-400" />
-                        <Input 
-                          placeholder="URL de evidencia (imagen/video)..." 
-                          className="pl-10 h-10 border-slate-200"
-                          value={newHistory.evidence_url}
-                          onChange={(e) => setNewHistory({...newHistory, evidence_url: e.target.value})}
+                  <div className="grid grid-cols-1 lg:grid-cols-10 gap-4">
+                    {/* Add History Form */}
+                    <div className="lg:col-span-6 bg-slate-50/50 border border-slate-100 p-6 rounded-2xl space-y-4">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nuevo Avance</p>
+                      <textarea 
+                        className="w-full min-h-[80px] p-4 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm resize-none bg-white"
+                        placeholder="Describe qué trabajo se realizó hoy..."
+                        value={newHistory.description}
+                        onChange={(e) => setNewHistory({...newHistory, description: e.target.value})}
+                      />
+                      <div className="flex gap-3 items-center">
+                        <input 
+                          type="file" 
+                          accept="image/*" 
+                          id="local-upload" 
+                          className="hidden" 
+                          onChange={handleLocalFileChange}
+                        />
+                        <Button 
+                          variant="outline" 
+                          type="button"
+                          disabled={isUploadingLocal}
+                          className="flex-1 h-10 gap-2 border-dashed border-slate-200 text-[10px] font-bold rounded-xl tracking-widest uppercase"
+                          onClick={() => document.getElementById('local-upload')?.click()}
+                        >
+                          {isUploadingLocal ? (
+                            <><Loader2 className="w-4 h-4 animate-spin text-slate-400" /> Subiendo...</>
+                          ) : newHistory.evidence_url ? (
+                            <><CheckCircle className="w-4 h-4 text-emerald-500" /> Foto Lista</>
+                          ) : (
+                            <><Camera className="w-4 h-4 text-slate-500" /> Subir Foto Local</>
+                          )}
+                        </Button>
+                        <Button 
+                          className="bg-slate-900 hover:bg-slate-800 font-bold uppercase text-[10px] tracking-widest px-6 h-10"
+                          disabled={!newHistory.description}
+                          onClick={() => {
+                            handleAddHistory();
+                            if (ticket.status === 'accepted') {
+                              updateTicketMutation.mutate({ id: ticket.id, status: 'repairing' });
+                            }
+                          }}
+                        >
+                          REGISTRAR
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* QR Code for Mobile Upload */}
+                    <div className="lg:col-span-4 bg-slate-50 border border-slate-100 p-6 rounded-2xl flex flex-col items-center justify-center text-center gap-4">
+                      <p className="text-xs font-bold text-slate-800 leading-tight max-w-[180px]">
+                        Agrega evidencia desde tu celular. Escanea el QR
+                      </p>
+                      <div className="bg-white p-2.5 rounded-2xl border border-slate-200 shadow-sm shrink-0 mt-1">
+                        <img 
+                          src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`${window.location.origin}/tickets/${ticket.id}/upload`)}`} 
+                          alt="Código QR de subida" 
+                          className="w-[100px] h-[100px]"
                         />
                       </div>
-                      <Button 
-                        className="bg-slate-900 hover:bg-slate-800 font-bold uppercase text-[10px] tracking-widest px-8"
-                        onClick={() => {
-                          handleAddHistory();
-                          if (ticket.status === 'accepted') {
-                            updateTicketMutation.mutate({ id: ticket.id, status: 'repairing' });
-                          }
-                        }}
-                      >
-                        REGISTRAR
-                      </Button>
-                    </div>
-                  </div>
-                )}
-
-                {/* QR Code for Mobile Upload */}
-                {(ticket.status === 'accepted' || ticket.status === 'repairing') && (
-                  <div className="bg-slate-50 border border-slate-100 p-4 rounded-2xl flex flex-col md:flex-row items-center gap-4">
-                    <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm shrink-0">
-                      <img 
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(`${window.location.origin}/tickets/${ticket.id}/upload`)}`} 
-                        alt="Código QR de subida" 
-                        className="w-[100px] h-[100px]"
-                      />
-                    </div>
-                    <div className="space-y-1 text-center md:text-left">
-                      <p className="text-xs font-bold text-slate-800 flex items-center gap-2 justify-center md:justify-start">
-                        <Camera className="w-4 h-4 text-slate-600" /> ¿Subir fotos desde el celular?
-                      </p>
-                      <p className="text-slate-500 text-[11px] leading-relaxed">Escanea este código QR con la cámara de tu teléfono para registrar avances y subir evidencias directamente.</p>
                     </div>
                   </div>
                 )}
 
                 {/* Timeline */}
+                <div className="pt-6 border-t border-slate-100 mt-4">
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-6">Historial de Evidencias y Avances</p>
+                </div>
                 <div className="relative pl-8 space-y-8 before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100">
                   {history.map((item) => (
                     <div key={item.id} className="relative">
@@ -453,11 +547,11 @@ export default function AdminTicketDetail() {
                         {item.evidence_url && (
                           <div className="mt-3">
                             {(item.evidence_url.startsWith('data:image/') || item.evidence_url.match(/\.(jpeg|jpg|gif|png|webp)/i)) ? (
-                              <div className="max-w-[250px] rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-slate-50 relative group transition-all duration-300 hover:shadow-md">
+                              <div className="max-w-[125px] rounded-2xl overflow-hidden border border-slate-100 shadow-sm bg-slate-50 relative group transition-all duration-300 hover:shadow-md">
                                 <img 
                                   src={item.evidence_url} 
                                   alt="Evidencia fotográfica" 
-                                  className="w-full h-auto object-cover max-h-[200px] cursor-pointer"
+                                  className="w-full h-auto object-cover max-h-[100px] cursor-pointer"
                                   onClick={() => window.open(item.evidence_url, '_blank')}
                                 />
                               </div>
@@ -588,10 +682,10 @@ export default function AdminTicketDetail() {
         <div className="flex gap-2 flex-wrap justify-end">
           <Button 
             variant="outline" 
-            className="rounded-xl h-10 px-4 border-slate-200 gap-2 font-bold text-xs transition-all active:scale-95 hover:bg-slate-50" 
+            className="rounded-xl h-10 px-4 border-slate-200 gap-2 font-bold text-xs transition-all active:scale-95 hover:bg-slate-50 uppercase tracking-wide" 
             onClick={handlePrint}
           >
-            <Printer className="w-4 h-4" /> IMPRIMIR PRESUPUESTO
+            <Printer className="w-4 h-4" /> {activeView === 'reparacion' ? 'Resumen de Reparación' : 'Imprimir Presupuesto'}
           </Button>
 
 
@@ -745,12 +839,26 @@ export default function AdminTicketDetail() {
           </div>
         </div>
 
-        <div className="mb-8">
+        <div className="mb-6">
           <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Descripción del Servicio</h3>
           <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs leading-relaxed whitespace-pre-wrap italic">
             "{localDescription || ticket.description || 'Sin descripción detallada'}"
           </div>
         </div>
+
+        {activeView === 'reparacion' && history.length > 0 && (
+          <div className="mb-6">
+            <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Avances de la Reparación</h3>
+            <div className="space-y-2.5 bg-slate-50 p-4 rounded-xl border border-slate-100">
+              {history.map(item => (
+                <div key={item.id} className="border-b border-slate-200/50 pb-2 last:border-0 last:pb-0 text-xs">
+                  <span className="font-bold text-slate-600">{format(parseISO(item.created_at), "dd/MM HH:mm", { locale: es })}: </span>
+                  <span className="text-slate-800">{item.description}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="mb-6">
           <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Detalle de Hallazgos</h3>
