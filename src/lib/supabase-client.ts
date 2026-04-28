@@ -862,3 +862,35 @@ export const useAddTicketHistory = () => {
     },
   });
 };
+
+// ============================================================================
+// FLOW PAYMENT
+// ============================================================================
+
+export interface FlowPaymentInput {
+  serviceId: string;
+  serviceName: string;
+  amount: number;
+  customerEmail: string;
+  customerName: string;
+  slotStart: string; // ISO string
+  slotEnd: string;   // ISO string
+  notes?: string;
+  phone?: string;
+}
+
+/**
+ * Llama al Edge Function create-flow-payment y redirige al usuario a la URL de pago.
+ * Retorna { url, token, commerceOrder } o lanza un error.
+ */
+export const createFlowPayment = async (input: FlowPaymentInput): Promise<{ url: string; token: string; commerceOrder: string }> => {
+  const { data, error } = await supabase.functions.invoke('create-flow-payment', {
+    body: input,
+  });
+
+  if (error) throw new Error(error.message || 'Error al iniciar el pago');
+  if (data?.error) throw new Error(data.error);
+  if (!data?.url) throw new Error('No se recibió URL de pago de Flow');
+
+  return data as { url: string; token: string; commerceOrder: string };
+};

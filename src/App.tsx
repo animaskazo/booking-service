@@ -8,6 +8,7 @@ import AdminSettings from './pages/AdminSettings';
 import AdminTickets from './pages/AdminTickets';
 import AdminTicketDetail from './pages/AdminTicketDetail';
 import TicketMobileUpload from './pages/TicketMobileUpload';
+import BookingReturn from './pages/BookingReturn';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { DialogProvider } from './components/ui/dialog-provider';
 
@@ -18,6 +19,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<BookingSystemMVP />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/booking/return" element={<BookingReturn />} />
           <Route path="/tickets/:id/upload" element={<TicketMobileUpload />} />
           
           {/* Panel Administrativo Protegido con Layout */}

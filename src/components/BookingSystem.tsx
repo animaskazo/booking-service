@@ -12,11 +12,9 @@ import { CalendarIcon, Clock, Loader2, AlertCircle, CheckCircle2 } from 'lucide-
 import {
   calculateAvailableSlots,
   formatDateForDisplay,
-  formatTimeRange,
   formatPrice,
   validateAppointment,
   getSummaryInfo,
-  prepareAppointmentData,
   getAvailableDates,
   ServiceWithAvailability,
 } from '../lib/utils-booking';
@@ -24,10 +22,9 @@ import {
   useServices,
   useAvailability,
   useAppointmentsByDateRange,
-  useCreateAppointment,
   checkSlotAvailability,
   useBusinessSettings,
-  sendBookingEmail,
+  createFlowPayment,
 } from '../lib/supabase-client';
 
 import { Button } from '@/components/ui/button';
@@ -76,6 +73,7 @@ export const BookingSystemMVP: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<BookingStep>('service');
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [shortId, setShortId] = useState<string | null>(null);
+  const [isPaying, setIsPaying] = useState(false);
 
   // Queries
   const { data: services = [], isLoading: servicesLoading } = useServices();
@@ -91,17 +89,17 @@ export const BookingSystemMVP: React.FC = () => {
   }, [services]);
   const { data: availabilities = [] } = useAvailability(state.selectedService?.id || null);
 
-  // Rango de fechas para buscar citas (próximos 30 días)
-  const dateRangeStart = new Date();
-  const dateRangeEnd = addDays(dateRangeStart, 30);
+  // Rango de fechas para buscar citas (próximos 30 días), memorizado para evitar bucle infinito
+  const { dateRangeStart, dateRangeEnd } = useMemo(() => {
+    const start = startOfDay(new Date());
+    const end = addDays(start, 30);
+    return { dateRangeStart: start, dateRangeEnd: end };
+  }, []);
 
   const { data: appointments = [] } = useAppointmentsByDateRange(
     dateRangeStart,
     dateRangeEnd
   );
-
-  // Mutation para crear cita
-  const createAppointment = useCreateAppointment();
 
   // Configuración global
   const { data: bSettings = { slot_interval: 30 } } = useBusinessSettings();
@@ -199,8 +197,11 @@ export const BookingSystemMVP: React.FC = () => {
       return;
     }
 
+    setIsPaying(true);
+    setState((prev) => ({ ...prev, errors: [] }));
+
     try {
-      // Validación de último minuto: verificar que el slot siga disponible
+      // Verificar disponibilidad de último minuto
       const isAvailable = await checkSlotAvailability(
         state.selectedService.id,
         state.selectedSlot.start,
@@ -213,43 +214,30 @@ export const BookingSystemMVP: React.FC = () => {
           errors: ['El horario fue reservado por otro cliente. Por favor selecciona otro.'],
         }));
         setCurrentStep('date');
+        setIsPaying(false);
         return;
       }
 
-      // Preparar datos y crear cita
-      const appointmentData = prepareAppointmentData(
-        state.selectedService.id,
-        state.customerName,
-        state.customerEmail,
-        state.customerPhone || undefined,
-        state.selectedSlot.start,
-        state.selectedSlot.end,
-        state.notes || undefined
-      );
-
-      const result = await createAppointment.mutateAsync(appointmentData);
-
-      // 3. Disparar email de confirmación (sin esperar a que termine para no bloquear la UI)
-      sendBookingEmail({
-        customerName: state.customerName,
-        customerEmail: state.customerEmail,
+      // Iniciar pago en Flow
+      const { url } = await createFlowPayment({
+        serviceId: state.selectedService.id,
         serviceName: state.selectedService.name,
-        date: formatDateForDisplay(state.selectedSlot.start),
-        time: formatTimeRange(state.selectedSlot.start, state.selectedSlot.end),
-        shortId: result.short_id,
+        amount: state.selectedService.price,
+        customerEmail: state.customerEmail,
+        customerName: state.customerName,
+        slotStart: state.selectedSlot.start.toISOString(),
+        slotEnd: state.selectedSlot.end.toISOString(),
         notes: state.notes || undefined,
-        techSupportEmail: 'fernando.rg@live.cl'
+        phone: state.customerPhone || undefined,
       });
 
-      // Éxito
-      setShortId(result.short_id);
-      setBookingConfirmed(true);
-      setCurrentStep('confirmation');
-      setState((prev) => ({ ...prev, errors: [] }));
+      // Redirigir a Flow — el usuario sale del sitio
+      window.location.href = url;
     } catch (error: any) {
+      setIsPaying(false);
       setState((prev) => ({
         ...prev,
-        errors: [error.message || 'Error al crear la cita. Intenta nuevamente.'],
+        errors: [error.message || 'Error al iniciar el pago. Intenta nuevamente.'],
       }));
     }
   };
@@ -734,12 +722,12 @@ export const BookingSystemMVP: React.FC = () => {
           </Button>
           <Button
             onClick={handleConfirmBooking}
-            disabled={!state.customerName || !state.customerEmail || !state.customerPhone || createAppointment.isPending}
+            disabled={!state.customerName || !state.customerEmail || !state.customerPhone || isPaying}
             className="px-10 h-10 bg-slate-900 hover:bg-slate-800 text-white font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 disabled:opacity-30"
           >
-            {createAppointment.isPending ? (
-              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />PROCESANDO...</>
-            ) : 'CONFIRMAR RESERVA'}
+            {isPaying ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />REDIRIGIENDO...</>
+            ) : 'PAGAR PARA RESERVAR'}
           </Button>
         </div>
       );
