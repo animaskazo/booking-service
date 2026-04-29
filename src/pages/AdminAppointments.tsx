@@ -15,7 +15,8 @@ import {
   Phone,
   Tag,
   AlertCircle,
-  FileText
+  FileText,
+  CreditCard
 } from 'lucide-react';
 import {
   useAppointmentsByDateRange,
@@ -680,6 +681,12 @@ export default function AdminAppointments() {
                     <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><AlertCircle className="w-3 h-3" /> Estado Actual</p>
                     <div>{getStatusBadge(selectedApp.status)}</div>
                   </div>
+                  {selectedApp.flow_commerce_order && (
+                    <div className="space-y-1 pt-3 border-t border-slate-100/50">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><CreditCard className="w-3 h-3" /> Orden Flow</p>
+                      <p className="font-bold text-slate-900 font-mono text-[11px]">{selectedApp.flow_commerce_order}</p>
+                    </div>
+                  )}
                 </div>
               </div>
               

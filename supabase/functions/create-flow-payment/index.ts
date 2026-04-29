@@ -123,7 +123,7 @@ serve(async (req) => {
       email: customerEmail,
       subject: `Reserva: ${serviceName.slice(0, 30)}`,
       urlConfirmation: `${Deno.env.get("SUPABASE_URL")}/functions/v1/confirm-flow-payment`,
-      urlReturn: `${APP_URL}/booking/return`,
+      urlReturn: `${Deno.env.get("SUPABASE_URL")}/functions/v1/flow-return-handler`,
       optional: commerceOrder, // Sólo guardamos el commerceOrder
     };
 
