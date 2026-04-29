@@ -521,6 +521,9 @@ export const BookingSystemMVP: React.FC = () => {
         <div className="text-right">
           <p className="text-lg font-bold text-slate-900">{formatPrice(state.selectedService?.price || 0)}</p>
           <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">Total a pagar</p>
+          <p className="text-[10px] text-emerald-600 font-bold mt-1 text-right">
+            ✓ Este valor se abonará a la reparación.
+          </p>
         </div>
       </div>
 
