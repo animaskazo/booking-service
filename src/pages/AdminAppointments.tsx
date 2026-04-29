@@ -515,9 +515,13 @@ export default function AdminAppointments() {
 
       {/* Modal Reserva Manual */}
       {selectedSlot && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in transition-all">
-          <Card className="w-full max-w-lg shadow-2xl border-t-8 border-slate-900 overflow-hidden rounded-2xl">
-            <CardHeader className="bg-slate-50/80 border-b pb-6">
+        <div className="fixed inset-0 z-[100] overflow-y-auto">
+          {/* Backdrop */}
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSelectedSlot(null)} />
+          
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Card className="relative z-10 w-full max-w-lg shadow-2xl overflow-hidden rounded-[32px] border border-slate-100 bg-white" onClick={(e) => e.stopPropagation()}>
+              <CardHeader className="bg-slate-50/50 border-b border-slate-100/60 pb-6">
               <div className="flex justify-between items-center">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -628,14 +632,18 @@ export default function AdminAppointments() {
               </div>
             </form>
           </Card>
+          </div>
         </div>
       )}
 
-      {/* Modal Detalle de Cita */}
       {selectedApp && (
-        <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-[999] flex items-center justify-center p-4 animate-in fade-in duration-300" onClick={() => setSelectedApp(null)}>
-          <Card className="w-full max-w-lg shadow-2xl border-t-8 border-slate-900 overflow-hidden animate-in zoom-in-95 duration-300" onClick={(e) => e.stopPropagation()}>
-            <CardHeader className="bg-slate-50/80 border-b">
+        <div className="fixed inset-0 z-[999] overflow-y-auto">
+          {/* Backdrop */}
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setSelectedApp(null)} />
+          
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Card className="relative z-10 w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 rounded-[32px] border border-slate-100 bg-white" onClick={(e) => e.stopPropagation()}>
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100/60">
               <div className="flex justify-between items-center">
                 <div>
                   <div className="flex items-center gap-2">
@@ -652,164 +660,134 @@ export default function AdminAppointments() {
               </div>
             </CardHeader>
 
-            <CardContent className="p-8 space-y-8">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h3 className="text-2xl font-black text-slate-900 leading-tight">{selectedApp.customer_name}</h3>
-                  <p className="text-slate-500 font-medium flex items-center gap-2 mt-1">
-                    <Mail className="w-3.5 h-3.5" /> {selectedApp.customer_email}
-                  </p>
-                  {selectedApp.customer_phone && (
-                    <p className="text-slate-500 font-medium flex items-center gap-2">
-                      <Phone className="w-3.5 h-3.5" /> {selectedApp.customer_phone}
+            <CardContent className="p-8 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                
+                {/* Columna Izquierda: Cliente e Info */}
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-xl font-black text-slate-900 leading-tight">{selectedApp.customer_name}</h3>
+                    <p className="text-slate-500 font-medium flex items-center gap-2 mt-1 text-sm">
+                      <Mail className="w-3.5 h-3.5" /> {selectedApp.customer_email}
                     </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-8 py-6 border-y border-slate-100">
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Tag className="w-3 h-3" /> Servicio</p>
-                    <p className="font-bold text-slate-900">{selectedApp.service?.name}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Clock className="w-3 h-3" /> Horario</p>
-                    <p className="font-bold text-slate-900">{format(parseISO(selectedApp.start_time), 'HH:mm')} - {format(parseISO(selectedApp.end_time), 'HH:mm')}</p>
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><CalendarIcon className="w-3 h-3" /> Fecha</p>
-                    <p className="font-bold text-slate-900 capitalize">{format(parseISO(selectedApp.start_time), "EEEE d 'de' MMMM", { locale: es })}</p>
-                  </div>
-                  <div className="space-y-1">
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><AlertCircle className="w-3 h-3" /> Estado Actual</p>
-                    <div>{getStatusBadge(selectedApp.status)}</div>
-                  </div>
-                  {selectedApp.flow_commerce_order && (
-                    <div className="space-y-1 pt-3 border-t border-slate-100/50">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><CreditCard className="w-3 h-3" /> Orden Flow</p>
-                      <p className="font-bold text-slate-900 font-mono text-[11px]">{selectedApp.flow_commerce_order}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {existingTicket && (
-                <div className="bg-slate-900 rounded-2xl p-6 text-white space-y-4 shadow-xl">
-                  <div className="flex justify-between items-center border-b border-white/10 pb-4">
-                    <div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Ticket Técnico</p>
-                      <Badge className="bg-white/10 text-white border-none font-bold uppercase text-[10px] tracking-widest">
-                        {existingTicket.status === 'evaluating' ? 'Pendiente de Evaluación' : 
-                         existingTicket.status === 'quoted' ? 'En Presupuesto' :
-                         (existingTicket.status === 'accepted' || existingTicket.status === 'repairing') ? 'Reparación' :
-                         existingTicket.status === 'ready' ? 'Pendiente de Retiro' : 
-                         existingTicket.status === 'rejected' ? 'Rechazado' : 'Retirado'}
-                      </Badge>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total a Pagar</p>
-                      <p className="text-xl font-black">{formatPrice(existingTicket.total_budget || 0)}</p>
-                    </div>
+                    {selectedApp.customer_phone && (
+                      <p className="text-slate-500 font-medium flex items-center gap-2 text-sm mt-0.5">
+                        <Phone className="w-3.5 h-3.5" /> {selectedApp.customer_phone}
+                      </p>
+                    )}
                   </div>
 
-                  {existingTicket.status === 'quoted' && (
-                    <div className="flex gap-3">
+                  <div className="grid grid-cols-2 gap-4 py-4 border-y border-slate-100">
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Tag className="w-3 h-3" /> Servicio</p>
+                      <p className="font-bold text-slate-900 text-sm">{selectedApp.service?.name}</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><CalendarIcon className="w-3 h-3" /> Fecha</p>
+                      <p className="font-bold text-slate-900 text-sm capitalize">{format(parseISO(selectedApp.start_time), "d 'de' MMMM", { locale: es })}</p>
+                    </div>
+                    <div className="space-y-1 mt-2">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><Clock className="w-3 h-3" /> Horario</p>
+                      <p className="font-bold text-slate-900 text-sm">{format(parseISO(selectedApp.start_time), 'HH:mm')} - {format(parseISO(selectedApp.end_time), 'HH:mm')}</p>
+                    </div>
+                    <div className="space-y-1 mt-2">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><AlertCircle className="w-3 h-3" /> Estado</p>
+                      <div>{getStatusBadge(selectedApp.status)}</div>
+                    </div>
+                    {selectedApp.flow_commerce_order && (
+                      <div className="space-y-1 mt-2 col-span-2 pt-2 border-t border-slate-100">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5"><CreditCard className="w-3 h-3" /> Orden Flow</p>
+                        <p className="font-bold text-slate-900 font-mono text-[11px]">{selectedApp.flow_commerce_order}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {selectedApp.notes && (
+                    <div className="bg-slate-50 p-4 rounded-xl space-y-1 border border-slate-100/60">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Notas Internas</p>
+                      <p className="text-xs text-slate-600 leading-relaxed italic">"{selectedApp.notes}"</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Columna Derecha: Ticket Técnico */}
+                <div className="space-y-4">
+                  {existingTicket ? (
+                    <div className="bg-slate-50/80 border border-slate-100 rounded-[24px] p-5 space-y-4">
+                      <div className="flex justify-between items-center border-b border-slate-200/60 pb-3">
+                        <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Orden Técnica</p>
+                          <Badge className="bg-slate-900 text-white border-none font-bold uppercase text-[10px] tracking-widest px-2.5 py-1 rounded-lg">
+                            {existingTicket.status === 'evaluating' ? 'Pendiente' : 
+                             existingTicket.status === 'quoted' ? 'Presupuesto' :
+                             (existingTicket.status === 'accepted' || existingTicket.status === 'repairing') ? 'En Reparación' :
+                             existingTicket.status === 'ready' ? 'Listo' : 
+                             existingTicket.status === 'rejected' ? 'Rechazado' : 'Retirado'}
+                          </Badge>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Presupuesto</p>
+                          <p className="text-lg font-black text-slate-900">{formatPrice(existingTicket.total_budget || 0)}</p>
+                        </div>
+                      </div>
+
+                      {existingTicket.status === 'quoted' && (
+                        <div className="flex gap-2.5 pt-1">
+                          <Button
+                            variant="outline"
+                            className="flex-1 border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 h-10 font-bold uppercase tracking-widest text-[10px] transition-all rounded-xl"
+                            onClick={() => updateTicketMutation.mutate({ id: existingTicket.id, status: 'rejected' })}
+                          >
+                            <XCircle className="w-4 h-4 mr-1.5" /> Rechazar
+                          </Button>
+                          <Button
+                            className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white h-10 font-bold uppercase tracking-widest text-[10px] transition-all rounded-xl shadow-lg shadow-emerald-600/10"
+                            onClick={() => updateTicketMutation.mutate({ id: existingTicket.id, status: 'accepted' })}
+                          >
+                            <CheckCircle className="w-4 h-4 mr-1.5" /> Aceptar
+                          </Button>
+                        </div>
+                      )}
+
                       <Button
                         variant="outline"
-                        className="flex-1 bg-transparent border-red-500/50 text-red-400 hover:bg-red-500/10 hover:text-red-300 h-11 font-bold uppercase tracking-widest text-[10px] transition-all"
-                        onClick={() => updateTicketMutation.mutate({ id: existingTicket.id, status: 'rejected' })}
+                        className="w-full justify-center text-slate-500 hover:text-slate-800 bg-white border-slate-200 h-10 font-bold uppercase tracking-widest text-[10px] transition-all rounded-xl shadow-sm"
+                        onClick={() => navigate(`/admin/tickets/${existingTicket.id}`)}
                       >
-                        <XCircle className="w-4 h-4 mr-2" />
-                        Rechazar
-                      </Button>
-                      <Button
-                        className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white h-11 font-bold uppercase tracking-widest text-[10px] transition-all shadow-lg shadow-emerald-900/20"
-                        onClick={() => updateTicketMutation.mutate({ id: existingTicket.id, status: 'accepted' })}
-                      >
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Aceptar
+                        Gestionar Detalles <ChevronRightIcon className="w-4 h-4 ml-2" />
                       </Button>
                     </div>
+                  ) : (
+                    <div className="border border-dashed border-slate-200 rounded-[24px] p-6 text-center text-xs text-slate-400 font-medium flex flex-col justify-center items-center gap-2 h-full min-h-[160px]">
+                      <AlertCircle className="w-5 h-5 opacity-40 text-slate-400" />
+                      <span>Sin ticket técnico asociado</span>
+                    </div>
                   )}
-
-                  <Button
-                    variant="ghost"
-                    className="w-full justify-center text-slate-400 hover:text-white hover:bg-white/5 h-10 font-bold uppercase tracking-widest text-[10px] transition-all"
-                    onClick={() => navigate(`/admin/tickets/${existingTicket.id}`)}
-                  >
-                    Gestionar Detalles del Ticket <ChevronRightIcon className="w-4 h-4 ml-2" />
-                  </Button>
                 </div>
-              )}
 
-              {selectedApp.notes && (
-                <div className="bg-slate-50 p-4 rounded-xl space-y-2">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Notas Internas</p>
-                  <p className="text-sm text-slate-600 leading-relaxed italic">"{selectedApp.notes}"</p>
-                </div>
-              )}
+              </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t border-slate-100">
-
+              <div className="flex items-center pt-6 border-t border-slate-100 gap-3 w-full">
+                {/* Eliminar Cita */}
                 <Button
                   variant="outline"
-                  className="flex-[1] h-12 border-red-100 text-red-500 hover:bg-red-50 hover:border-red-200 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center justify-center"
+                  size="icon"
+                  className="w-12 h-12 border-red-100 text-red-500 hover:bg-red-50 hover:border-red-200 hover:text-red-600 font-bold rounded-xl transition-all flex items-center justify-center shadow-sm"
                   onClick={() => { handleDelete(selectedApp.id); setSelectedApp(null); }}
                   title="Eliminar Cita"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
 
-                {selectedApp.status === 'pending' && (
-                  <Button
-                    className="flex-[2] bg-emerald-600 hover:bg-emerald-700 text-white h-12 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center justify-center gap-2"
-                    onClick={() => { handleStatusUpdate(selectedApp.id, 'confirmed'); setSelectedApp(null); }}
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Confirmar Cita
-                  </Button>
-                )}
-                {selectedApp.status === 'confirmed' && (
-                  <Button
-                    className="flex-[2] bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center justify-center gap-2"
-                    onClick={() => { handleStatusUpdate(selectedApp.id, 'completed'); setSelectedApp(null); }}
-                  >
-                    <CheckCircle className="w-4 h-4" />
-                    Finalizar Cita
-                  </Button>
-                )}
-
-                {existingTicket?.status === 'quoted' && (
-                  <div className="flex gap-4 w-full">
-                    <Button
-                      variant="outline"
-                      className="flex-1 border-red-200 text-red-600 hover:bg-red-50 h-12 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center justify-center gap-2"
-                      onClick={() => updateTicketMutation.mutate({ id: existingTicket.id, status: 'rejected' })}
-                    >
-                      <XCircle className="w-4 h-4" />
-                      Rechazar Pto.
-                    </Button>
-                    <Button
-                      className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white h-12 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center justify-center gap-2"
-                      onClick={() => updateTicketMutation.mutate({ id: existingTicket.id, status: 'accepted' })}
-                    >
-                      <CheckCircle className="w-4 h-4" />
-                      Aceptar Pto.
-                    </Button>
-                  </div>
-                )}
-
+                {/* Iniciar Ticket Técnico */}
                 {!existingTicket && selectedApp.status !== 'pending' && (
                   <Button
                     variant="outline"
-                    className="flex-[2] border-slate-200 text-slate-900 h-12 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center justify-center gap-2"
+                    className="border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 h-12 font-bold uppercase tracking-widest text-[10px] rounded-xl px-4 transition-all shadow-sm flex items-center justify-center gap-2"
                     disabled={createTicketMutation.isPending}
                     onClick={async () => {
-                      const ticket = await createTicketMutation.mutateAsync(selectedApp.id);
-                      navigate(`/admin/tickets/${ticket.id}`);
+                      const t = await createTicketMutation.mutateAsync(selectedApp.id);
+                      navigate(`/admin/tickets/${t.id}`);
                     }}
                   >
                     <Plus className="w-4 h-4 text-blue-500" />
@@ -817,10 +795,32 @@ export default function AdminAppointments() {
                   </Button>
                 )}
 
-
+                {/* Confirmar / Finalizar Cita */}
+                {selectedApp.status === 'pending' && (
+                  <Button
+                    variant="outline"
+                    className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:border-emerald-300 h-12 font-bold uppercase tracking-widest text-[10px] rounded-xl px-5 transition-all shadow-sm flex items-center justify-center gap-2 ml-auto"
+                    onClick={() => { handleStatusUpdate(selectedApp.id, 'confirmed'); setSelectedApp(null); }}
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    Confirmar Cita
+                  </Button>
+                )}
+                
+                {selectedApp.status === 'confirmed' && (
+                  <Button
+                    variant="outline"
+                    className="border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 h-12 font-bold uppercase tracking-widest text-[10px] rounded-xl px-5 transition-all shadow-sm flex items-center justify-center gap-2 ml-auto"
+                    onClick={() => { handleStatusUpdate(selectedApp.id, 'completed'); setSelectedApp(null); }}
+                  >
+                    <CheckCircle className="w-4 h-4" />
+                    Finalizar Cita
+                  </Button>
+                )}
               </div>
             </CardContent>
           </Card>
+          </div>
         </div>
       )}
     </div>

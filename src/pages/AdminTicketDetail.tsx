@@ -79,6 +79,34 @@ export default function AdminTicketDetail() {
     }
   }, [ticket?.status]);
 
+  // Email notification when ticket becomes ready for pickup
+  const [readyEmailSent, setReadyEmailSent] = useState(false);
+
+  const sendReadyEmail = async (ticketId: string) => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-ready-email`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticket_id: ticketId }),
+      });
+      if (!res.ok) {
+        const err = await res.text();
+        console.error('Error sending ready‑for‑pickup email:', err);
+      } else {
+        console.log('Ready‑for‑pickup email sent');
+        setReadyEmailSent(true);
+      }
+    } catch (e) {
+      console.error('Exception sending ready email:', e);
+    }
+  };
+
+  React.useEffect(() => {
+    if (ticket && ticket.status === 'ready' && !readyEmailSent) {
+      sendReadyEmail(ticket.id);
+    }
+  }, [ticket?.status, readyEmailSent]);
+
   if (isLoadingTicket) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -731,9 +759,13 @@ export default function AdminTicketDetail() {
       </div>
 
       {showSendModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-in fade-in transition-all">
-          <Card className="w-full max-w-md shadow-2xl border-t-8 border-slate-900 overflow-hidden rounded-2xl">
-            <CardHeader className="bg-slate-50/80 border-b pb-6">
+        <div className="fixed inset-0 z-[100] overflow-y-auto">
+          {/* Backdrop */}
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowSendModal(false)} />
+          
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Card className="relative z-10 w-full max-w-md shadow-2xl overflow-hidden rounded-[32px] border border-slate-100 bg-white">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100/60 pb-6">
               <div className="flex justify-between items-center">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -796,6 +828,7 @@ export default function AdminTicketDetail() {
               </div>
             </CardContent>
           </Card>
+          </div>
         </div>
       )}
 

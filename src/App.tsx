@@ -11,6 +11,10 @@ import TicketMobileUpload from './pages/TicketMobileUpload';
 import BookingReturn from './pages/BookingReturn';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { DialogProvider } from './components/ui/dialog-provider';
+import { PublicTrackingProvider } from './lib/public-tracking-context';
+import TrackReservation from './pages/TrackReservation';
+import ReservationStatus from './pages/ReservationStatus';
+import TicketDetailPublic from './pages/TicketDetailPublic';
 
 export default function App() {
   return (
@@ -21,6 +25,11 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/booking/return" element={<BookingReturn />} />
           <Route path="/tickets/:id/upload" element={<TicketMobileUpload />} />
+          
+          {/* Seguimiento Público */}
+          <Route path="/track" element={<PublicTrackingProvider><TrackReservation /></PublicTrackingProvider>} />
+          <Route path="/track/status" element={<PublicTrackingProvider><ReservationStatus /></PublicTrackingProvider>} />
+          <Route path="/track/ticket" element={<PublicTrackingProvider><TicketDetailPublic /></PublicTrackingProvider>} />
           
           {/* Panel Administrativo Protegido con Layout */}
           <Route 

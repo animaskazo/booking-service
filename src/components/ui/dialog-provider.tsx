@@ -94,41 +94,50 @@ function DialogModal({ config, onClose }: { config: DialogConfig; onClose: () =>
       />
 
       {/* Modal */}
-      <div className="relative z-10 bg-white w-full max-w-sm shadow-2xl animate-in zoom-in-95 duration-200">
-        {/* Top accent bar */}
-        <div className={`h-1 w-full ${
-          config.type === 'error' ? 'bg-red-500' : 
-          (config.type === 'confirm' && config.isDanger) ? 'bg-red-500' : 'bg-slate-900'
-        }`} />
-
-        <div className="p-6 space-y-4">
-          {/* Header */}
-          <div className="flex items-start gap-4">
+      <div className="relative z-10 bg-white w-full max-w-sm rounded-[32px] shadow-2xl animate-in zoom-in-95 duration-300 overflow-hidden">
+        
+        <div className="p-8 space-y-6 flex flex-col items-center text-center">
+          {/* Icon */}
+          <div className="transform scale-110">
             <DialogIcon type={config.type} isDanger={config.isDanger} />
-            <div className="flex-1 pt-1">
-              <h2 className="font-bold text-slate-900 text-base leading-tight">{config.title}</h2>
-              <p className="text-sm text-slate-500 mt-1.5 leading-relaxed">{config.message}</p>
-            </div>
+          </div>
+
+          {/* Header */}
+          <div className="space-y-2">
+            <h2 className="font-black text-slate-900 text-lg tracking-tight leading-snug">
+              {config.title}
+            </h2>
+            <p className="text-xs text-slate-400 font-medium leading-relaxed max-w-[280px]">
+              {config.message}
+            </p>
           </div>
 
           {/* Actions */}
-          <div className={`flex gap-3 pt-2 ${config.type === 'confirm' ? 'flex-row-reverse' : ''}`}>
+          <div className={`flex flex-col gap-2.5 w-full pt-2`}>
             {config.type === 'confirm' && (
               <Button
                 onClick={handleConfirm}
-                className={`flex-1 text-white ${config.isDanger ? 'bg-red-600 hover:bg-red-700' : 'bg-slate-900 hover:bg-slate-800'}`}
+                className={`w-full text-white font-bold h-11 rounded-2xl shadow-sm border-none ${
+                  config.isDanger 
+                    ? 'bg-red-600 hover:bg-red-500 shadow-red-200' 
+                    : 'bg-slate-900 hover:bg-slate-800 shadow-slate-200'
+                }`}
               >
-                {config.confirmLabel ?? 'ELIMINAR'}
+                {config.confirmLabel ?? 'Eliminar'}
               </Button>
             )}
             <Button
               variant={config.type === 'confirm' ? 'outline' : 'default'}
               onClick={config.type === 'confirm' ? handleCancel : handleConfirm}
-              className={`${config.type === 'confirm' ? 'flex-1' : 'w-full'}`}
+              className={`w-full font-bold h-11 rounded-2xl border-none ${
+                config.type === 'confirm' 
+                  ? 'bg-slate-50 text-slate-600 hover:bg-slate-100' 
+                  : 'bg-slate-900 hover:bg-slate-800 text-white shadow-md shadow-slate-900/10'
+              }`}
             >
               {config.type === 'confirm'
-                ? (config.cancelLabel ?? 'CANCELAR')
-                : 'ACEPTAR'}
+                ? (config.cancelLabel ?? 'Cancelar')
+                : 'Aceptar'}
             </Button>
           </div>
         </div>
