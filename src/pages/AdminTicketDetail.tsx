@@ -84,7 +84,7 @@ export default function AdminTicketDetail() {
 
   const sendReadyEmail = async (ticketId: string) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-ready-email`, {
+      const res = await fetch(`${(import.meta as any).env.VITE_SUPABASE_URL}/functions/v1/send-ready-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ticket_id: ticketId }),

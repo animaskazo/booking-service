@@ -16,7 +16,7 @@ export default function TrackReservation() {
     e.preventDefault();
     setError(null);
     try {
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/public-track`, {
+      const res = await fetch(`${(import.meta as any).env.VITE_SUPABASE_URL}/functions/v1/public-track`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

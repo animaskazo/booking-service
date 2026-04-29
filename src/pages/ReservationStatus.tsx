@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePublicTracking } from '../lib/public-tracking-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';

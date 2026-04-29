@@ -1,11 +1,11 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePublicTracking } from '../lib/public-tracking-context';
 import { useTicketById, useTicketFindings, useTicketHistory } from '../lib/supabase-client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { ArrowLeft, CheckCircle, FileText, Package, Wrench } from 'lucide-react';
+import { ArrowLeft, FileText, Package, Wrench } from 'lucide-react';
 import { formatPrice } from '../lib/utils-booking';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -39,7 +39,7 @@ export default function TicketDetailPublic() {
   if (!appointment || !contextTicket) return null;
 
   // Si aún no carga el ticket live, usamos el del contexto
-  const currentTicket = ticket || contextTicket;
+  const currentTicket = (ticket || contextTicket) as any;
 
   const formatDate = (isoString: string) => {
     try {
