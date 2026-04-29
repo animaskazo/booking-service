@@ -37,6 +37,10 @@ export interface AppointmentRecord {
   customer_phone?: string;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   short_id: string; // ID corto para el cliente
+  paid?: boolean;
+  paid_amount?: number;
+  flow_commerce_order?: string;
+  flow_token?: string;
   service?: ServiceWithAvailability;
   notes?: string;
 }
