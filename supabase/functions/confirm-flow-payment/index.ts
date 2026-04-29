@@ -140,49 +140,35 @@ serve(async (req) => {
     console.log("Appointment confirmed in Supabase:", appointment.id);
 
     // 4. Enviar email de confirmación vía Resend
-    if (RESEND_API_KEY && customerEmail) {
+    // 4. Enviar email de confirmación llamando a la función existente send-booking-email
+    if (customerEmail) {
       try {
-        await fetch("https://api.resend.com/emails", {
+        const res = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/send-booking-email`, {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${RESEND_API_KEY}`,
             "Content-Type": "application/json",
+            "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
           },
           body: JSON.stringify({
-            from: "Reservas <no-reply@bookingpro.cl>",
-            to: [customerEmail],
-            subject: `✅ Reserva confirmada #${shortId}`,
-            html: `
-              <div style="font-family:sans-serif;max-width:520px;margin:0 auto;padding:32px 24px;">
-                <h1 style="font-size:22px;font-weight:900;text-transform:uppercase;letter-spacing:-0.5px;margin-bottom:4px;">¡Reserva Confirmada!</h1>
-                <p style="color:#64748b;font-size:13px;margin-bottom:32px;">Hola ${customerName?.split(" ")[0]}, tu pago fue procesado exitosamente.</p>
-                <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
-                  <tr style="border-bottom:1px solid #f1f5f9;">
-                    <td style="padding:12px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;">Servicio</td>
-                    <td style="padding:12px 0;font-size:14px;font-weight:700;text-align:right;">${serviceName}</td>
-                  </tr>
-                  <tr style="border-bottom:1px solid #f1f5f9;">
-                    <td style="padding:12px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;">Fecha</td>
-                    <td style="padding:12px 0;font-size:14px;font-weight:700;text-align:right;">${formatDate(slotStart)}</td>
-                  </tr>
-                  <tr style="border-bottom:1px solid #f1f5f9;">
-                    <td style="padding:12px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;">Horario</td>
-                    <td style="padding:12px 0;font-size:14px;font-weight:700;text-align:right;">${formatTime(slotStart)} – ${formatTime(slotEnd)}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding:12px 0;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:#94a3b8;">ID Reserva</td>
-                    <td style="padding:12px 0;font-size:14px;font-weight:900;text-align:right;font-family:monospace;">#${shortId}</td>
-                  </tr>
-                </table>
-                <div style="background:#f8fafc;border-radius:12px;padding:16px;text-align:center;color:#64748b;font-size:12px;">
-                  Monto pagado: <strong>$${Number(payment.amount).toLocaleString("es-CL")} CLP</strong>
-                </div>
-              </div>
-            `,
+            type: "booking",
+            customerName: customerName,
+            customerEmail: customerEmail,
+            serviceName: serviceName,
+            date: formatDate(slotStart),
+            time: `${formatTime(slotStart)} – ${formatTime(slotEnd)}`,
+            shortId: shortId,
+            notes: appointment.notes ?? "",
           }),
         });
+
+        if (!res.ok) {
+          const errData = await res.text();
+          console.error("Error calling send-booking-email:", errData);
+        } else {
+          console.log("Send-booking-email called successfully!");
+        }
       } catch (emailErr) {
-        console.error("Email error (non-fatal):", emailErr);
+        console.error("Error invoking send-booking-email:", emailErr);
       }
     }
 

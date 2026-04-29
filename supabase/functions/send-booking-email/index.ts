@@ -43,7 +43,7 @@ serve(async (req) => {
     };
 
     const isBudget = type === 'budget'
-    const subject = isBudget 
+    const subject = isBudget
       ? `Presupuesto Servicio Técnico - Ticket #${shortId}`
       : `Confirmación de Reserva - ${serviceName} #${shortId}`
 
@@ -179,7 +179,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: isBudget ? 'Servicio Técnico <no-reply@tu-dominio.com>' : 'Reservas <no-reply@tu-dominio.com>',
+        from: isBudget ? 'Servicio Técnico <no-reply@digital-solutions.work>' : 'Reservas <no-reply@digital-solutions.work>',
         to: [customerEmail],
         cc: [techSupportEmail],
         subject: subject,

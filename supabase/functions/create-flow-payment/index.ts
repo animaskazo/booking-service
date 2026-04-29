@@ -121,7 +121,7 @@ serve(async (req) => {
       commerceOrder,
       currency: "CLP",
       email: customerEmail,
-      subject: `Reserva: ${serviceName.slice(0, 30)}`,
+      subject: `Reserva #${shortId}: ${serviceName.slice(0, 30)}`,
       urlConfirmation: `${Deno.env.get("SUPABASE_URL")}/functions/v1/confirm-flow-payment`,
       urlReturn: `${Deno.env.get("SUPABASE_URL")}/functions/v1/flow-return-handler`,
       optional: commerceOrder, // Sólo guardamos el commerceOrder

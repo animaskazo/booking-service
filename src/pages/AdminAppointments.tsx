@@ -455,7 +455,13 @@ export default function AdminAppointments() {
                           <div className="text-xs text-slate-500">{format(parseISO(app.start_time), 'dd MMM, yyyy', { locale: es })}</div>
                         </td>
                         <td className="p-4">
-                          {getStatusBadge(app.status)}
+                          <div className="flex flex-col gap-1 items-start">
+                            {app.paid ? (
+                              <Badge className="bg-emerald-50 hover:bg-emerald-50 pointer-events-none text-emerald-700 border border-emerald-200/50 text-[9px] font-black tracking-widest uppercase shadow-none py-0 px-2 h-5 flex items-center justify-center rounded-md">Pagado</Badge>
+                            ) : (
+                              <Badge className="bg-amber-50 hover:bg-amber-50 pointer-events-none text-amber-700 border border-amber-200/50 text-[9px] font-black tracking-widest uppercase shadow-none py-0 px-2 h-5 flex items-center justify-center rounded-md">Por Pagar</Badge>
+                            )}
+                          </div>
                         </td>
                         <td className="p-4">
                           <div className="flex items-center gap-1">
