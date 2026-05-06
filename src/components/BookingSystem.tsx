@@ -174,7 +174,7 @@ export const BookingSystemMVP: React.FC = () => {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     let value = e.target.value;
-    
+
     // Formateo especial para RUT
     if (field === 'customerRut') {
       value = formatRut(value);
@@ -568,63 +568,63 @@ export const BookingSystemMVP: React.FC = () => {
           <p className="text-lg font-bold text-slate-900">{formatPrice(state.selectedService?.price || 0)}</p>
           <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">Total a pagar</p>
           <p className={`text-[10px] font-bold mt-1 text-right ${state.selectedService?.name.toLowerCase().includes('express') ? 'text-amber-600' : 'text-emerald-600'}`}>
-            {state.selectedService?.name.toLowerCase().includes('express') 
-              ? '⚠ Servicio Express: Este valor NO se abona a la reparación.' 
+            {state.selectedService?.name.toLowerCase().includes('express')
+              ? '⚠ Servicio Express: Este valor NO se abona a la reparación.'
               : '✓ Este valor se abonará a la reparación.'}
           </p>
         </div>
       </div>
 
       <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="name" className="text-xs font-bold text-slate-700">Nombre completo *</Label>
-          <Input
-            id="name"
-            placeholder="Juan Pérez"
-            value={state.customerName}
-            onChange={handleInputChange('customerName')}
-            className="mt-1.5 h-10 border-slate-200"
-          />
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="name" className="text-xs font-bold text-slate-700">Nombre completo *</Label>
+            <Input
+              id="name"
+              placeholder="Juan Pérez"
+              value={state.customerName}
+              onChange={handleInputChange('customerName')}
+              className="mt-1.5 h-10 border-slate-200"
+            />
+          </div>
 
-        <div>
-          <Label htmlFor="rut" className="text-xs font-bold text-slate-700">RUT *</Label>
-          <Input
-            id="rut"
-            placeholder="12345678-k"
-            value={state.customerRut}
-            onChange={handleInputChange('customerRut')}
-            className="mt-1.5 h-10 border-slate-200"
-            required
-          />
+          <div>
+            <Label htmlFor="rut" className="text-xs font-bold text-slate-700">RUT *</Label>
+            <Input
+              id="rut"
+              placeholder="12345678-k"
+              value={state.customerRut}
+              onChange={handleInputChange('customerRut')}
+              className="mt-1.5 h-10 border-slate-200"
+              required
+            />
+          </div>
         </div>
-      </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="email" className="text-xs font-bold text-slate-700">Email *</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="juan@ejemplo.com"
-            value={state.customerEmail}
-            onChange={handleInputChange('customerEmail')}
-            className="mt-1.5 h-10 border-slate-200"
-          />
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="email" className="text-xs font-bold text-slate-700">Email *</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="juan@ejemplo.com"
+              value={state.customerEmail}
+              onChange={handleInputChange('customerEmail')}
+              className="mt-1.5 h-10 border-slate-200"
+            />
+          </div>
 
-        <div>
-          <Label htmlFor="phone" className="text-xs font-bold text-slate-700">Teléfono *</Label>
-          <Input
-            id="phone"
-            placeholder="+56 9 1234 5678"
-            value={state.customerPhone}
-            onChange={handleInputChange('customerPhone')}
-            className="mt-1.5 h-10 border-slate-200"
-            required
-          />
+          <div>
+            <Label htmlFor="phone" className="text-xs font-bold text-slate-700">Teléfono *</Label>
+            <Input
+              id="phone"
+              placeholder="+56 9 1234 5678"
+              value={state.customerPhone}
+              onChange={handleInputChange('customerPhone')}
+              className="mt-1.5 h-10 border-slate-200"
+              required
+            />
+          </div>
         </div>
-      </div>
         <div>
           <Label htmlFor="notes" className="text-xs font-bold text-slate-700">Notas adicionales</Label>
           <textarea
@@ -683,8 +683,8 @@ export const BookingSystemMVP: React.FC = () => {
                           {summary.duration}
                         </Badge>
                         <p className={`text-[9px] font-bold uppercase tracking-tight ${summary.serviceName.toLowerCase().includes('express') ? 'text-amber-600' : 'text-emerald-600'}`}>
-                          {summary.serviceName.toLowerCase().includes('express') 
-                            ? 'Tarifa express no reembolsable' 
+                          {summary.serviceName.toLowerCase().includes('express')
+                            ? 'Tarifa express no reembolsable'
                             : 'Monto abonable a reparación'}
                         </p>
                       </div>
@@ -822,9 +822,10 @@ export const BookingSystemMVP: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50/50 py-8 px-4 sm:px-6 flex flex-col items-center">
       <div className="w-full max-w-4xl mx-auto space-y-6">
-        {/* Step indicator */}
+        {/* Header with Logo and Step indicator */}
         {!bookingConfirmed && (
-          <div className="flex justify-end px-2">
+          <div className="flex justify-between items-center px-4 md:px-2">
+            <img src="/powerfix-negro.png" alt="Powerfix Logo" className="h-5 sm:h-4 w-auto" />
             {renderStepIndicator()}
           </div>
         )}
