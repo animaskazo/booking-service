@@ -63,6 +63,7 @@ serve(async (req) => {
       slotEnd,
       notes,
       phone,
+      rut,
     } = body;
 
     if (!amount || !customerEmail || !serviceName) {
@@ -96,6 +97,7 @@ serve(async (req) => {
         customer_name: customerName,
         customer_email: customerEmail,
         customer_phone: phone ?? "",
+        customer_rut: rut ?? "",
         start_time: slotStart,
         end_time: slotEnd,
         notes: notes ?? "",

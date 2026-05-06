@@ -9,6 +9,7 @@ interface AppointmentData {
   service_id: string;
   start_time: string;
   end_time: string;
+  service_name?: string;
   flow_commerce_order?: string | null;
   flow_token?: string | null;
 }

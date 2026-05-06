@@ -16,7 +16,9 @@ import {
   validateAppointment,
   getSummaryInfo,
   getAvailableDates,
+  prepareAppointmentData,
   ServiceWithAvailability,
+  formatRut,
 } from '../lib/utils-booking';
 import {
   useServices,
@@ -25,6 +27,7 @@ import {
   checkSlotAvailability,
   useBusinessSettings,
   createFlowPayment,
+  useCreateAppointment,
 } from '../lib/supabase-client';
 
 import { Button } from '@/components/ui/button';
@@ -49,6 +52,7 @@ interface BookingState {
   customerName: string;
   customerEmail: string;
   customerPhone: string;
+  customerRut: string;
   notes: string;
   errors: string[];
 }
@@ -66,6 +70,7 @@ export const BookingSystemMVP: React.FC = () => {
     customerName: '',
     customerEmail: '',
     customerPhone: '',
+    customerRut: '',
     notes: '',
     errors: [],
   });
@@ -74,6 +79,9 @@ export const BookingSystemMVP: React.FC = () => {
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [shortId, setShortId] = useState<string | null>(null);
   const [isPaying, setIsPaying] = useState(false);
+
+  // Mutations
+  const createAppointmentMutation = useCreateAppointment();
 
   // Queries
   const { data: services = [], isLoading: servicesLoading } = useServices();
@@ -165,9 +173,16 @@ export const BookingSystemMVP: React.FC = () => {
   const handleInputChange = (field: keyof Omit<BookingState, 'selectedService' | 'selectedDate' | 'selectedSlot' | 'errors'>) => (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
+    let value = e.target.value;
+    
+    // Formateo especial para RUT
+    if (field === 'customerRut') {
+      value = formatRut(value);
+    }
+
     setState((prev) => ({
       ...prev,
-      [field]: e.target.value,
+      [field]: value,
     }));
   };
 
@@ -185,6 +200,7 @@ export const BookingSystemMVP: React.FC = () => {
       state.customerName,
       state.customerEmail,
       state.customerPhone,
+      state.customerRut,
       state.selectedSlot.start,
       state.selectedSlot.end
     );
@@ -218,26 +234,55 @@ export const BookingSystemMVP: React.FC = () => {
         return;
       }
 
-      // Iniciar pago en Flow
-      const { url } = await createFlowPayment({
-        serviceId: state.selectedService.id,
-        serviceName: state.selectedService.name,
-        amount: state.selectedService.price,
-        customerEmail: state.customerEmail,
-        customerName: state.customerName,
-        slotStart: state.selectedSlot.start.toISOString(),
-        slotEnd: state.selectedSlot.end.toISOString(),
-        notes: state.notes || undefined,
-        phone: state.customerPhone || undefined,
-      });
+      // Iniciar pago en Flow o agendar directamente si es gratis
+      if (state.selectedService.price > 0) {
+        const { url } = await createFlowPayment({
+          serviceId: state.selectedService.id,
+          serviceName: state.selectedService.name,
+          amount: state.selectedService.price,
+          customerEmail: state.customerEmail,
+          customerName: state.customerName,
+          slotStart: state.selectedSlot.start.toISOString(),
+          slotEnd: state.selectedSlot.end.toISOString(),
+          notes: state.notes || undefined,
+          phone: state.customerPhone || undefined,
+          rut: state.customerRut || undefined,
+        });
 
-      // Redirigir a Flow — el usuario sale del sitio
-      window.location.href = url;
+        // Redirigir a Flow — el usuario sale del sitio
+        window.location.href = url;
+      } else {
+        // Agendamiento GRATIS directo
+        const appointmentData = prepareAppointmentData(
+          state.selectedService.id,
+          state.customerName,
+          state.customerEmail,
+          state.customerPhone,
+          state.customerRut,
+          state.selectedSlot.start,
+          state.selectedSlot.end,
+          state.notes,
+          state.selectedService.user_id
+        );
+
+        const result = await createAppointmentMutation.mutateAsync({
+          ...appointmentData,
+          status: 'confirmed', // Marcar como confirmada de inmediato
+          paid: true,
+          paid_amount: 0
+        } as any);
+
+        if (result) {
+          setShortId(result.short_id);
+          setBookingConfirmed(true);
+        }
+        setIsPaying(false);
+      }
     } catch (error: any) {
       setIsPaying(false);
       setState((prev) => ({
         ...prev,
-        errors: [error.message || 'Error al iniciar el pago. Intenta nuevamente.'],
+        errors: [error.message || 'Error al procesar la reserva. Intenta nuevamente.'],
       }));
     }
   };
@@ -250,6 +295,7 @@ export const BookingSystemMVP: React.FC = () => {
       customerName: '',
       customerEmail: '',
       customerPhone: '',
+      customerRut: '',
       notes: '',
       errors: [],
     });
@@ -521,13 +567,16 @@ export const BookingSystemMVP: React.FC = () => {
         <div className="text-right">
           <p className="text-lg font-bold text-slate-900">{formatPrice(state.selectedService?.price || 0)}</p>
           <p className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">Total a pagar</p>
-          <p className="text-[10px] text-emerald-600 font-bold mt-1 text-right">
-            ✓ Este valor se abonará a la reparación.
+          <p className={`text-[10px] font-bold mt-1 text-right ${state.selectedService?.name.toLowerCase().includes('express') ? 'text-amber-600' : 'text-emerald-600'}`}>
+            {state.selectedService?.name.toLowerCase().includes('express') 
+              ? '⚠ Servicio Express: Este valor NO se abona a la reparación.' 
+              : '✓ Este valor se abonará a la reparación.'}
           </p>
         </div>
       </div>
 
       <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="name" className="text-xs font-bold text-slate-700">Nombre completo *</Label>
           <Input
@@ -539,6 +588,19 @@ export const BookingSystemMVP: React.FC = () => {
           />
         </div>
 
+        <div>
+          <Label htmlFor="rut" className="text-xs font-bold text-slate-700">RUT *</Label>
+          <Input
+            id="rut"
+            placeholder="12345678-k"
+            value={state.customerRut}
+            onChange={handleInputChange('customerRut')}
+            className="mt-1.5 h-10 border-slate-200"
+            required
+          />
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="email" className="text-xs font-bold text-slate-700">Email *</Label>
           <Input
@@ -562,7 +624,7 @@ export const BookingSystemMVP: React.FC = () => {
             required
           />
         </div>
-
+      </div>
         <div>
           <Label htmlFor="notes" className="text-xs font-bold text-slate-700">Notas adicionales</Label>
           <textarea
@@ -596,68 +658,85 @@ export const BookingSystemMVP: React.FC = () => {
       : null;
 
     return (
-      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 min-h-[500px] flex flex-col items-center justify-center">
-        <div className="max-w-md w-full flex-1 flex flex-col justify-between">
-          <div>
+      <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 min-h-[500px] flex flex-col items-center justify-center py-4">
+        <div className="max-w-md w-full flex-1 flex flex-col">
+          <div className="flex-1">
             {/* Header Uber Style */}
-            <div className="text-center space-y-2 pb-4 border-b border-slate-100 mb-6 mt-0 animate-in fade-in flex flex-col items-center">
-              <CheckCircle2 className="w-8 h-8 text-emerald-500 mb-1" />
-              <h2 className="text-xl font-black tracking-tight text-slate-900 uppercase">¡Reserva Lista!</h2>
-              <p className="text-slate-500 text-xs font-bold">Gracias por tu preferencia, {state.customerName.split(' ')[0]}</p>
+            <div className="text-center space-y-3 pb-8 mb-8 border-b border-slate-100 flex flex-col items-center">
+              <div className="w-16 h-16 bg-emerald-50 rounded-full flex items-center justify-center mb-2">
+                <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+              </div>
+              <h2 className="text-2xl font-black tracking-tighter text-slate-900 uppercase">¡Reserva Confirmada!</h2>
+              <p className="text-slate-500 text-sm font-medium">Hemos reservado tu espacio, {state.customerName.split(' ')[0]}</p>
             </div>
 
             {summary && (
-              <div className="space-y-6 px-2">
+              <div className="space-y-8 px-2">
                 {/* Main Info Section */}
                 <div className="space-y-6">
-                  <div className="flex justify-between items-start border-b pb-6">
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div className="space-y-1">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Servicio</p>
-                      <p className="text-xl font-bold text-slate-900">{summary.serviceName}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: summary.serviceColor }} />
-                        <span className="text-xs font-medium text-slate-500">{summary.duration} de sesión</span>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Servicio solicitado</p>
+                      <p className="text-xl font-bold text-slate-900 leading-tight">{summary.serviceName}</p>
+                      <div className="flex flex-col gap-1.5 mt-1">
+                        <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-bold text-[10px] px-2 py-0.5 w-fit">
+                          {summary.duration}
+                        </Badge>
+                        <p className={`text-[9px] font-bold uppercase tracking-tight ${summary.serviceName.toLowerCase().includes('express') ? 'text-amber-600' : 'text-emerald-600'}`}>
+                          {summary.serviceName.toLowerCase().includes('express') 
+                            ? 'Tarifa express no reembolsable' 
+                            : 'Monto abonable a reparación'}
+                        </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total</p>
+                    <div className="sm:text-right bg-slate-50 p-3 rounded-2xl border border-slate-100 min-w-[100px]">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total</p>
                       <p className="text-xl font-black text-slate-900 tracking-tighter">{summary.price}</p>
                     </div>
                   </div>
 
-                  {/* Date, Time & ID Section */}
-                  <div className="grid grid-cols-3 gap-4 border-b pb-6 text-center">
-                    <div className="space-y-1 border-r border-slate-100">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fecha</p>
-                      <p className="text-xs font-bold text-slate-900 capitalize">{summary.date}</p>
+                  {/* Details Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 py-6 border-y border-slate-100">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <CalendarIcon className="w-4 h-4 text-slate-400" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fecha</p>
+                        <p className="text-sm font-bold text-slate-900 capitalize">{summary.date}</p>
+                      </div>
                     </div>
-                    <div className="space-y-1 border-r border-slate-100">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Horario</p>
-                      <p className="text-xs font-bold text-slate-900">{summary.time}</p>
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-slate-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Clock className="w-4 h-4 text-slate-400" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Horario</p>
+                        <p className="text-sm font-bold text-slate-900">{summary.time}</p>
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">ID Reserva</p>
-                      <p className="text-xs font-black text-slate-900 font-mono tracking-wider uppercase">{shortId}</p>
+                  </div>
+
+                  {/* ID Section */}
+                  <div className="flex justify-between items-center bg-slate-900 text-white p-4 rounded-2xl shadow-lg shadow-slate-200">
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">ID de Reserva</p>
+                      <p className="text-lg font-black font-mono tracking-widest">{shortId}</p>
+                    </div>
+                    <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                     </div>
                   </div>
                 </div>
 
-                {/* Bottom Message */}
-                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100 text-center">
-                  <p className="text-xs text-slate-600 font-medium">Hemos enviado el comprobante a tu correo: <span className="font-bold text-slate-900">{state.customerEmail}</span></p>
+                {/* Email Confirmation */}
+                <div className="text-center pt-4">
+                  <p className="text-xs text-slate-400 font-medium">
+                    Hemos enviado los detalles a <span className="text-slate-900 font-bold">{state.customerEmail}</span>
+                  </p>
                 </div>
               </div>
             )}
-          </div>
-
-          {/* Uber-like Button */}
-          <div className="sticky bottom-0 -mx-6 -mb-10 mt-auto pt-6 pb-4 px-6 bg-white border-t border-slate-100 z-30 w-[calc(100%+3rem)]">
-            <Button
-              onClick={handleReset}
-              className="w-full bg-slate-900 hover:bg-slate-800 text-white h-10 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95"
-            >
-              VOLVER AL INICIO
-            </Button>
           </div>
         </div>
       </div>
@@ -725,12 +804,14 @@ export const BookingSystemMVP: React.FC = () => {
           </Button>
           <Button
             onClick={handleConfirmBooking}
-            disabled={!state.customerName || !state.customerEmail || !state.customerPhone || isPaying}
+            disabled={!state.customerName || !state.customerEmail || !state.customerPhone || !state.customerRut || isPaying}
             className="px-10 h-10 bg-slate-900 hover:bg-slate-800 text-white font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 disabled:opacity-30"
           >
             {isPaying ? (
-              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />REDIRIGIENDO...</>
-            ) : 'PAGAR PARA RESERVAR'}
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{state.selectedService?.price === 0 ? 'AGENDANDO...' : 'REDIRIGIENDO...'}</>
+            ) : (
+              state.selectedService?.price === 0 ? 'CONFIRMAR Y AGENDAR' : 'PAGAR PARA RESERVAR'
+            )}
           </Button>
         </div>
       );
@@ -739,30 +820,29 @@ export const BookingSystemMVP: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white py-8 px-4 sm:px-6 flex items-center justify-center">
-      <div className="w-full max-w-4xl mx-auto">
-        {/* Main Card: flex-col with fixed footer */}
-        <Card className="shadow-xl border-slate-200/60 relative rounded-3xl bg-white h-[700px] flex flex-col overflow-hidden">
-          {/* Step indicator */}
-          {!bookingConfirmed && (
-            <div className="absolute top-5 right-6 z-20">
-              {renderStepIndicator()}
-            </div>
-          )}
+    <div className="min-h-screen bg-slate-50/50 py-8 px-4 sm:px-6 flex flex-col items-center">
+      <div className="w-full max-w-4xl mx-auto space-y-6">
+        {/* Step indicator */}
+        {!bookingConfirmed && (
+          <div className="flex justify-end px-2">
+            {renderStepIndicator()}
+          </div>
+        )}
 
-          {/* Content area — scrollable, takes all remaining space */}
-          <div className="flex-1 overflow-y-auto px-6 sm:px-10 pt-12 pb-4">
+        {/* Content area — Natural flow */}
+        <div className="bg-white shadow-xl shadow-slate-200/50 rounded-[2.5rem] border border-slate-100 overflow-hidden">
+          <div className="px-6 sm:px-12 pt-12 pb-8">
             {!bookingConfirmed && currentStep === 'service' && renderStepService()}
             {!bookingConfirmed && currentStep === 'date' && renderStepDateTime()}
             {!bookingConfirmed && currentStep === 'details' && renderStepDetails()}
             {bookingConfirmed && renderStepConfirmation()}
           </div>
 
-          {/* Footer — always at the bottom, never scrolls */}
-          <div className="flex-shrink-0 px-6 sm:px-10 py-4 border-t border-slate-100 bg-white">
+          {/* Footer — Bottom of content */}
+          <div className="px-6 sm:px-12 py-6 border-t border-slate-50 bg-slate-50/30">
             {renderFooter()}
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );

@@ -37,10 +37,15 @@ export default function TrackReservation() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gradient-to-b from-slate-100 via-white to-slate-100">
-      <Card className="w-full max-w-md p-6 space-y-4 shadow-xl">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-slate-100 via-white to-slate-100 p-4">
+      <img
+        src="/powerfix-negro.png"
+        alt="Powerfix Logo"
+        className="w-56 h-auto mb-12 animate-in fade-in slide-in-from-top-4 duration-700"
+      />
+      <Card className="w-full max-w-md p-4 space-y-4 shadow-xl">
         <CardHeader>
-          <CardTitle className="text-2xl font-black text-center">Seguimiento de Reserva</CardTitle>
+          <CardTitle className="text-2xl font-black text-center">Seguimiento de Ticket</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">

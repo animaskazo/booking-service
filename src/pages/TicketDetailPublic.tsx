@@ -5,7 +5,7 @@ import { useTicketById, useTicketFindings, useTicketHistory } from '../lib/supab
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { ArrowLeft, FileText, Package, Wrench } from 'lucide-react';
+import { AlertCircle, ArrowLeft, FileText, Package, Wrench } from 'lucide-react';
 import { formatPrice } from '../lib/utils-booking';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -73,7 +73,13 @@ export default function TicketDetailPublic() {
 
   return (
     <div className="min-h-screen bg-slate-50/50 py-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center animate-in fade-in duration-500">
-      <div className="w-full max-w-2xl space-y-6">
+      <div className="w-full max-w-2xl space-y-6 flex flex-col items-center">
+        <img 
+          src="/powerfix-negro.png" 
+          alt="Powerfix Logo" 
+          className="w-40 h-auto mb-2"
+        />
+
 
         {/* Botón Volver */}
         <div className="flex justify-start">
@@ -152,14 +158,28 @@ export default function TicketDetailPublic() {
                     <span>Subtotal Evaluado</span>
                     <span>{formatPrice(currentTicket.budget || currentTicket.total_budget || 0)}</span>
                   </div>
-                  <div className="flex justify-between items-center text-xs text-emerald-600 font-bold bg-emerald-50/50 px-2 py-1 rounded-lg">
-                    <span>Abono Realizado</span>
-                    <span>- {formatPrice(appointment.amount || 0)}</span>
-                  </div>
+                  
+                  {appointment.service_name?.toLowerCase().includes('express') ? (
+                    <div className="bg-amber-50 border border-amber-100 p-3 rounded-xl flex items-start gap-2.5 mt-2">
+                      <AlertCircle className="w-3.5 h-3.5 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <p className="text-[10px] text-amber-700 font-medium leading-relaxed">
+                        <span className="font-bold">Tarifa Express:</span> El abono de {formatPrice(appointment.amount || 0)} corresponde a la reserva prioritaria y no se deduce del total.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between items-center text-xs text-emerald-600 font-bold bg-emerald-50/50 px-2 py-1 rounded-lg">
+                      <span>Abono Realizado</span>
+                      <span>- {formatPrice(appointment.amount || 0)}</span>
+                    </div>
+                  )}
+
                   <div className="flex justify-between items-center pt-2.5 border-t border-slate-100 font-bold text-slate-900">
                     <span className="text-sm">Saldo Pendiente</span>
                     <span className="text-lg text-slate-950 font-black">
-                      {formatPrice(Math.max(0, (currentTicket.budget || currentTicket.total_budget || 0) - (appointment.amount || 0)))}
+                      {formatPrice(Math.max(0, 
+                        (currentTicket.budget || currentTicket.total_budget || 0) - 
+                        (appointment.service_name?.toLowerCase().includes('express') ? 0 : (appointment.amount || 0))
+                      ))}
                     </span>
                   </div>
                 </div>

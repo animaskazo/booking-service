@@ -32,7 +32,7 @@ serve(async (req) => {
     // Query appointment matching short_id and phone
     const { data: appointment, error: apptErr } = await supabase
       .from("appointments")
-      .select(`*, ticket: tickets(*)`)
+      .select(`*, ticket: tickets(*), service: services(name)`)
       .eq("short_id", short_id)
       .eq("customer_phone", phone)
       .single();
@@ -55,6 +55,7 @@ serve(async (req) => {
         service_id: appointment.service_id,
         start_time: appointment.start_time,
         end_time: appointment.end_time,
+        service_name: (appointment.service as any)?.name ?? "Servicio",
         flow_commerce_order: appointment.flow_commerce_order ?? null,
         flow_token: appointment.flow_token ?? null,
       },

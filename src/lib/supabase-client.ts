@@ -1,9 +1,4 @@
-// ============================================================================
-// SUPABASE CLIENT & REACT QUERY CONFIG
-// ============================================================================
-
 import { createClient } from '@supabase/supabase-js';
-import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
 import { ServiceWithAvailability, AppointmentRecord, AvailabilityRecord, prepareAppointmentData, TicketRecord, TicketFinding, TicketHistoryItem } from './utils-booking';
 
@@ -23,31 +18,11 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // ============================================================================
-// AUTH HOOKS
+// AUTH — Re-export from centralized AuthProvider (single subscription)
 // ============================================================================
 
-export const useAuth = () => {
-  const [session, setSession] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setLoading(false);
-    });
-
-    // Listen for changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
-
-  return { session, user: session?.user ?? null, loading };
-};
+import { useAuth } from './auth-provider';
+export { useAuth };
 
 // ============================================================================
 // TIPOS PARA SUPABASE
@@ -173,7 +148,12 @@ export const useAppointmentsByDateRange = (
 
       let query = supabase
         .from('appointments')
-        .select('*, service:services!inner(*)');
+        .select(`
+          id, short_id, customer_name, customer_email, customer_phone, 
+          start_time, end_time, status, notes, paid, paid_amount, 
+          flow_commerce_order, service_id,
+          service:services!inner(id, name, color, category, user_id, price, duration_min)
+        `);
 
       // Si es admin, filtrar solo sus citas
       if (user) {
@@ -185,7 +165,7 @@ export const useAppointmentsByDateRange = (
         .lte('start_time', endDate.toISOString());
 
       if (error) throw error;
-      return data as AppointmentRecord[];
+      return (data ?? []) as unknown as AppointmentRecord[];
     },
     enabled: !!startDate && !!endDate,
   });
@@ -660,11 +640,16 @@ export const useTickets = () => {
       if (!user) return [];
       const { data, error } = await supabase
         .from('tickets')
-        .select('*, appointment:appointments(*, service:services(*))')
+        .select(`
+          id, status, total_budget, description, created_at, updated_at, appointment_id,
+          appointment:appointments(id, short_id, customer_name, customer_email, customer_phone, start_time, end_time, status, paid, paid_amount,
+            service:services(id, name, color, price, category)
+          )
+        `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data as TicketRecord[];
+      return (data ?? []) as unknown as TicketRecord[];
     },
     enabled: !!user,
   });
@@ -688,7 +673,7 @@ export const useTicketById = (id: string | undefined) => {
       if (error) throw error;
       return data as TicketRecord | null;
     },
-    staleTime: 0,
+    staleTime: 1000 * 60 * 2, // 2 minutos
     enabled: !!user && !!id,
   });
 };
@@ -711,7 +696,7 @@ export const useTicketByAppointment = (appointmentId: string | undefined) => {
       if (error) throw error;
       return data as TicketRecord | null;
     },
-    staleTime: 0,
+    staleTime: 1000 * 60 * 2, // 2 minutos
     enabled: !!user && !!appointmentId,
   });
 };
@@ -877,6 +862,7 @@ export interface FlowPaymentInput {
   slotEnd: string;   // ISO string
   notes?: string;
   phone?: string;
+  rut?: string;
 }
 
 /**

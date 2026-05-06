@@ -12,12 +12,14 @@ import BookingReturn from './pages/BookingReturn';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { DialogProvider } from './components/ui/dialog-provider';
 import { PublicTrackingProvider } from './lib/public-tracking-context';
+import { AuthProvider } from './lib/auth-provider';
 import TrackReservation from './pages/TrackReservation';
 import ReservationStatus from './pages/ReservationStatus';
 import TicketDetailPublic from './pages/TicketDetailPublic';
 
 export default function App() {
   return (
+    <AuthProvider>
     <DialogProvider>
       <BrowserRouter>
         <Routes>
@@ -50,5 +52,6 @@ export default function App() {
         </Routes>
       </BrowserRouter>
     </DialogProvider>
+    </AuthProvider>
   );
 }

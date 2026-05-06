@@ -4,7 +4,7 @@ import { usePublicTracking } from '../lib/public-tracking-context';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
-import { Calendar, CheckCircle, Clock, CreditCard, Shield, Wrench } from 'lucide-react';
+import { AlertCircle, Calendar, CheckCircle, Clock, CreditCard, Shield, Wrench } from 'lucide-react';
 import { formatPrice } from '../lib/utils-booking';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -55,7 +55,12 @@ export default function ReservationStatus() {
       <div className="w-full max-w-xl space-y-6">
         
         {/* Encabezado */}
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-4 flex flex-col items-center">
+          <img 
+            src="/powerfix-negro.png" 
+            alt="Powerfix Logo" 
+            className="w-40 h-auto mb-2"
+          />
           <Badge variant="outline" className="bg-slate-900 text-white font-bold tracking-widest uppercase border-0 px-3 py-1 text-[10px]">
             Código #{appointment.short_id}
           </Badge>
@@ -136,6 +141,14 @@ export default function ReservationStatus() {
                   </Badge>
                 </div>
               </div>
+              {appointment.service_name?.toLowerCase().includes('express') && (
+                <div className="bg-amber-50 border border-amber-100 p-3 rounded-xl flex items-start gap-3 mt-2">
+                  <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <p className="text-[10px] text-amber-700 font-medium leading-relaxed">
+                    <span className="font-bold">Nota Express:</span> Al ser un servicio de agendamiento rápido, este monto corresponde a la tarifa de reserva prioritaria y <span className="font-bold underline">no se descuenta</span> del valor final de la reparación técnica.
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Botones de acción / Enlace al Ticket */}

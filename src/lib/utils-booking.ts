@@ -25,6 +25,7 @@ export interface ServiceWithAvailability {
   price: number;
   color: string;
   category: string;
+  user_id?: string;
 }
 
 export interface AppointmentRecord {
@@ -35,6 +36,7 @@ export interface AppointmentRecord {
   customer_name: string;
   customer_email: string;
   customer_phone?: string;
+  customer_rut?: string;
   status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
   short_id: string; // ID corto para el cliente
   paid?: boolean;
@@ -274,6 +276,7 @@ export const validateAppointment = (
   customerName: string,
   customerEmail: string,
   customerPhone: string,
+  customerRut: string,
   slotStart: Date,
   slotEnd: Date
 ): { valid: boolean; errors: string[] } => {
@@ -289,6 +292,10 @@ export const validateAppointment = (
 
   if (!customerPhone || customerPhone.trim().length < 8) {
     errors.push('El teléfono es obligatorio y debe tener al menos 8 dígitos.');
+  }
+
+  if (!customerRut || !validateRut(customerRut)) {
+    errors.push('El RUT no es válido.');
   }
 
   if (!isBefore(new Date(), slotStart)) {
@@ -311,6 +318,46 @@ export const validateAppointment = (
 export const isValidEmail = (email: string): boolean => {
   const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return regex.test(email);
+};
+
+/**
+ * Valida un RUT chileno
+ */
+export const validateRut = (rut: string): boolean => {
+  if (!/^[0-9]+-[0-9kK]{1}$/.test(rut)) return false;
+  const tmp = rut.split('-');
+  let digv = tmp[1];
+  const rutBody = tmp[0];
+  if (digv === 'K') digv = 'k';
+  return calculateDV(rutBody) === digv;
+};
+
+/**
+ * Calcula el dígito verificador de un RUT
+ */
+const calculateDV = (rut: string): string => {
+  let suma = 0;
+  let mul = 2;
+  for (let i = rut.length - 1; i >= 0; i--) {
+    suma = suma + parseInt(rut.charAt(i)) * mul;
+    if (mul === 7) mul = 2;
+    else mul++;
+  }
+  const res = 11 - (suma % 11);
+  if (res === 11) return '0';
+  if (res === 10) return 'k';
+  return res.toString();
+};
+
+/**
+ * Formatea un RUT mientras el usuario escribe
+ */
+export const formatRut = (rut: string): string => {
+  const newRut = rut.replace(/\./g, '').replace(/-/g, '').trim().toLowerCase();
+  if (newRut.length <= 1) return newRut;
+  const body = newRut.slice(0, -1);
+  const dv = newRut.slice(-1);
+  return `${body}-${dv}`;
 };
 
 /**
@@ -357,15 +404,19 @@ export const prepareAppointmentData = (
   customerName: string,
   customerEmail: string,
   customerPhone: string | undefined,
+  customerRut: string | undefined,
   slotStart: Date,
   slotEnd: Date,
-  notes?: string
+  notes?: string,
+  userId?: string
 ) => {
   return {
     service_id: serviceId,
+    user_id: userId || null,
     customer_name: customerName,
     customer_email: customerEmail,
     customer_phone: customerPhone || null,
+    customer_rut: customerRut || null,
     start_time: slotStart.toISOString(),
     end_time: slotEnd.toISOString(),
     status: 'pending' as 'pending' | 'confirmed' | 'cancelled' | 'completed',

@@ -1,11 +1,11 @@
 import React from 'react';
 import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
-import { 
-  Calendar, 
-  Settings, 
-  Briefcase, 
-  LogOut, 
-  Menu, 
+import {
+  Calendar,
+  Settings,
+  Briefcase,
+  LogOut,
+  Menu,
   X,
   ChevronRight,
   FileText
@@ -35,14 +35,12 @@ export default function AdminLayout() {
     <div className="min-h-screen bg-slate-50 flex">
       {/* Sidebar Desktop */}
       <aside className="hidden md:flex flex-col w-64 bg-slate-900 text-white border-r border-slate-800 shadow-xl">
-        <div className="p-6 flex items-center gap-3">
-          <div className="bg-white/10 p-2 rounded-xl">
-            <Calendar className="w-6 h-6 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight">BookingPro</h1>
-            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Admin Panel</p>
-          </div>
+        <div className="p-9">
+          <img
+            src="/powerfix-blanco.png"
+            alt="Powerfix Logo"
+            className="w-40 h-auto"
+          />
         </div>
 
         <nav className="flex-1 px-4 py-6 space-y-1">
@@ -54,8 +52,8 @@ export default function AdminLayout() {
                 to={item.path}
                 className={`
                   flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium group
-                  ${isActive 
-                    ? 'bg-white text-slate-900 shadow-lg shadow-white/5' 
+                  ${isActive
+                    ? 'bg-white text-slate-900 shadow-lg shadow-white/5'
                     : 'text-slate-400 hover:bg-white/5 hover:text-white'}
                 `}
               >
@@ -71,23 +69,24 @@ export default function AdminLayout() {
 
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 h-16 bg-slate-900 text-white flex items-center justify-between px-4 z-40 shadow-lg border-b border-slate-800">
-        <div className="flex items-center gap-2">
-          <div className="bg-white/10 p-1.5 rounded-lg">
-            <Calendar className="w-5 h-5 text-white" />
-          </div>
-          <span className="font-bold tracking-tight">BookingPro</span>
+        <div className="flex items-center">
+          <img
+            src="/powerfix-blanco.png"
+            alt="Powerfix Logo"
+            className="h-8 w-auto"
+          />
         </div>
-        
+
         <div className="flex items-center gap-2">
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             size="sm"
             className="text-slate-400 hover:text-red-400 p-2"
             onClick={handleLogout}
           >
             <LogOut className="w-5 h-5" />
           </Button>
-          <button 
+          <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             className="p-2 hover:bg-white/5 rounded-lg transition-colors"
           >
@@ -102,7 +101,7 @@ export default function AdminLayout() {
           {/* Mobile Menu Header */}
           <div className="px-6 py-6 border-b border-slate-800 flex items-center justify-between bg-white/5">
             <span className="text-white font-bold text-lg">Menú</span>
-            <button 
+            <button
               onClick={() => setIsMobileMenuOpen(false)}
               className="bg-slate-800 p-2 rounded-lg text-slate-400"
             >
@@ -120,8 +119,8 @@ export default function AdminLayout() {
                   onClick={() => setIsMobileMenuOpen(false)}
                   className={`
                     flex items-center gap-4 p-4 rounded-xl text-lg font-bold transition-all
-                    ${isActive 
-                      ? 'bg-white text-slate-900 shadow-xl' 
+                    ${isActive
+                      ? 'bg-white text-slate-900 shadow-xl'
                       : 'text-slate-400 hover:text-white hover:bg-white/5'}
                   `}
                 >
@@ -133,8 +132,8 @@ export default function AdminLayout() {
           </nav>
 
           <div className="p-6 mt-auto border-t border-slate-800 bg-slate-950/50">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               className="w-full justify-start text-red-400 hover:text-red-300 hover:bg-red-400/10 p-4 rounded-xl font-bold"
               onClick={handleLogout}
             >
@@ -156,8 +155,8 @@ export default function AdminLayout() {
           </div>
 
           <div className="flex items-center">
-            <Button 
-              variant="ghost" 
+            <Button
+              variant="ghost"
               size="sm"
               className="text-slate-500 hover:text-red-500 hover:bg-red-50 font-bold rounded-lg transition-all"
               onClick={handleLogout}

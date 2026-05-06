@@ -179,9 +179,11 @@ export default function AdminAppointments() {
     try {
       const result = await createAppointmentMutation.mutateAsync({
         service_id: serviceId,
+        user_id: service.user_id || null,
         customer_name: formData.get('name') as string,
         customer_email: formData.get('email') as string,
         customer_phone: formData.get('phone') as string,
+        customer_rut: null,
         start_time: startTime.toISOString(),
         end_time: endTime.toISOString(),
         status: 'confirmed' as 'pending' | 'confirmed' | 'cancelled' | 'completed',
