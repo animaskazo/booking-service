@@ -7,6 +7,7 @@ import AdminLayout from './components/AdminLayout';
 import AdminSettings from './pages/AdminSettings';
 import AdminTickets from './pages/AdminTickets';
 import AdminTicketDetail from './pages/AdminTicketDetail';
+import AdminSpareParts from './pages/AdminSpareParts';
 import TicketMobileUpload from './pages/TicketMobileUpload';
 import BookingReturn from './pages/BookingReturn';
 import { ProtectedRoute } from './components/ProtectedRoute';
@@ -48,6 +49,7 @@ export default function App() {
             <Route path="settings" element={<AdminSettings />} />
             <Route path="tickets" element={<AdminTickets />} />
             <Route path="tickets/:id" element={<AdminTicketDetail />} />
+            <Route path="spare-parts" element={<AdminSpareParts />} />
           </Route>
         </Routes>
       </BrowserRouter>

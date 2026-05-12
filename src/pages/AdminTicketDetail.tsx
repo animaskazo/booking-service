@@ -8,6 +8,10 @@ import {
   useDeleteTicketFinding, 
   useTicketHistory, 
   useAddTicketHistory,
+  useTicketParts,
+  useAddTicketPart,
+  useUpdateTicketPart,
+  useDeleteTicketPart,
   sendBudgetEmail,
   supabase
 } from '../lib/supabase-client';
@@ -35,11 +39,20 @@ import {
   Printer,
   Save,
   Wrench,
-  Loader2
+  Loader2,
+  Package,
+  Truck,
+  ExternalLink
 } from 'lucide-react';
-import { formatPrice } from '../lib/utils-booking';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { formatPrice } from '../lib/utils-booking';
+const PART_STATUS = {
+  pending: { label: 'Pendiente de compra', color: 'bg-amber-100 text-amber-700 border-amber-200' },
+  purchased: { label: 'Comprado', color: 'bg-blue-100 text-blue-700 border-blue-200' },
+  shipped: { label: 'En camino', color: 'bg-purple-100 text-purple-700 border-purple-200' },
+  received: { label: 'Recibido', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+};
 
 export default function AdminTicketDetail() {
   const { id } = useParams<{ id: string }>();
@@ -48,11 +61,15 @@ export default function AdminTicketDetail() {
   const { data: ticket, isLoading: isLoadingTicket } = useTicketById(id);
   const { data: findings = [] } = useTicketFindings(id);
   const { data: history = [] } = useTicketHistory(id);
+  const { data: ticketParts = [] } = useTicketParts(id);
   
   const updateTicketMutation = useUpdateTicket();
   const addFindingMutation = useAddTicketFinding();
   const deleteFindingMutation = useDeleteTicketFinding();
   const addHistoryMutation = useAddTicketHistory();
+  const addPartMutation = useAddTicketPart();
+  const updatePartMutation = useUpdateTicketPart();
+  const deletePartMutation = useDeleteTicketPart();
 
   const [newFinding, setNewFinding] = useState({ description: '', price: '' });
   const [newHistory, setNewHistory] = useState({ description: '', evidence_url: '' });
@@ -60,7 +77,8 @@ export default function AdminTicketDetail() {
   const [isSending, setIsSending] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [customEmail, setCustomEmail] = useState('');
-  const [activeView, setActiveView] = useState<'presupuesto' | 'reparacion'>('presupuesto');
+  const [activeView, setActiveView] = useState<'presupuesto' | 'reparacion' | 'repuestos'>('presupuesto');
+  const [newPart, setNewPart] = useState({ name: '', value: '', tracking: '', link: '', status: 'pending' });
   const [isUploadingLocal, setIsUploadingLocal] = useState(false);
   
   const { showAlert, showError } = useDialog();
@@ -154,6 +172,27 @@ export default function AdminTicketDetail() {
       evidence_url: newHistory.evidence_url || undefined
     });
     setNewHistory({ description: '', evidence_url: '' });
+  };
+  
+  const handleAddPart = async () => {
+    if (!newPart.name || !newPart.value || !id) return;
+    await addPartMutation.mutateAsync({
+      ticket_id: id,
+      name: newPart.name,
+      value: parseFloat(newPart.value),
+      tracking_number: newPart.tracking,
+      reference_link: newPart.link,
+      status: newPart.status
+    });
+    setNewPart({ name: '', value: '', tracking: '', link: '', status: 'pending' });
+  };
+
+  const handleUpdatePartStatus = async (partId: string, newStatus: string) => {
+    await updatePartMutation.mutateAsync({ id: partId, status: newStatus });
+  };
+
+  const handleDeletePart = async (partId: string) => {
+    await deletePartMutation.mutateAsync(partId);
   };
 
   const getStatusLabel = (status: string) => {
@@ -318,6 +357,7 @@ export default function AdminTicketDetail() {
           {[
             { key: 'evaluating_quoted', label: 'Evaluación y presupuesto' },
             { key: 'repairing', label: 'Reparación' },
+            { key: 'repuestos', label: 'Repuestos' },
             { key: 'ready', label: 'Retiro' },
             { key: 'closed', label: 'Retirado' }
           ].map((step, index) => {
@@ -326,8 +366,8 @@ export default function AdminTicketDetail() {
               quoted: 0,
               accepted: 1,
               repairing: 1,
-              ready: 2,
-              closed: 3,
+              ready: 3,
+              closed: 4,
               rejected: -1
             };
             const currentStepIndex = stepsMap[ticket.status] ?? 0;
@@ -341,6 +381,8 @@ export default function AdminTicketDetail() {
                 onClick={() => {
                   if (step.key === 'evaluating_quoted') {
                     setActiveView('presupuesto');
+                  } else if (step.key === 'repuestos') {
+                    setActiveView('repuestos');
                   } else {
                     setActiveView('reparacion');
                   }
@@ -600,6 +642,155 @@ export default function AdminTicketDetail() {
                   ))}
                   {history.length === 0 && (
                     <div className="text-center py-8 text-slate-400 italic text-sm">No hay avances registrados aún.</div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Phase 3: Spare Parts Tracking */}
+          {activeView === 'repuestos' && (
+            <Card className="border-slate-200 overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-emerald-100 p-2 rounded-lg">
+                      <Package className="w-5 h-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">Seguimiento de Repuestos</CardTitle>
+                      <CardDescription>Control de partes y componentes para esta reparación</CardDescription>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+                
+                {/* Add Part Form */}
+                {['evaluating', 'quoted', 'accepted', 'repairing'].includes(ticket.status) && (
+                  <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nombre Repuesto</label>
+                        <Input 
+                          placeholder="Ej: Batería Original" 
+                          value={newPart.name}
+                          onChange={(e) => setNewPart({...newPart, name: e.target.value})}
+                          className="bg-white border-slate-200 h-11"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor Costo</label>
+                        <Input 
+                          type="number"
+                          placeholder="0" 
+                          value={newPart.value}
+                          onChange={(e) => setNewPart({...newPart, value: e.target.value})}
+                          className="bg-white border-slate-200 h-11"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nº Seguimiento</label>
+                        <Input 
+                          placeholder="Tracking ID" 
+                          value={newPart.tracking}
+                          onChange={(e) => setNewPart({...newPart, tracking: e.target.value})}
+                          className="bg-white border-slate-200 h-11"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Link Referencia</label>
+                        <Input 
+                          placeholder="https://..." 
+                          value={newPart.link}
+                          onChange={(e) => setNewPart({...newPart, link: e.target.value})}
+                          className="bg-white border-slate-200 h-11"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado Inicial</label>
+                        <select 
+                          className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium focus:ring-2 focus:ring-slate-900 outline-none transition-all"
+                          value={newPart.status}
+                          onChange={(e) => setNewPart({...newPart, status: e.target.value})}
+                        >
+                          {Object.entries(PART_STATUS).map(([key, value]) => (
+                            <option key={key} value={key}>{value.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <Button 
+                      onClick={handleAddPart} 
+                      className="w-full bg-slate-900 hover:bg-slate-800 gap-2 font-bold uppercase text-xs tracking-widest h-12 rounded-xl"
+                      disabled={!newPart.name || !newPart.value}
+                    >
+                      <Plus className="w-4 h-4" /> AGREGAR REPUESTO
+                    </Button>
+                  </div>
+                )}
+
+                {/* Parts List */}
+                <div className="space-y-4">
+                  {ticketParts.map((part) => (
+                    <div key={part.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl border border-slate-100 bg-white hover:shadow-sm transition-all">
+                      <div className="flex items-start gap-4">
+                        <div className="bg-slate-100 p-2.5 rounded-xl">
+                          <Package className="w-5 h-5 text-slate-400" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge className={`${PART_STATUS[part.status as keyof typeof PART_STATUS]?.color || ''} border shadow-none font-bold uppercase text-[9px]`}>
+                              {PART_STATUS[part.status as keyof typeof PART_STATUS]?.label || part.status}
+                            </Badge>
+                          </div>
+                          <h4 className="font-bold text-slate-900">{part.name}</h4>
+                          <div className="flex flex-wrap gap-3 mt-1">
+                            <span className="text-xs font-black text-emerald-600">{formatPrice(part.value)}</span>
+                            {part.tracking_number && (
+                              <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1 uppercase tracking-widest">
+                                <Truck className="w-3 h-3" /> {part.tracking_number}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex gap-1 mt-3">
+                            {Object.entries(PART_STATUS).map(([key, value]) => (
+                              <button
+                                key={key}
+                                onClick={() => handleUpdatePartStatus(part.id, key)}
+                                className={`px-2 py-1 rounded-md text-[8px] font-bold border transition-all ${part.status === key ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
+                              >
+                                {key === 'pending' ? 'Pendiente' : key === 'purchased' ? 'Comprado' : key === 'shipped' ? 'En camino' : 'Recibido'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-slate-50">
+                        {part.reference_link && (
+                          <Button variant="outline" size="sm" asChild className="h-9 rounded-lg border-slate-200 gap-2 text-xs font-bold">
+                            <a href={part.reference_link} target="_blank" rel="noreferrer">
+                              <ExternalLink className="w-3.5 h-3.5" /> Ver Link
+                            </a>
+                          </Button>
+                        )}
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          className="h-9 w-9 text-slate-300 hover:text-red-500 hover:bg-red-50"
+                          onClick={() => handleDeletePart(part.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {ticketParts.length === 0 && (
+                    <div className="text-center py-12 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                      <Package className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+                      <p className="text-slate-400 text-sm font-medium italic">No hay repuestos registrados para este ticket.</p>
+                    </div>
                   )}
                 </div>
               </CardContent>

@@ -78,6 +78,17 @@ export interface TicketFinding {
   created_at: string;
 }
 
+export interface TicketPart {
+  id: string;
+  ticket_id: string;
+  name: string;
+  value: number;
+  tracking_number?: string;
+  reference_link?: string;
+  status: 'pending' | 'purchased' | 'shipped' | 'received';
+  created_at: string;
+}
+
 export interface TicketHistoryItem {
   id: string;
   ticket_id: string;

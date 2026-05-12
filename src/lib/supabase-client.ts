@@ -57,6 +57,10 @@ export type Database = {
         Row: any;
         Insert: any;
       };
+      ticket_parts: {
+        Row: any;
+        Insert: any;
+      };
     };
   };
 };
@@ -787,6 +791,115 @@ export const useAddTicketFinding = () => {
     },
     onSuccess: (_, finding) => {
       queryClient.invalidateQueries({ queryKey: ['ticket_findings', finding.ticket_id] });
+    },
+  });
+};
+
+/**
+ * Obtiene todos los repuestos (global para admin)
+ */
+export const useAllTicketParts = () => {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['ticket_parts', 'all', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('ticket_parts')
+        .select(`
+          *,
+          ticket:tickets!inner(
+            id,
+            appointment:appointments(customer_name, short_id)
+          )
+        `)
+        .eq('ticket.user_id', user.id)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+    enabled: !!user,
+  });
+};
+
+/**
+ * Obtiene los repuestos de un ticket específico
+ */
+export const useTicketParts = (ticketId: string | undefined) => {
+  return useQuery({
+    queryKey: ['ticket_parts', ticketId],
+    queryFn: async () => {
+      if (!ticketId) return [];
+      const { data, error } = await supabase
+        .from('ticket_parts')
+        .select('*')
+        .eq('ticket_id', ticketId)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data as any[];
+    },
+    enabled: !!ticketId,
+  });
+};
+
+/**
+ * Agrega un repuesto a un ticket
+ */
+export const useAddTicketPart = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (part: any) => {
+      const { data, error } = await supabase
+        .from('ticket_parts')
+        .insert([part])
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, part) => {
+      queryClient.invalidateQueries({ queryKey: ['ticket_parts'] });
+    },
+  });
+};
+
+/**
+ * Actualiza un repuesto (ej: cambiar estado)
+ */
+export const useUpdateTicketPart = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: { id: string; [key: string]: any }) => {
+      const { data, error } = await supabase
+        .from('ticket_parts')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ticket_parts'] });
+    },
+  });
+};
+
+/**
+ * Elimina un repuesto
+ */
+export const useDeleteTicketPart = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from('ticket_parts')
+        .delete()
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ticket_parts'] });
     },
   });
 };
