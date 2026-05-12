@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useTickets } from '../lib/supabase-client';
 import { formatPrice } from '../lib/utils-booking';
 import { Badge } from '@/components/ui/badge';

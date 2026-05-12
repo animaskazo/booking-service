@@ -754,7 +754,7 @@ export default function AdminTicketDetail() {
                             )}
                           </div>
                           <div className="flex gap-1 mt-3">
-                            {Object.entries(PART_STATUS).map(([key, value]) => (
+                            {Object.entries(PART_STATUS).map(([key, _]) => (
                               <button
                                 key={key}
                                 onClick={() => handleUpdatePartStatus(part.id, key)}

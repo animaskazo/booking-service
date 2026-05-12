@@ -2,12 +2,9 @@ import React, { useState } from 'react';
 import {
   Plus,
   Trash2,
-  ExternalLink,
   Package,
   Search,
-  Filter,
   Loader2,
-  Tag,
   Link as LinkIcon,
   Truck,
   Copy,
@@ -26,7 +23,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDialog } from '@/components/ui/dialog-provider';
 
 const PART_STATUS = {

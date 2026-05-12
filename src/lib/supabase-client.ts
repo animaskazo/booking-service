@@ -857,7 +857,7 @@ export const useAddTicketPart = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: (_, part) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['ticket_parts'] });
     },
   });
