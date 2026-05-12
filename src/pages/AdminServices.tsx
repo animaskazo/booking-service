@@ -173,7 +173,7 @@ export default function AdminServices() {
         <div className="lg:col-span-8">
           {isAddingService ? (
             <Card className="border-2 border-slate-900 shadow-xl overflow-hidden">
-              <CardHeader className="bg-slate-50 border-b">
+              <CardHeader className="bg-white border-b">
                 <div className="flex justify-between items-center">
                   <CardTitle>Añadir Nuevo Servicio</CardTitle>
                   <Button variant="ghost" size="icon" onClick={() => setIsAddingService(false)}>
@@ -213,7 +213,7 @@ export default function AdminServices() {
                     </div>
                     <div className="space-y-2 col-span-1">
                       <Label htmlFor="duration" className="opacity-50">Duración Global (min)</Label>
-                      <Input id="duration" name="duration" type="number" readOnly value={settings.slot_interval} className="bg-slate-50 text-slate-500 border-dashed" />
+                      <Input id="duration" name="duration" type="number" readOnly value={settings.slot_interval} className="bg-white text-slate-500 border-dashed" />
                     </div>
                   </div>
                   <p className="text-[10px] text-slate-500 font-medium">💡 Pon 0 para que figure como <strong className="text-emerald-600">Gratis</strong></p>
@@ -284,7 +284,7 @@ function ServiceDetailsSection({ service }: { service: ServiceWithAvailability }
               <CardDescription>Modifica los detalles del servicio seleccionado</CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="bg-slate-50">ID: {service.id.slice(0, 8)}</Badge>
+              <Badge variant="outline" className="bg-white">ID: {service.id.slice(0, 8)}</Badge>
             </div>
           </div>
         </CardHeader>
@@ -299,7 +299,7 @@ function ServiceDetailsSection({ service }: { service: ServiceWithAvailability }
                 <Label htmlFor="edit-color" className="text-slate-700 font-bold">Color Identificador</Label>
                 <div className="flex gap-3">
                   <Input id="edit-color" name="color" type="color" defaultValue={service.color} className="w-20 h-11 p-1" />
-                  <Input value={service.color} readOnly className="flex-1 h-11 bg-slate-50 text-slate-500 font-mono text-xs" />
+                  <Input value={service.color} readOnly className="flex-1 h-11 bg-white text-slate-500 font-mono text-xs" />
                 </div>
               </div>
               <div className="space-y-2 col-span-1 md:col-span-2">
@@ -328,7 +328,7 @@ function ServiceDetailsSection({ service }: { service: ServiceWithAvailability }
                 <Label htmlFor="edit-duration" className="text-slate-400 font-bold">Duración Global (fija)</Label>
                 <div className="relative">
                   <Clock className="absolute left-3 top-3 w-4 h-4 text-slate-300" />
-                  <Input id="edit-duration" name="duration" type="number" value={settings.slot_interval} readOnly className="pl-10 h-11 bg-slate-50 text-slate-400 border-dashed" />
+                  <Input id="edit-duration" name="duration" type="number" value={settings.slot_interval} readOnly className="pl-10 h-11 bg-white text-slate-400 border-dashed" />
                 </div>
               </div>
               <p className="text-[10px] text-slate-500 font-medium col-span-2">💡 Ingrese 0 para mostrar la etiqueta <strong className="text-emerald-600">Gratis</strong> al cliente</p>

@@ -820,7 +820,7 @@ export const BookingSystemMVP: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50/50 py-8 px-4 sm:px-6 flex flex-col items-center">
+    <div className="min-h-screen bg-white py-8 px-4 sm:px-6 flex flex-col items-center">
       <div className="w-full max-w-4xl mx-auto space-y-6">
         {/* Header with Logo and Step indicator */}
         {!bookingConfirmed && (
@@ -840,7 +840,7 @@ export const BookingSystemMVP: React.FC = () => {
           </div>
 
           {/* Footer — Bottom of content */}
-          <div className="px-6 sm:px-12 py-6 border-t border-slate-50 bg-slate-50/30">
+          <div className="px-6 sm:px-12 py-6 border-t border-slate-50 bg-white">
             {renderFooter()}
           </div>
         </div>

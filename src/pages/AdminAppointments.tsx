@@ -270,7 +270,7 @@ export default function AdminAppointments() {
 
           {/* Weekly/Daily Grid */}
           <div className="bg-white rounded-2xl border shadow-lg overflow-hidden flex flex-col">
-            <div className={`grid ${isMobile ? 'grid-cols-[60px_1fr]' : 'grid-cols-[80px_repeat(7,1fr)]'} divide-x border-b bg-slate-50/50`}>
+            <div className={`grid ${isMobile ? 'grid-cols-[60px_1fr]' : 'grid-cols-[80px_repeat(7,1fr)]'} divide-x border-b bg-white`}>
               <div className="p-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center flex items-center justify-center">Hora</div>
               {(isMobile ? [currentDate] : weekDays).map((day, i) => (
                 <div key={i} className={`p-4 text-center ${isSameDay(day, new Date()) ? 'bg-slate-900/5' : ''}`}>
@@ -285,7 +285,7 @@ export default function AdminAppointments() {
             <ScrollArea className="h-[70vh] md:h-[700px]">
               <div className={`grid ${isMobile ? 'grid-cols-[60px_1fr]' : 'grid-cols-[80px_repeat(7,1fr)]'} divide-x min-h-full`}>
                 {/* Hours Column */}
-                <div className="divide-y bg-slate-50/30">
+                <div className="divide-y bg-white">
                   {hoursArray.map((hour) => (
                     <div key={hour} className="h-24 md:h-32 p-2 text-[10px] font-bold text-slate-400 border-b relative flex items-start justify-center">
                       {hour.toString().padStart(2, '0')}:00
@@ -301,7 +301,7 @@ export default function AdminAppointments() {
                   const slotsPerHover = 60 / interval;
 
                   return (
-                    <div key={dayIdx} className={`divide-y relative min-h-full ${isToday ? 'bg-slate-50/40' : ''}`}>
+                    <div key={dayIdx} className={`divide-y relative min-h-full ${isToday ? 'bg-slate-50/10' : ''}`}>
                       {hoursArray.map((hour) => (
                         <div key={hour} className="h-24 md:h-32 border-b group relative divide-y divide-slate-100/30">
                           {/* Sub-slots within the hour */}
@@ -416,7 +416,7 @@ export default function AdminAppointments() {
           <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
-                <thead className="bg-slate-50 border-b">
+                <thead className="bg-white border-b">
                   <tr>
                     <th className="p-4 text-xs font-black text-slate-400 uppercase tracking-widest">ID</th>
                     <th className="p-4 text-xs font-black text-slate-400 uppercase tracking-widest">Cliente</th>
@@ -523,7 +523,7 @@ export default function AdminAppointments() {
           
           <div className="flex min-h-full items-center justify-center p-4">
             <Card className="relative z-10 w-full max-w-lg shadow-2xl overflow-hidden rounded-[32px] border border-slate-100 bg-white" onClick={(e) => e.stopPropagation()}>
-              <CardHeader className="bg-slate-50/50 border-b border-slate-100/60 pb-6">
+              <CardHeader className="bg-white border-b border-slate-100/60 pb-6">
               <div className="flex justify-between items-center">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
@@ -610,13 +610,13 @@ export default function AdminAppointments() {
                         name="notes"
                         placeholder="Agrega recordatorios o detalles especiales para esta cita..."
                         rows={3}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50/50 focus:bg-white p-4 text-sm outline-none focus:ring-2 focus:ring-slate-900 transition-all"
+                        className="w-full rounded-xl border border-slate-200 bg-white focus:bg-white p-4 text-sm outline-none focus:ring-2 focus:ring-slate-900 transition-all"
                       />
                     </div>
                   </div>
                 </div>
               </CardContent>
-              <div className="p-8 bg-slate-50 border-t flex flex-row-reverse gap-4">
+              <div className="p-8 bg-white border-t flex flex-row-reverse gap-4">
                 <Button
                   type="submit"
                   className="flex-1 bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95"
@@ -645,7 +645,7 @@ export default function AdminAppointments() {
           
           <div className="flex min-h-full items-center justify-center p-4">
             <Card className="relative z-10 w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 rounded-[32px] border border-slate-100 bg-white" onClick={(e) => e.stopPropagation()}>
-            <CardHeader className="bg-slate-50/50 border-b border-slate-100/60">
+            <CardHeader className="bg-white border-b border-slate-100/60">
               <div className="flex justify-between items-center">
                 <div>
                   <div className="flex items-center gap-2">
@@ -705,7 +705,7 @@ export default function AdminAppointments() {
                   </div>
 
                   {selectedApp.notes && (
-                    <div className="bg-slate-50 p-4 rounded-xl space-y-1 border border-slate-100/60">
+                    <div className="bg-white p-4 rounded-xl space-y-1 border border-slate-100/60">
                       <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Notas Internas</p>
                       <p className="text-xs text-slate-600 leading-relaxed italic">"{selectedApp.notes}"</p>
                     </div>
@@ -715,7 +715,7 @@ export default function AdminAppointments() {
                 {/* Columna Derecha: Ticket Técnico */}
                 <div className="space-y-4">
                   {existingTicket ? (
-                    <div className="bg-slate-50/80 border border-slate-100 rounded-[24px] p-5 space-y-4">
+                    <div className="bg-white border border-slate-100 rounded-[24px] p-5 space-y-4">
                       <div className="flex justify-between items-center border-b border-slate-200/60 pb-3">
                         <div>
                           <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Orden Técnica</p>

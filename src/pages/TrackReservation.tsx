@@ -37,7 +37,7 @@ export default function TrackReservation() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-slate-100 via-white to-slate-100 p-4">
+    <div className="flex flex-col items-center justify-center min-h-screen bg-white p-4">
       <img
         src="/powerfix-negro.png"
         alt="Powerfix Logo"

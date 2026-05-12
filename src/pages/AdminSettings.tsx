@@ -80,7 +80,7 @@ export default function AdminSettings() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
           <Card className="border-slate-200 shadow-sm overflow-hidden">
-            <CardHeader className="bg-slate-50/50 border-b">
+            <CardHeader className="bg-white border-b">
               <div className="flex justify-between items-center">
                 <div>
                   <CardTitle className="text-lg">Horario Laboral General</CardTitle>
@@ -96,7 +96,7 @@ export default function AdminSettings() {
             </CardHeader>
             <CardContent className="p-0">
               {showAdd && (
-                <div className="p-6 bg-slate-50 border-b animate-in fade-in slide-in-from-top-4">
+                <div className="p-6 bg-white border-b animate-in fade-in slide-in-from-top-4">
                   <form onSubmit={handleAddGlobalHours} className="space-y-6">
                     <div className="space-y-3">
                       <label className="text-sm font-bold text-slate-700">Días de la semana</label>
@@ -142,7 +142,7 @@ export default function AdminSettings() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-slate-100/50">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-px bg-slate-50">
                 {isLoading ? (
                   <div className="col-span-full p-8 text-center text-slate-400">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2" />
@@ -165,7 +165,7 @@ export default function AdminSettings() {
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {daySlots.map(slot => (
-                            <Badge key={slot.id} variant="secondary" className="bg-slate-50 border-slate-200 text-slate-700 pl-2 pr-1 py-1 flex items-center gap-1.5 transition-all duration-300 hover:bg-white hover:shadow-sm">
+                            <Badge key={slot.id} variant="secondary" className="bg-white border-slate-200 text-slate-700 pl-2 pr-1 py-1 flex items-center gap-1.5 transition-all duration-300 hover:bg-white hover:shadow-sm">
                               <span className="text-[10px] font-bold">{slot.start_time.slice(0, 5)} - {slot.end_time.slice(0, 5)}</span>
                               <button
                                 onClick={() => deleteAvailability.mutateAsync({ id: slot.id, serviceId: null })}
@@ -186,7 +186,7 @@ export default function AdminSettings() {
         </div>
         <div className="space-y-6">
           <Card className="border-slate-200 shadow-sm overflow-hidden bg-white">
-            <CardHeader className="bg-slate-50/50 border-b py-4">
+            <CardHeader className="bg-white border-b py-4">
               <CardTitle className="text-base font-black uppercase tracking-widest text-slate-400">Parámetros Globales</CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-8">
@@ -194,7 +194,7 @@ export default function AdminSettings() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                    <label className="text-xs font-black text-slate-900 uppercase tracking-widest">Intervalo (Min)</label>
-                   <Badge variant="outline" className="font-mono text-slate-900 bg-slate-50 border-slate-200 px-3">{settings.slot_interval} min</Badge>
+                   <Badge variant="outline" className="font-mono text-slate-900 bg-white border-slate-200 px-3">{settings.slot_interval} min</Badge>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {[15, 20, 30, 45, 60].map((duration) => (
@@ -257,7 +257,7 @@ export default function AdminSettings() {
                         type="time"
                         defaultValue={settings.lunch_end}
                         onBlur={(e) => updateSettings.mutate({ lunch_end: e.target.value })}
-                        className="w-full h-10 p-2 border border-slate-200 rounded-lg text-sm font-mono bg-slate-50/50 focus:bg-white outline-none focus:ring-2 focus:ring-slate-900"
+                        className="w-full h-10 p-2 border border-slate-200 rounded-lg text-sm font-mono bg-white focus:bg-white outline-none focus:ring-2 focus:ring-slate-900"
                       />
                     </div>
                   </div>

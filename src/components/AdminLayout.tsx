@@ -32,7 +32,7 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
+    <div className="min-h-screen bg-white flex">
       {/* Sidebar Desktop */}
       <aside className="hidden md:flex flex-col w-64 bg-slate-900 text-white border-r border-slate-800 shadow-xl">
         <div className="p-9">
@@ -168,7 +168,7 @@ export default function AdminLayout() {
         </header>
 
         {/* Scrollable Content Area */}
-        <div className="flex-1 overflow-y-auto pt-16 md:pt-0 bg-slate-50/50">
+        <div className="flex-1 overflow-y-auto pt-16 md:pt-0 bg-white">
           <div className="p-6 md:p-8 max-w-7xl mx-auto">
             <Outlet />
           </div>
