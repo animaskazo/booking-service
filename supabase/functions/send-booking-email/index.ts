@@ -18,6 +18,7 @@ serve(async (req) => {
       type = 'booking', // 'booking', 'budget' o 'test'
       customerName,
       customerEmail,
+      customerPhone,
       serviceName,
       date,
       time,
@@ -27,12 +28,14 @@ serve(async (req) => {
       description,
       findings,
       servicePrice,
-      techSupportEmail = 'contacto@powerfix.cl'
+      techSupportEmail = 'fernando.rg@live.cl'
     } = body
 
     if (!RESEND_API_KEY) {
       throw new Error('Missing RESEND_API_KEY')
     }
+
+    const appUrl = Deno.env.get('APP_URL') || 'http://localhost:5173'
 
     const formatPrice = (price: number) => {
       return new Intl.NumberFormat('es-CL', {
@@ -53,6 +56,11 @@ serve(async (req) => {
     } else {
       subject = `Confirmación de Reserva: ${serviceName} para ${customerName} (#${shortId})`
     }
+
+    // URL de auto-ingreso al tracking directo
+    const trackUrl = customerPhone 
+      ? `${appUrl}/track?code=${shortId}&phone=${encodeURIComponent(customerPhone)}`
+      : `${appUrl}/track`;
 
     const html = `<!DOCTYPE html>
 <html lang="es">
@@ -165,16 +173,22 @@ serve(async (req) => {
               </div>
               ` : ''}
 
-              <div style="margin-top:32px;background-color:#eff6ff;border-radius:8px;padding:20px 24px;text-align:center;">
-                <p style="margin:0;font-size:14px;color:#1d4ed8;line-height:1.6;">
-                  ${isBudget ? '💡 &nbsp;Puedes aceptar o rechazar este presupuesto desde el panel de cliente o respondiendo este correo.' : '📅 &nbsp;Te recomendamos llegar <strong>5 minutos antes</strong>.'}
+              <div style="margin-top:32px;text-align:center;">
+                <a href="${trackUrl}" target="_blank" style="display:inline-block;background-color:#2563eb;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:8px;box-shadow:0 4px 6px rgba(37,99,235,0.2);text-transform:uppercase;letter-spacing:0.05em;">
+                  ${isBudget ? 'Ver Presupuesto y Aprobar' : 'Ver Estado de mi Reserva'}
+                </a>
+              </div>
+
+              <div style="margin-top:32px;background-color:#f8fafc;border:1px dashed #e2e8f0;border-radius:8px;padding:16px 20px;text-align:center;">
+                <p style="margin:0;font-size:12px;color:#64748b;line-height:1.6;">
+                  ${isBudget ? '💡 &nbsp;También puedes responder directamente este correo si tienes dudas o comentarios adicionales.' : '📅 &nbsp;Te recomendamos llegar <strong>5 minutos antes</strong>.'}
                 </p>
               </div>
 
               <div style="border-top:1px solid #f1f5f9;margin:32px 0;"></div>
 
               <p style="margin:0;font-size:13px;color:#94a3b8;text-align:center;line-height:1.6;">
-                ${isBudget ? '¿Tienes dudas? Estamos aquí para ayudarte.' : '¿Necesitas cancelar o reprogramar? Responde este correo.'}
+                ¿Tienes dudas? Estamos aquí para ayudarte respondiendo este correo.
               </p>
               `}
 
@@ -206,9 +220,9 @@ serve(async (req) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'Reserva Web PowerFix <no-reply@digital-solutions.work>',
+        from: isBudget ? 'Servicio Técnico <no-reply@digital-solutions.work>' : 'Reservas <no-reply@digital-solutions.work>',
         to: [customerEmail],
-        bcc: isTest ? [] : [techSupportEmail],
+        bcc: type === 'test' ? [] : [techSupportEmail],
         reply_to: [techSupportEmail],
         subject: subject,
         html: html,

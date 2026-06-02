@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePublicTracking } from '../lib/public-tracking-context';
-import { useTicketById, useTicketFindings, useTicketHistory } from '../lib/supabase-client';
+import { useTicketById, useTicketFindings, useTicketHistory, useUpdateTicket } from '../lib/supabase-client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -14,6 +14,7 @@ export default function TicketDetailPublic() {
   const { appointment, ticket: contextTicket, setTrackingData } = usePublicTracking();
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const updateTicketMutation = useUpdateTicket();
 
   // Si no hay datos en el contexto, rehidratar de sessionStorage
   useEffect(() => {
@@ -183,6 +184,26 @@ export default function TicketDetailPublic() {
                       ))}
                     </span>
                   </div>
+
+                  {currentTicket.status === 'quoted' && (
+                    <div className="pt-4 mt-4 border-t border-slate-100 flex gap-3">
+                      <Button
+                        onClick={() => updateTicketMutation.mutate({ id: currentTicket.id, status: 'rejected' })}
+                        disabled={updateTicketMutation.isPending}
+                        variant="outline"
+                        className="flex-1 border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-2xl h-11"
+                      >
+                        Rechazar Presupuesto
+                      </Button>
+                      <Button
+                        onClick={() => updateTicketMutation.mutate({ id: currentTicket.id, status: 'accepted' })}
+                        disabled={updateTicketMutation.isPending}
+                        className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl h-11 shadow-lg shadow-emerald-600/10"
+                      >
+                        {updateTicketMutation.isPending ? 'Procesando...' : 'Aceptar Presupuesto'}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

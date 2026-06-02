@@ -306,6 +306,7 @@ export default function AdminTicketDetail() {
       const success = await sendBudgetEmail({
         customerName: ticket.appointment?.customer_name || '',
         customerEmail: customEmail || ticket.appointment?.customer_email || '',
+        customerPhone: ticket.appointment?.customer_phone || '',
         shortId: ticket.appointment?.short_id || '',
         totalAmount: Math.max(0, findingsTotal - servicePrice),
         description: ticket.description || '',

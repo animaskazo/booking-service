@@ -99,6 +99,14 @@ serve(async (req) => {
         `).join('')
       : `<p style="font-size:14px;color:#64748b;text-align:center;margin:0;">Sin registros históricos disponibles.</p>`;
 
+    const appUrl = Deno.env.get('APP_URL') || 'http://localhost:5173';
+    const customerPhone = appointment.customer_phone;
+    
+    // URL de auto-ingreso al tracking directo
+    const trackUrl = customerPhone 
+      ? `${appUrl}/track?code=${appointment.short_id}&phone=${encodeURIComponent(customerPhone)}`
+      : `${appUrl}/track`;
+
     const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -168,6 +176,19 @@ serve(async (req) => {
               <p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#0f172a;">¿Dónde retirar?</p>
               <p style="margin:0;font-size:14px;color:#475569;line-height:1.6;">
                 Te esperamos en nuestras instalaciones. Recuerda indicar tu código <strong>${appointment.short_id}</strong> al momento de retirar.
+              </p>
+
+              <!-- Botón interactivo directo -->
+              <div style="margin-top:32px;text-align:center;">
+                <a href="${trackUrl}" target="_blank" style="display:inline-block;background-color:#10b981;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:8px;box-shadow:0 4px 6px rgba(16,185,129,0.2);text-transform:uppercase;letter-spacing:0.05em;">
+                  Ver Historial de Reparación y Evidencias
+                </a>
+              </div>
+
+              <div style="border-top:1px solid #f1f5f9;margin:32px 0;"></div>
+
+              <p style="margin:0;font-size:13px;color:#94a3b8;text-align:center;line-height:1.6;">
+                ¿Tienes dudas? Estamos aquí para ayudarte respondiendo este correo.
               </p>
 
             </td>

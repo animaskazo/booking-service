@@ -149,17 +149,18 @@ serve(async (req) => {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${SUPABASE_SERVICE_KEY}`,
           },
-          body: JSON.stringify({
-            type: "booking",
-            customerName: customerName,
-            customerEmail: customerEmail,
-            serviceName: serviceName,
-            date: formatDate(slotStart),
-            time: `${formatTime(slotStart)} – ${formatTime(slotEnd)}`,
-            shortId: shortId,
-            notes: appointment.notes ?? "",
-          }),
-        });
+            body: JSON.stringify({
+              type: "booking",
+              customerName: customerName,
+              customerEmail: customerEmail,
+              customerPhone: appointment.customer_phone,
+              serviceName: serviceName,
+              date: formatDate(slotStart),
+              time: `${formatTime(slotStart)} – ${formatTime(slotEnd)}`,
+              shortId: shortId,
+              notes: appointment.notes ?? "",
+            }),
+          });
 
         if (!res.ok) {
           const errData = await res.text();

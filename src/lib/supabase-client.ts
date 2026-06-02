@@ -585,6 +585,7 @@ export const useDeleteAppointment = () => {
 export const sendBudgetEmail = async (budgetData: {
   customerName: string;
   customerEmail: string;
+  customerPhone?: string;
   shortId: string;
   totalAmount: number;
   description: string;
