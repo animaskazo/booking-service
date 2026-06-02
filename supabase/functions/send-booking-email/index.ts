@@ -57,9 +57,12 @@ serve(async (req) => {
       subject = `Confirmación de Reserva: ${serviceName} para ${customerName} (#${shortId})`
     }
 
+    // Normalizar variable de teléfono (puede llegar como customerPhone o customer_phone)
+    const activePhone = customerPhone || body.customer_phone || '';
+
     // URL de auto-ingreso al tracking directo
-    const trackUrl = customerPhone 
-      ? `${appUrl}/track?code=${shortId}&phone=${encodeURIComponent(customerPhone)}`
+    const trackUrl = activePhone 
+      ? `${appUrl}/track?code=${shortId}&phone=${encodeURIComponent(activePhone)}`
       : `${appUrl}/track`;
 
     const html = `<!DOCTYPE html>
