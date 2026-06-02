@@ -35,7 +35,7 @@ serve(async (req) => {
       throw new Error('Missing RESEND_API_KEY')
     }
 
-    const appUrl = Deno.env.get('APP_URL') || 'http://localhost:5173'
+    const appUrl = Deno.env.get('APP_URL') || 'https://booking.digital-solutions.work'
 
     const formatPrice = (price: number) => {
       return new Intl.NumberFormat('es-CL', {
@@ -176,11 +176,13 @@ serve(async (req) => {
               </div>
               ` : ''}
 
+              ${isBudget ? `
               <div style="margin-top:32px;text-align:center;">
                 <a href="${trackUrl}" target="_blank" style="display:inline-block;background-color:#2563eb;color:#ffffff;font-size:14px;font-weight:700;text-decoration:none;padding:14px 28px;border-radius:8px;box-shadow:0 4px 6px rgba(37,99,235,0.2);text-transform:uppercase;letter-spacing:0.05em;">
-                  ${isBudget ? 'Ver Presupuesto y Aprobar' : 'Ver Estado de mi Reserva'}
+                  Ver Presupuesto y Aprobar
                 </a>
               </div>
+              ` : ''}
 
               <div style="margin-top:32px;background-color:#f8fafc;border:1px dashed #e2e8f0;border-radius:8px;padding:16px 20px;text-align:center;">
                 <p style="margin:0;font-size:12px;color:#64748b;line-height:1.6;">

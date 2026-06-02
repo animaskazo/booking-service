@@ -99,7 +99,7 @@ serve(async (req) => {
         `).join('')
       : `<p style="font-size:14px;color:#64748b;text-align:center;margin:0;">Sin registros históricos disponibles.</p>`;
 
-    const appUrl = Deno.env.get('APP_URL') || 'http://localhost:5173';
+    const appUrl = Deno.env.get('APP_URL') || 'https://booking.digital-solutions.work';
     const customerPhone = appointment.customer_phone;
     
     // URL de auto-ingreso al tracking directo

@@ -129,7 +129,6 @@ export default function AdminTickets() {
         <div className="flex gap-3 h-[calc(100vh-180px)] min-w-min">
           {KANBAN_STATUSES.map(col => {
             const colTickets = tickets.filter(t => {
-              if (col.id === 'repairing' && (t.status === 'accepted' || t.status === 'repairing')) return true;
               return t.status === col.id;
             });
 
