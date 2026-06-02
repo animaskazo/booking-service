@@ -52,7 +52,7 @@ export default function ReservationStatus() {
 
   return (
     <div className="min-h-screen bg-white py-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center justify-center animate-in fade-in duration-500">
-      <div className="w-full max-w-xl space-y-6">
+      <div className="w-full max-w-2xl space-y-6">
         
         {/* Encabezado */}
         <div className="text-center space-y-4 flex flex-col items-center">

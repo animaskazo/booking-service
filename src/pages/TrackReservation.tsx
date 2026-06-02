@@ -43,7 +43,7 @@ export default function TrackReservation() {
         alt="Powerfix Logo"
         className="w-56 h-auto mb-12 animate-in fade-in slide-in-from-top-4 duration-700"
       />
-      <Card className="w-full max-w-md p-4 space-y-4 shadow-xl">
+      <Card className="w-full max-w-2xl p-4 space-y-4 shadow-xl">
         <CardHeader>
           <CardTitle className="text-2xl font-black text-center">Seguimiento de Ticket</CardTitle>
         </CardHeader>

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePublicTracking } from '../lib/public-tracking-context';
 import { useTicketById, useTicketFindings, useTicketHistory } from '../lib/supabase-client';
@@ -13,6 +13,7 @@ import { es } from 'date-fns/locale';
 export default function TicketDetailPublic() {
   const { appointment, ticket: contextTicket, setTrackingData } = usePublicTracking();
   const navigate = useNavigate();
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
 
   // Si no hay datos en el contexto, rehidratar de sessionStorage
   useEffect(() => {
@@ -109,7 +110,7 @@ export default function TicketDetailPublic() {
 
         {/* Resumen del Técnico / Diagnóstico */}
         {currentTicket.description && (
-          <Card className="border border-slate-100 shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden bg-white animate-in fade-in duration-300">
+          <Card className="w-full border border-slate-100 shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden bg-white animate-in fade-in duration-300">
             <CardHeader className="p-6 pb-3 border-b border-slate-100 flex flex-row items-center gap-2">
               <FileText className="w-5 h-5 text-slate-400" />
               <div>
@@ -126,7 +127,7 @@ export default function TicketDetailPublic() {
         )}
 
         {/* Card de Presupuesto */}
-        <Card className="border border-slate-100 shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden bg-white">
+        <Card className="w-full border border-slate-100 shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden bg-white">
           <CardHeader className="p-6 border-b border-slate-100 flex flex-row items-center justify-between">
             <div className="space-y-1">
               <CardTitle className="text-xl font-bold tracking-tight flex items-center gap-2">
@@ -189,7 +190,7 @@ export default function TicketDetailPublic() {
         </Card>
 
         {/* Card de Historial */}
-        <Card className="border border-slate-100 shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden bg-white">
+        <Card className="w-full border border-slate-100 shadow-xl shadow-slate-200/40 rounded-3xl overflow-hidden bg-white">
           <CardHeader className="p-6 border-b border-slate-100">
             <CardTitle className="text-xl font-bold tracking-tight flex items-center gap-2">
               <Wrench className="w-5 h-5 text-slate-400" /> Historial de Reparación y Evidencias
@@ -218,6 +219,25 @@ export default function TicketDetailPublic() {
                       <p className="text-sm text-slate-700 font-medium leading-relaxed bg-slate-50 p-3 rounded-2xl border border-slate-100">
                         {step.description}
                       </p>
+                      {step.evidence_url && (
+                        <div className="mt-2">
+                          <button
+                            onClick={() => setSelectedImage(step.evidence_url || null)}
+                            className="group relative block overflow-hidden rounded-xl border border-slate-100 bg-slate-50 transition-all hover:border-slate-200 hover:shadow-md focus:outline-none"
+                          >
+                            <img
+                              src={step.evidence_url}
+                              alt="Evidencia de reparación"
+                              className="h-20 w-32 object-cover transition-transform duration-300 group-hover:scale-105"
+                            />
+                            <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors duration-300 group-hover:bg-black/20">
+                              <span className="text-[10px] font-bold text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100 uppercase tracking-wider">
+                                Ampliar
+                              </span>
+                            </div>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -227,6 +247,38 @@ export default function TicketDetailPublic() {
         </Card>
 
       </div>
+
+      {/* Modal para ver imagen ampliada */}
+      {selectedImage && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+          onClick={() => setSelectedImage(null)}
+        >
+          <div 
+            className="relative max-w-3xl w-full max-h-[85vh] bg-white rounded-3xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="absolute top-4 right-4 z-10">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setSelectedImage(null)}
+                className="rounded-full bg-slate-900/10 hover:bg-slate-900/20 text-slate-900 border-0 font-bold text-xs"
+              >
+                Cerrar
+              </Button>
+            </div>
+            <div className="p-2 flex items-center justify-center bg-slate-50 min-h-[300px]">
+              <img
+                src={selectedImage}
+                alt="Evidencia ampliada"
+                className="max-h-[80vh] w-auto object-contain rounded-2xl"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
