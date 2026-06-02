@@ -206,7 +206,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: isBudget ? 'Servicio Técnico <no-reply@digital-solutions.work>' : 'Reservas <no-reply@digital-solutions.work>',
+        from: 'Reserva Web PowerFix <no-reply@digital-solutions.work>',
         to: [customerEmail],
         cc: isTest ? [] : [techSupportEmail],
         reply_to: techSupportEmail,
