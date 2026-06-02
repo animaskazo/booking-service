@@ -4,13 +4,15 @@ import {
   Plus,
   Trash2,
   Loader2,
+  Mail
 } from 'lucide-react';
 import {
   useAvailability,
   useCreateAvailability,
   useDeleteAvailability,
   useBusinessSettings,
-  useUpdateBusinessSettings
+  useUpdateBusinessSettings,
+  sendTestEmail
 } from '../lib/supabase-client';
 import { Button } from '@/components/ui/button';
 import { useDialog } from '@/components/ui/dialog-provider';
@@ -31,6 +33,7 @@ export default function AdminSettings() {
 
   const [showAdd, setShowAdd] = useState(false);
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
+  const [isTestingEmail, setIsTestingEmail] = useState(false);
 
   const { showAlert, showConfirm } = useDialog();
 
@@ -262,6 +265,79 @@ export default function AdminSettings() {
                     </div>
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Notificaciones */}
+          <Card className="border-slate-200 shadow-sm overflow-hidden bg-white mt-6">
+            <CardHeader className="bg-white border-b py-4">
+              <CardTitle className="text-base font-black uppercase tracking-widest text-slate-400">Notificaciones por Correo</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <div className="space-y-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs font-black text-slate-900 uppercase tracking-widest">Correo de Notificaciones</label>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Todas las notificaciones del administrador se enviarán a esta dirección</p>
+                </div>
+                
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="email"
+                    placeholder="contacto@powerfix.cl"
+                    defaultValue={settings.notification_email || 'contacto@powerfix.cl'}
+                    onBlur={(e) => {
+                      const val = e.target.value;
+                      if (val && val.includes('@')) {
+                        updateSettings.mutate({ notification_email: val });
+                      }
+                    }}
+                    className="w-full h-11 pl-10 pr-4 border border-slate-200 rounded-xl text-sm bg-slate-50/50 focus:bg-white outline-none focus:ring-2 focus:ring-slate-900 transition-all font-medium"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-6 border-t">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Prueba de Envío</label>
+                  <p className="text-[10px] text-slate-400 font-medium leading-relaxed">Envía un correo electrónico de prueba para confirmar la conexión de Resend y la recepción en tu bandeja de entrada.</p>
+                </div>
+                
+                <Button
+                  onClick={async () => {
+                    const currentEmail = settings.notification_email || 'contacto@powerfix.cl';
+                    setIsTestingEmail(true);
+                    try {
+                      await sendTestEmail(currentEmail);
+                      showAlert(
+                        'Correo Enviado',
+                        `Se ha enviado un correo electrónico de prueba exitosamente a ${currentEmail}. Revisa tu bandeja de entrada o spam.`
+                      );
+                    } catch (err: any) {
+                      showAlert(
+                        'Error de Envío',
+                        `No se pudo enviar el correo de prueba: ${err.message || err}. Asegúrate de tener configurada tu API Key de Resend en Supabase.`
+                      );
+                    } finally {
+                      setIsTestingEmail(false);
+                    }
+                  }}
+                  disabled={isTestingEmail}
+                  className="w-full h-11 bg-slate-900 hover:bg-slate-800 text-white font-bold uppercase tracking-widest text-xs rounded-xl transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {isTestingEmail ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      ENVIANDO...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="w-4 h-4" />
+                      REALIZAR PRUEBA
+                    </>
+                  )}
+                </Button>
               </div>
             </CardContent>
           </Card>

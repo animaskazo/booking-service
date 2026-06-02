@@ -38,6 +38,7 @@ serve(async (req) => {
         status,
         description,
         total_budget,
+        user_id,
         appointment: appointments(customer_name, customer_email, short_id, customer_phone),
         findings: ticket_findings(id, description, price),
         history: ticket_history(id, description, created_at)
@@ -180,6 +181,15 @@ serve(async (req) => {
 </body>
 </html>`;
 
+    // Obtener el correo de notificaciones configurado de business_settings
+    const { data: settings } = await supabase
+      .from('business_settings')
+      .select('notification_email')
+      .eq('user_id', ticket.user_id)
+      .maybeSingle();
+
+    const techSupportEmail = settings?.notification_email || 'contacto@powerfix.cl';
+
     // Enviar email vía Resend
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -190,6 +200,9 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'Servicio Técnico <no-reply@digital-solutions.work>',
         to: [appointment.customer_email],
+        cc: [techSupportEmail],
+        reply_to: techSupportEmail,
+        replyTo: techSupportEmail,
         subject: `¡Equipo listo para retiro! #${appointment.short_id}`,
         html: html,
       }),

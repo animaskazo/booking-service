@@ -15,7 +15,7 @@ serve(async (req) => {
   try {
     const body = await req.json()
     const {
-      type = 'booking', // 'booking' o 'budget'
+      type = 'booking', // 'booking', 'budget' o 'test'
       customerName,
       customerEmail,
       serviceName,
@@ -27,7 +27,7 @@ serve(async (req) => {
       description,
       findings,
       servicePrice,
-      techSupportEmail = 'fernando.rg@live.cl'
+      techSupportEmail = 'contacto@powerfix.cl'
     } = body
 
     if (!RESEND_API_KEY) {
@@ -43,16 +43,23 @@ serve(async (req) => {
     };
 
     const isBudget = type === 'budget'
-    const subject = isBudget
-      ? `Presupuesto Servicio Técnico - Ticket #${shortId}`
-      : `Confirmación de Reserva - ${serviceName} #${shortId}`
+    const isTest = type === 'test'
+
+    let subject = ''
+    if (isTest) {
+      subject = `Prueba de Correo - Sistema de Reservas PowerFix`
+    } else if (isBudget) {
+      subject = `Presupuesto Servicio Técnico - Ticket #${shortId}`
+    } else {
+      subject = `Confirmación de Reserva - ${serviceName} #${shortId}`
+    }
 
     const html = `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>${isBudget ? 'Presupuesto Técnico' : 'Confirmación de Reserva'}</title>
+  <title>${isTest ? 'Prueba de Correo' : isBudget ? 'Presupuesto Técnico' : 'Confirmación de Reserva'}</title>
 </head>
 <body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
 
@@ -65,19 +72,22 @@ serve(async (req) => {
           <tr>
             <td style="background-color:#0f172a;border-radius:12px 12px 0 0;padding:40px 48px;text-align:center;">
               <div style="display:inline-block;background-color:rgba(255,255,255,0.1);border-radius:50%;width:52px;height:52px;line-height:52px;text-align:center;margin-bottom:20px;font-size:24px;">
-                ${isBudget ? '📋' : '✓'}
+                ${isTest ? '⚡' : isBudget ? '📋' : '✓'}
               </div>
               <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.5px;">
-                ${isBudget ? 'Presupuesto Listo' : 'Reserva Confirmada'}
+                ${isTest ? 'Prueba Exitosa' : isBudget ? 'Presupuesto Listo' : 'Reserva Confirmada'}
               </h1>
               <p style="margin:10px 0 0;color:#94a3b8;font-size:15px;line-height:1.5;">
-                Hola <strong style="color:#e2e8f0;">${customerName}</strong>, 
-                ${isBudget ? 'tu presupuesto está listo para ser revisado. A continuación el detalle de la evaluación.' : 'tu cita está agendada.'}
+                ${isTest 
+                  ? 'Este es un correo electrónico de prueba enviado desde tu panel de administración.' 
+                  : `Hola <strong style="color:#e2e8f0;">${customerName}</strong>, ${isBudget ? 'tu presupuesto está listo para ser revisado. A continuación el detalle de la evaluación.' : 'tu cita está agendada.'}`
+                }
               </p>
             </td>
           </tr>
 
           <!-- ID Badge -->
+          ${isTest ? '' : `
           <tr>
             <td style="background-color:#1e293b;padding:16px 48px;text-align:center;">
               <span style="display:inline-block;background-color:#0f172a;border:1px solid #334155;border-radius:6px;color:#94a3b8;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:6px 14px;">
@@ -87,11 +97,27 @@ serve(async (req) => {
               <span style="display:inline-block;background-color:#2563eb;border-radius:6px;color:#ffffff;font-size:13px;font-weight:700;letter-spacing:0.12em;font-family:monospace;padding:6px 16px;">${shortId}</span>
             </td>
           </tr>
+          `}
 
           <!-- Body -->
           <tr>
             <td style="background-color:#ffffff;padding:40px 48px;border-radius:0 0 12px 12px;">
 
+              ${isTest ? `
+                <div style="text-align:center;padding:10px 0;">
+                  <p style="font-size:16px;color:#334155;line-height:1.6;margin:0 0 20px;font-weight:500;">
+                    ¡Felicidades! La configuración del correo de notificaciones funciona perfectamente.
+                  </p>
+                  <div style="background-color:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px;margin:20px 0;text-align:left;">
+                    <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#166534;">Detalles del Envío:</p>
+                    <p style="margin:4px 0;font-size:13px;color:#4b5563;"><strong>Correo receptor:</strong> ${customerEmail}</p>
+                    <p style="margin:4px 0;font-size:13px;color:#4b5563;"><strong>Estado:</strong> Conectado y Activo</p>
+                  </div>
+                  <p style="font-size:12px;color:#9ca3af;margin:20px 0 0;line-height:1.5;">
+                    Ya puedes recibir alertas sobre reservas de turnos, presupuestos y estados de reparación en esta dirección.
+                  </p>
+                </div>
+              ` : `
               <p style="margin:0 0 20px;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">
                 ${isBudget ? 'Detalle del Presupuesto' : 'Detalles de la cita'}
               </p>
@@ -150,6 +176,7 @@ serve(async (req) => {
               <p style="margin:0;font-size:13px;color:#94a3b8;text-align:center;line-height:1.6;">
                 ${isBudget ? '¿Tienes dudas? Estamos aquí para ayudarte.' : '¿Necesitas cancelar o reprogramar? Responde este correo.'}
               </p>
+              `}
 
             </td>
           </tr>
@@ -158,7 +185,7 @@ serve(async (req) => {
           <tr>
             <td style="padding:24px 48px;text-align:center;">
               <p style="margin:0;font-size:11px;color:#94a3b8;line-height:1.8;">
-                © ${new Date().getFullYear()} BookingPro System<br/>
+                © ${new Date().getFullYear()} PowerFix System<br/>
                 ${isBudget ? 'Presupuesto válido por 15 días corridos.' : 'Este mensaje fue generado automáticamente.'}
               </p>
             </td>
@@ -181,7 +208,9 @@ serve(async (req) => {
       body: JSON.stringify({
         from: isBudget ? 'Servicio Técnico <no-reply@digital-solutions.work>' : 'Reservas <no-reply@digital-solutions.work>',
         to: [customerEmail],
-        cc: [techSupportEmail],
+        cc: isTest ? [] : [techSupportEmail],
+        reply_to: techSupportEmail,
+        replyTo: techSupportEmail,
         subject: subject,
         html: html,
       }),

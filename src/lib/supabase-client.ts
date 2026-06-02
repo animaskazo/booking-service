@@ -290,7 +290,8 @@ export const useBusinessSettings = () => {
         slot_interval: 30,
         lunch_start: '13:00',
         lunch_end: '14:00',
-        has_lunch_break: true
+        has_lunch_break: true,
+        notification_email: 'contacto@powerfix.cl'
       };
     },
     enabled: !!user,
@@ -309,7 +310,8 @@ export const useUpdateBusinessSettings = () => {
       slot_interval?: number, 
       lunch_start?: string, 
       lunch_end?: string, 
-      has_lunch_break?: boolean 
+      has_lunch_break?: boolean,
+      notification_email?: string
     }) => {
       if (!user) throw new Error("Debes estar logueado");
       
@@ -588,6 +590,7 @@ export const sendBudgetEmail = async (budgetData: {
   description: string;
   findings: any[];
   servicePrice: number;
+  techSupportEmail?: string;
 }) => {
   try {
     const { data, error } = await supabase.functions.invoke('send-booking-email', {
@@ -626,6 +629,28 @@ export const sendBookingEmail = async (bookingData: {
     console.error('Error al enviar el email:', err);
     // No lanzamos error para no romper el flujo de UI del usuario,
     // pero lo registramos en consola.
+  }
+};
+
+/**
+ * Invoca la Edge Function para enviar un email de prueba
+ */
+export const sendTestEmail = async (email: string) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('send-booking-email', {
+      body: {
+        type: 'test',
+        customerName: 'Administrador de PowerFix',
+        customerEmail: email,
+        subject: 'Prueba de Correo - BookingPro System',
+      },
+    });
+
+    if (error) throw error;
+    return data;
+  } catch (err) {
+    console.error('Error al enviar el email de prueba:', err);
+    throw err;
   }
 };
 

@@ -13,7 +13,8 @@ import {
   useUpdateTicketPart,
   useDeleteTicketPart,
   sendBudgetEmail,
-  supabase
+  supabase,
+  useBusinessSettings
 } from '../lib/supabase-client';
 import { Button } from '@/components/ui/button';
 import { useDialog } from '@/components/ui/dialog-provider';
@@ -57,6 +58,7 @@ const PART_STATUS = {
 export default function AdminTicketDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { data: bSettings = { notification_email: 'contacto@powerfix.cl' } } = useBusinessSettings();
   
   const { data: ticket, isLoading: isLoadingTicket } = useTicketById(id);
   const { data: findings = [] } = useTicketFindings(id);
@@ -308,7 +310,8 @@ export default function AdminTicketDetail() {
         totalAmount: Math.max(0, findingsTotal - servicePrice),
         description: ticket.description || '',
         findings: findings,
-        servicePrice: servicePrice
+        servicePrice: servicePrice,
+        techSupportEmail: bSettings?.notification_email || 'contacto@powerfix.cl'
       });
 
       if (success) {

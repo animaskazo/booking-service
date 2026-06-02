@@ -72,7 +72,7 @@ export default function AdminAppointments() {
 
   const { data: appointments = [] } = useAppointmentsByDateRange(weekDays[0], addDays(weekDays[6], 1));
   const { data: globalAvailabilities = [] } = useAvailability(null);
-  const { data: bSettings = { lunch_start: '13:00', lunch_end: '14:00', has_lunch_break: true, slot_interval: 30 } } = useBusinessSettings();
+  const { data: bSettings = { lunch_start: '13:00', lunch_end: '14:00', has_lunch_break: true, slot_interval: 30, notification_email: 'contacto@powerfix.cl' } } = useBusinessSettings();
   const { data: services = [] } = useServices();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -200,7 +200,7 @@ export default function AdminAppointments() {
         time: formatTimeRange(startTime, endTime),
         shortId: result.short_id,
         notes: (formData.get('notes') as string) || undefined,
-        techSupportEmail: 'fernando.rg@live.cl'
+        techSupportEmail: bSettings.notification_email || 'contacto@powerfix.cl'
       });
 
       setSelectedSlot(null);
