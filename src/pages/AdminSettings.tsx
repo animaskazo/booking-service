@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Clock,
   Plus,
   Trash2,
   Loader2,
-  Mail
+  Mail,
+  Save,
+  Check
 } from 'lucide-react';
 import {
   useAvailability,
@@ -34,6 +36,14 @@ export default function AdminSettings() {
   const [showAdd, setShowAdd] = useState(false);
   const [selectedDays, setSelectedDays] = useState<number[]>([]);
   const [isTestingEmail, setIsTestingEmail] = useState(false);
+  const [notificationEmail, setNotificationEmail] = useState('');
+  const [emailSaved, setEmailSaved] = useState(false);
+
+  useEffect(() => {
+    if ((settings as any).notification_email) {
+      setNotificationEmail((settings as any).notification_email);
+    }
+  }, [(settings as any).notification_email]);
 
   const { showAlert, showConfirm } = useDialog();
 
@@ -80,8 +90,8 @@ export default function AdminSettings() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-6">
+      <div className="flex flex-col gap-8">
+        <div className="space-y-6 max-w-3xl mx-auto w-full">
           <Card className="border-slate-200 shadow-sm overflow-hidden">
             <CardHeader className="bg-white border-b">
               <div className="flex justify-between items-center">
@@ -186,8 +196,6 @@ export default function AdminSettings() {
               </div>
             </CardContent>
           </Card>
-        </div>
-        <div className="space-y-6">
           <Card className="border-slate-200 shadow-sm overflow-hidden bg-white">
             <CardHeader className="bg-white border-b py-4">
               <CardTitle className="text-base font-black uppercase tracking-widest text-slate-400">Parámetros Globales</CardTitle>
@@ -280,21 +288,50 @@ export default function AdminSettings() {
                   <label className="text-xs font-black text-slate-900 uppercase tracking-widest">Correo de Notificaciones</label>
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Todas las notificaciones del administrador se enviarán a esta dirección</p>
                 </div>
-                
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input
-                    type="email"
-                    placeholder="contacto@powerfix.cl"
-                    defaultValue={settings.notification_email || 'contacto@powerfix.cl'}
-                    onBlur={(e) => {
-                      const val = e.target.value;
-                      if (val && val.includes('@')) {
-                        updateSettings.mutate({ notification_email: val });
+
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="email"
+                      placeholder="contacto@powerfix.cl"
+                      value={notificationEmail}
+                      onChange={(e) => {
+                        setNotificationEmail(e.target.value);
+                        setEmailSaved(false);
+                      }}
+                      className="w-full h-11 pl-10 pr-4 border border-slate-200 rounded-xl text-sm bg-slate-50/50 focus:bg-white outline-none focus:ring-2 focus:ring-slate-900 transition-all font-medium"
+                    />
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (notificationEmail && notificationEmail.includes('@')) {
+                        updateSettings.mutate(
+                          { notification_email: notificationEmail } as any,
+                          {
+                            onSuccess: () => {
+                              setEmailSaved(true);
+                              setTimeout(() => setEmailSaved(false), 2500);
+                            }
+                          }
+                        );
                       }
                     }}
-                    className="w-full h-11 pl-10 pr-4 border border-slate-200 rounded-xl text-sm bg-slate-50/50 focus:bg-white outline-none focus:ring-2 focus:ring-slate-900 transition-all font-medium"
-                  />
+                    disabled={!notificationEmail || !notificationEmail.includes('@') || updateSettings.isPending}
+                    className={`h-11 px-4 rounded-xl font-bold uppercase tracking-widest text-xs transition-all active:scale-95 flex items-center gap-2 shrink-0 ${
+                      emailSaved
+                        ? 'bg-emerald-500 text-white'
+                        : 'bg-slate-900 hover:bg-slate-700 text-white disabled:opacity-40'
+                    }`}
+                  >
+                    {updateSettings.isPending ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : emailSaved ? (
+                      <><Check className="w-4 h-4" /> Guardado</>
+                    ) : (
+                      <><Save className="w-4 h-4" /> Guardar</>
+                    )}
+                  </button>
                 </div>
               </div>
 

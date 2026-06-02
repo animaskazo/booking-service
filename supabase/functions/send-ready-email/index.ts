@@ -200,10 +200,9 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'Reserva Web PowerFix <no-reply@digital-solutions.work>',
         to: [appointment.customer_email],
-        cc: [techSupportEmail],
-        reply_to: techSupportEmail,
-        replyTo: techSupportEmail,
-        subject: `¡Equipo listo para retiro! #${appointment.short_id}`,
+        bcc: [techSupportEmail],
+        reply_to: [techSupportEmail],
+        subject: `¡Listo para retiro! Equipo de ${appointment.customer_name} (#${appointment.short_id})`,
         html: html,
       }),
     });

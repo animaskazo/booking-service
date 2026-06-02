@@ -49,9 +49,9 @@ serve(async (req) => {
     if (isTest) {
       subject = `Prueba de Correo - Sistema de Reservas PowerFix`
     } else if (isBudget) {
-      subject = `Presupuesto Servicio Técnico - Ticket #${shortId}`
+      subject = `Presupuesto Técnico para ${customerName} - Ticket #${shortId}`
     } else {
-      subject = `Confirmación de Reserva - ${serviceName} #${shortId}`
+      subject = `Confirmación de Reserva: ${serviceName} para ${customerName} (#${shortId})`
     }
 
     const html = `<!DOCTYPE html>
@@ -208,9 +208,8 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'Reserva Web PowerFix <no-reply@digital-solutions.work>',
         to: [customerEmail],
-        cc: isTest ? [] : [techSupportEmail],
-        reply_to: techSupportEmail,
-        replyTo: techSupportEmail,
+        bcc: isTest ? [] : [techSupportEmail],
+        reply_to: [techSupportEmail],
         subject: subject,
         html: html,
       }),
