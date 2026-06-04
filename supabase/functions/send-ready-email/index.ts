@@ -211,6 +211,11 @@ serve(async (req) => {
 
     const techSupportEmail = settings?.notification_email || 'contacto@powerfix.cl';
 
+    const resendFromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'no-reply@digital-solutions.work';
+    const fromAddress = resendFromEmail.includes('<')
+      ? resendFromEmail
+      : `Reserva Web PowerFix <${resendFromEmail}>`;
+
     // Enviar email vía Resend
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -219,7 +224,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'Reserva Web PowerFix <no-reply@digital-solutions.work>',
+        from: fromAddress,
         to: [appointment.customer_email],
         bcc: [techSupportEmail],
         reply_to: [techSupportEmail],

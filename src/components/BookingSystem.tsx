@@ -28,6 +28,7 @@ import {
   useBusinessSettings,
   createFlowPayment,
   useCreateAppointment,
+  sendBookingEmail,
 } from '../lib/supabase-client';
 
 import { Button } from '@/components/ui/button';
@@ -275,6 +276,21 @@ export const BookingSystemMVP: React.FC = () => {
         if (result) {
           setShortId(result.short_id);
           setBookingConfirmed(true);
+
+          // Enviar correo de confirmación
+          try {
+            await sendBookingEmail({
+              customerName: state.customerName,
+              customerEmail: state.customerEmail,
+              serviceName: state.selectedService.name,
+              date: formatDateForDisplay(state.selectedSlot.start),
+              time: formatTimeRange(state.selectedSlot.start, state.selectedSlot.end),
+              shortId: result.short_id,
+              notes: state.notes || undefined,
+            });
+          } catch (emailErr) {
+            console.error('Error al enviar email de confirmación para agendamiento gratis:', emailErr);
+          }
         }
         setIsPaying(false);
       }

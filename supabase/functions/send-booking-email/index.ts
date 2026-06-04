@@ -218,6 +218,13 @@ serve(async (req) => {
 </body>
 </html>`
 
+    const resendFromEmail = Deno.env.get('RESEND_FROM_EMAIL') || 'no-reply@digital-solutions.work';
+    const fromAddress = resendFromEmail.includes('<')
+      ? resendFromEmail
+      : isBudget 
+        ? `Servicio Técnico <${resendFromEmail}>` 
+        : `Reservas <${resendFromEmail}>`;
+
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
@@ -225,7 +232,7 @@ serve(async (req) => {
         'Authorization': `Bearer ${RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: isBudget ? 'Servicio Técnico <no-reply@digital-solutions.work>' : 'Reservas <no-reply@digital-solutions.work>',
+        from: fromAddress,
         to: [customerEmail],
         bcc: type === 'test' ? [] : [techSupportEmail],
         reply_to: [techSupportEmail],

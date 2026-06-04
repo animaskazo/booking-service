@@ -30,7 +30,8 @@ import {
   sendBookingEmail,
   useCreateTicket,
   useTicketByAppointment,
-  useUpdateTicket
+  useUpdateTicket,
+  useAppointmentsAdmin
 } from '../lib/supabase-client';
 import { isSlotOccupied, generateShortId, formatPrice, formatDateForDisplay, formatTimeRange } from '../lib/utils-booking';
 import { format, startOfWeek, addDays, isSameDay, parseISO } from 'date-fns';
@@ -71,12 +72,16 @@ export default function AdminAppointments() {
   const weekDays = [...Array(7)].map((_, i) => addDays(weekStart, i));
 
   const { data: appointments = [] } = useAppointmentsByDateRange(weekDays[0], addDays(weekDays[6], 1));
+  const { data: allAppointments = [] } = useAppointmentsAdmin();
   const { data: globalAvailabilities = [] } = useAvailability(null);
   const { data: bSettings = { lunch_start: '13:00', lunch_end: '14:00', has_lunch_break: true, slot_interval: 30, notification_email: 'contacto@powerfix.cl' } } = useBusinessSettings();
   const { data: services = [] } = useServices();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [timeFilter, setTimeFilter] = useState('upcoming');
+  const [resendEmailApp, setResendEmailApp] = useState<any | null>(null);
+  const [resendEmailAddress, setResendEmailAddress] = useState<string>('');
 
   // Calcular rango de horas visibles basado en disponibilidad global
   const visibleHours = useMemo(() => {
@@ -136,7 +141,7 @@ export default function AdminAppointments() {
     }
   };
 
-  const { showConfirm, showError } = useDialog();
+  const { showConfirm, showError, showAlert } = useDialog();
 
   const handleDelete = async (id: string) => {
     showConfirm(
@@ -400,6 +405,15 @@ export default function AdminAppointments() {
             </div>
             <div className="flex gap-2 md:col-span-2">
               <select
+                value={timeFilter}
+                onChange={(e) => setTimeFilter(e.target.value)}
+                className="flex-1 h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-900"
+              >
+                <option value="upcoming">Próximas (Futuras)</option>
+                <option value="all">Todas en el tiempo</option>
+                <option value="past">Pasadas</option>
+              </select>
+              <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
                 className="flex-1 h-11 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-slate-900"
@@ -427,16 +441,31 @@ export default function AdminAppointments() {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {appointments
+                  {allAppointments
                     .filter(a => {
                       const matchesSearch =
                         a.customer_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         a.customer_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                         a.short_id?.toLowerCase().includes(searchTerm.toLowerCase());
                       const matchesStatus = statusFilter === 'all' || a.status === statusFilter;
-                      return matchesSearch && matchesStatus;
+                      
+                      const appTime = new Date(a.start_time).getTime();
+                      const nowTime = Date.now();
+                      const matchesTime = 
+                        timeFilter === 'all' ||
+                        (timeFilter === 'upcoming' && appTime >= nowTime) ||
+                        (timeFilter === 'past' && appTime < nowTime);
+
+                      return matchesSearch && matchesStatus && matchesTime;
                     })
-                    .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime())
+                    .sort((a, b) => {
+                      const timeA = new Date(a.start_time).getTime();
+                      const timeB = new Date(b.start_time).getTime();
+                      if (timeFilter === 'past') {
+                        return timeB - timeA; // Más recientes primero para las pasadas
+                      }
+                      return timeA - timeB; // Más próximas primero para las futuras/todas
+                    })
                     .map(app => (
                       <tr key={app.id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="p-4">
@@ -467,17 +496,29 @@ export default function AdminAppointments() {
                         </td>
                         <td className="p-4">
                           <div className="flex items-center gap-1">
-                            <Button size="icon" variant="ghost" className="text-blue-600 h-8 w-8" title="Ver Detalles" onClick={() => setSelectedApp(app)}>
+                            <Button size="icon" variant="ghost" className="text-slate-900 h-8 w-8" title="Ver Detalles" onClick={() => setSelectedApp(app)}>
                               <Search className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="text-slate-900 h-8 w-8"
+                              title="Reenviar Correo de Confirmación"
+                              onClick={() => {
+                                setResendEmailApp(app);
+                                setResendEmailAddress(app.customer_email);
+                              }}
+                            >
+                              <Mail className="w-4 h-4" />
                             </Button>
                             {(() => {
                               const ticketForApp = tickets.find((t: any) => t.appointment_id === app.id);
                               return ticketForApp ? (
-                                <Button size="icon" variant="ghost" className="text-emerald-600 h-8 w-8" title="Ver Ticket" onClick={() => navigate(`/admin/tickets/${ticketForApp.id}`)}>
+                                <Button size="icon" variant="ghost" className="text-slate-900 h-8 w-8" title="Ver Ticket" onClick={() => navigate(`/admin/tickets/${ticketForApp.id}`)}>
                                   <FileText className="w-4 h-4" />
                                 </Button>
                               ) : app.status !== 'pending' ? (
-                                <Button size="icon" variant="ghost" className="text-blue-500 h-8 w-8" title="Iniciar Ticket" disabled={createTicketMutation.isPending} onClick={async () => {
+                                <Button size="icon" variant="ghost" className="text-slate-900 h-8 w-8" title="Iniciar Ticket" disabled={createTicketMutation.isPending} onClick={async () => {
                                   const newTicket = await createTicketMutation.mutateAsync(app.id);
                                   navigate(`/admin/tickets/${newTicket.id}`);
                                 }}>
@@ -486,16 +527,16 @@ export default function AdminAppointments() {
                               ) : null;
                             })()}
                             {app.status === 'pending' && (
-                              <Button size="icon" variant="ghost" className="text-green-600 h-8 w-8" title="Confirmar" onClick={() => handleStatusUpdate(app.id, 'confirmed')}>
+                              <Button size="icon" variant="ghost" className="text-slate-900 h-8 w-8" title="Confirmar" onClick={() => handleStatusUpdate(app.id, 'confirmed')}>
                                 <CheckCircle className="w-4 h-4" />
                               </Button>
                             )}
                             {app.status === 'confirmed' && (
-                              <Button size="icon" variant="ghost" className="text-slate-600 h-8 w-8" title="Marcar como realizada" onClick={() => handleStatusUpdate(app.id, 'completed')}>
+                              <Button size="icon" variant="ghost" className="text-slate-900 h-8 w-8" title="Marcar como realizada" onClick={() => handleStatusUpdate(app.id, 'completed')}>
                                 <CheckCircle className="w-4 h-4" />
                               </Button>
                             )}
-                            <Button size="icon" variant="ghost" className="text-red-400 h-8 w-8" title="Eliminar" onClick={() => handleDelete(app.id)}>
+                            <Button size="icon" variant="ghost" className="text-red-500 h-8 w-8" title="Eliminar" onClick={() => handleDelete(app.id)}>
                               <Trash2 className="w-4 h-4" />
                             </Button>
                           </div>
@@ -504,7 +545,7 @@ export default function AdminAppointments() {
                     ))}
                 </tbody>
               </table>
-              {appointments.length === 0 && (
+              {allAppointments.length === 0 && (
                 <div className="p-20 text-center text-slate-400">
                   <CalendarIcon className="w-12 h-12 mx-auto mb-4 opacity-10" />
                   No hay citas registradas.
@@ -634,6 +675,91 @@ export default function AdminAppointments() {
               </div>
             </form>
           </Card>
+          </div>
+        </div>
+      )}
+
+      {resendEmailApp && (
+        <div className="fixed inset-0 z-[100] overflow-y-auto">
+          {/* Backdrop */}
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setResendEmailApp(null)} />
+          
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Card className="relative z-10 w-full max-w-md shadow-2xl overflow-hidden rounded-[32px] border border-slate-100 bg-white" onClick={(e) => e.stopPropagation()}>
+              <CardHeader className="bg-white border-b border-slate-100/60 pb-6">
+                <div className="flex justify-between items-center">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-slate-900 p-1.5 rounded-lg text-white">
+                        <Mail className="w-4 h-4" />
+                      </div>
+                      <CardTitle className="text-xl">Reenviar Confirmación</CardTitle>
+                    </div>
+                    <CardDescription className="text-slate-500">
+                      Cita #{resendEmailApp.short_id || resendEmailApp.id.slice(0, 5)}
+                    </CardDescription>
+                  </div>
+                  <Button variant="ghost" size="icon" className="rounded-full hover:bg-red-50 hover:text-red-500 transition-colors" onClick={() => setResendEmailApp(null)}>
+                    <XCircle className="w-6 h-6" />
+                  </Button>
+                </div>
+              </CardHeader>
+              
+              <CardContent className="p-8 space-y-4">
+                <p className="text-sm text-slate-600">
+                  ¿Deseas reenviar el correo de confirmación de la cita de <strong>{resendEmailApp.customer_name}</strong>?
+                </p>
+                
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-700">
+                    Correo del Cliente
+                  </Label>
+                  <Input 
+                    type="email" 
+                    value={resendEmailAddress} 
+                    onChange={(e) => setResendEmailAddress(e.target.value)} 
+                    placeholder="correo@ejemplo.com"
+                    className="h-12 rounded-xl border-slate-200"
+                    required
+                  />
+                </div>
+              </CardContent>
+              
+              <div className="p-8 bg-white border-t flex flex-row-reverse gap-4">
+                <Button
+                  onClick={async () => {
+                    try {
+                      await sendBookingEmail({
+                        customerName: resendEmailApp.customer_name,
+                        customerEmail: resendEmailAddress,
+                        serviceName: resendEmailApp.service?.name || 'Servicio',
+                        date: formatDateForDisplay(parseISO(resendEmailApp.start_time)),
+                        time: formatTimeRange(parseISO(resendEmailApp.start_time), parseISO(resendEmailApp.end_time)),
+                        shortId: resendEmailApp.short_id,
+                        notes: resendEmailApp.notes || undefined,
+                        techSupportEmail: bSettings.notification_email || 'contacto@powerfix.cl'
+                      });
+                      setResendEmailApp(null);
+                      showAlert('Correo Enviado', 'El correo de confirmación ha sido reenviado correctamente al cliente y al servicio técnico.');
+                    } catch (err) {
+                      console.error(err);
+                      showError('Error', 'No se pudo reenviar el correo de confirmación.');
+                    }
+                  }}
+                  className="flex-1 bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95 shadow-lg shadow-slate-900/10"
+                >
+                  REENVIAR
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="h-12 px-6 border-slate-200 font-bold hover:bg-white uppercase tracking-widest text-xs transition-all active:scale-95" 
+                  onClick={() => setResendEmailApp(null)}
+                >
+                  CANCELAR
+                </Button>
+              </div>
+            </Card>
           </div>
         </div>
       )}
