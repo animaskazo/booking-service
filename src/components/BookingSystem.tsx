@@ -19,6 +19,7 @@ import {
   prepareAppointmentData,
   ServiceWithAvailability,
   formatRut,
+  formatTimeRange,
 } from '../lib/utils-booking';
 import {
   useServices,
