@@ -1,6 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? ""
+const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+
+const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY)
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,8 +33,34 @@ serve(async (req) => {
       description,
       findings,
       servicePrice,
-      techSupportEmail = 'fernando.rg@live.cl'
+      techSupportEmail: reqTechSupportEmail
     } = body
+
+    let techSupportEmail = reqTechSupportEmail || 'contacto@powerfix.cl'
+
+    // Obtener el correo configurado desde business_settings si tenemos shortId
+    if (shortId && !reqTechSupportEmail) {
+      try {
+        const { data: appointment } = await supabase
+          .from('appointments')
+          .select('user_id')
+          .eq('short_id', shortId)
+          .maybeSingle();
+
+        if (appointment?.user_id) {
+          const { data: settings } = await supabase
+            .from('business_settings')
+            .select('notification_email')
+            .eq('user_id', appointment.user_id)
+            .maybeSingle();
+          if (settings?.notification_email) {
+            techSupportEmail = settings.notification_email;
+          }
+        }
+      } catch (dbErr) {
+        console.error('Error fetching business settings for notification_email:', dbErr);
+      }
+    }
 
     if (!RESEND_API_KEY) {
       throw new Error('Missing RESEND_API_KEY')
