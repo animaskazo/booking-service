@@ -14,7 +14,8 @@ import {
   useDeleteTicketPart,
   sendBudgetEmail,
   supabase,
-  useBusinessSettings
+  useBusinessSettings,
+  useTicketPaymentLinks,
 } from '../lib/supabase-client';
 import { Button } from '@/components/ui/button';
 import { useDialog } from '@/components/ui/dialog-provider';
@@ -43,7 +44,12 @@ import {
   Loader2,
   Package,
   Truck,
-  ExternalLink
+  ExternalLink,
+  CreditCard,
+  Copy,
+  Link,
+  ArrowUpCircle,
+  Info
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -64,6 +70,7 @@ export default function AdminTicketDetail() {
   const { data: findings = [] } = useTicketFindings(id);
   const { data: history = [] } = useTicketHistory(id);
   const { data: ticketParts = [] } = useTicketParts(id);
+  const { data: paymentLinks = [] } = useTicketPaymentLinks(id);
   
   const updateTicketMutation = useUpdateTicket();
   const addFindingMutation = useAddTicketFinding();
@@ -82,6 +89,15 @@ export default function AdminTicketDetail() {
   const [activeView, setActiveView] = useState<'presupuesto' | 'reparacion' | 'repuestos'>('presupuesto');
   const [newPart, setNewPart] = useState({ name: '', value: '', tracking: '', link: '', status: 'pending' });
   const [isUploadingLocal, setIsUploadingLocal] = useState(false);
+
+  // Payment link modal state
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentForm, setPaymentForm] = useState({ description: '', amount: '' });
+  const [paymentLink, setPaymentLink] = useState<string | null>(null);
+  const [paymentEmail, setPaymentEmail] = useState('');
+  const [isCreatingLink, setIsCreatingLink] = useState(false);
+  const [isSendingPaymentEmail, setIsSendingPaymentEmail] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   
   const { showAlert, showError } = useDialog();
 
@@ -326,6 +342,82 @@ export default function AdminTicketDetail() {
     } finally {
       setIsSending(false);
     }
+  };
+
+  const handleCreatePaymentLink = async () => {
+    if (!ticket || !paymentForm.description || !paymentForm.amount) return;
+    setIsCreatingLink(true);
+    try {
+      const res = await fetch(
+        `${(import.meta as any).env.VITE_SUPABASE_URL}/functions/v1/create-ticket-payment-link`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ticket_id: ticket.id,
+            description: paymentForm.description,
+            amount: parseFloat(paymentForm.amount),
+            customer_email: paymentEmail || ticket.appointment?.customer_email || '',
+            customer_name: ticket.appointment?.customer_name || '',
+            short_id: ticket.appointment?.short_id || '',
+          }),
+        }
+      );
+      const data = await res.json();
+      if (data.paymentUrl) {
+        setPaymentLink(data.paymentUrl);
+      } else {
+        showError('Error al crear link', data.error || 'No se pudo generar el link de pago en Flow.');
+      }
+    } catch (err) {
+      showError('Error inesperado', 'No se pudo conectar con el servidor de pagos.');
+    } finally {
+      setIsCreatingLink(false);
+    }
+  };
+
+  const handleSendPaymentEmail = async () => {
+    if (!ticket || !paymentLink) return;
+    setIsSendingPaymentEmail(true);
+    try {
+      const res = await fetch(
+        `${(import.meta as any).env.VITE_SUPABASE_URL}/functions/v1/send-payment-link-email`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            customer_name: ticket.appointment?.customer_name || '',
+            customer_email: paymentEmail || ticket.appointment?.customer_email || '',
+            short_id: ticket.appointment?.short_id || '',
+            description: paymentForm.description,
+            amount: parseFloat(paymentForm.amount),
+            payment_url: paymentLink,
+            tech_support_email: bSettings?.notification_email || 'contacto@powerfix.cl',
+          }),
+        }
+      );
+      const data = await res.json();
+      if (data.success) {
+        showAlert('Email Enviado', `El link de pago fue enviado correctamente a ${paymentEmail || ticket.appointment?.customer_email}.`);
+        setShowPaymentModal(false);
+        setPaymentForm({ description: '', amount: '' });
+        setPaymentLink(null);
+        setLinkCopied(false);
+      } else {
+        showError('Error al enviar', data.error || 'No se pudo enviar el correo.');
+      }
+    } catch (err) {
+      showError('Error inesperado', 'No se pudo conectar con el servidor de correo.');
+    } finally {
+      setIsSendingPaymentEmail(false);
+    }
+  };
+
+  const handleCopyLink = () => {
+    if (!paymentLink) return;
+    navigator.clipboard.writeText(paymentLink);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
   };
 
   return (
@@ -844,6 +936,125 @@ export default function AdminTicketDetail() {
             </CardContent>
           </Card>
 
+          {/* ── Resumen Financiero — visible después de aprobar presupuesto ── */}
+          {['accepted', 'repairing', 'ready', 'closed'].includes(ticket.status) && findings.length > 0 && (() => {
+            const subtotal = findings.reduce((acc, f) => acc + f.price, 0);
+            const servicePrice = ticket.appointment?.service?.price || 0;
+            const isExpress = ticket.appointment?.service?.name?.toLowerCase().includes('express');
+            const abonoInicial = isExpress ? 0 : servicePrice;
+            const abonosPagados = paymentLinks
+              .filter(pl => pl.status === 'paid')
+              .reduce((acc, pl) => acc + pl.amount, 0);
+            const saldoPendiente = Math.max(0, subtotal - abonoInicial - abonosPagados);
+            const fmt = (n: number) => new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(n);
+
+            return (
+              <Card className="border-slate-200 shadow-sm">
+                <CardHeader className="bg-slate-50/50 border-b border-slate-100 rounded-t-[inherit]">
+                  <CardTitle className="text-sm uppercase tracking-widest font-black text-slate-400">Resumen Financiero</CardTitle>
+                </CardHeader>
+                <CardContent className="p-0">
+                  {/* Ítems */}
+                  <div className="divide-y divide-slate-50">
+
+                    {/* Total reparación */}
+                    <div className="flex justify-between items-center px-5 py-3">
+                      <span className="text-xs text-slate-500 font-medium">Total reparación</span>
+                      <span className="text-sm font-bold text-slate-800">{fmt(subtotal)}</span>
+                    </div>
+
+                    {/* Abono inicial */}
+                    {servicePrice > 0 && (
+                      <div className="flex justify-between items-center px-5 py-3">
+                        <span className="text-xs font-medium flex items-center gap-1.5 text-slate-500">
+                          {isExpress ? (
+                            <><span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" /> Tarifa express (no descuenta)</>
+                          ) : (
+                            <><span className="w-1.5 h-1.5 rounded-full bg-blue-400 inline-block" /> Abono inicial (evaluación)</>
+                          )}
+                        </span>
+                        <span className={`text-sm font-bold ${isExpress ? 'text-amber-600' : 'text-blue-600'}`}>
+                          {isExpress ? '' : '−'}{fmt(servicePrice)}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Abonos posteriores vía link */}
+                    {paymentLinks.filter(pl => pl.status === 'paid').map(pl => (
+                      <div key={pl.id} className="flex justify-between items-start px-5 py-3 hover:bg-slate-50/50 transition-colors cursor-default border-b border-slate-50 last:border-0 focus-within:relative focus-within:z-50">
+                        <div className="space-y-0.5">
+                          <span className="text-xs font-medium flex items-center gap-1.5 text-slate-500">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
+                            Abono pagado
+                            {pl.paid_at && (
+                              <button type="button" className="relative group/info ml-1 flex items-center outline-none">
+                                <Info className="w-3.5 h-3.5 text-slate-300 hover:text-slate-500 transition-colors cursor-pointer" />
+                                {/* Tooltip UP */}
+                                <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1.5 text-[10px] font-bold text-white shadow-lg opacity-0 translate-y-1 transition-all duration-150 group-focus/info:opacity-100 group-focus/info:translate-y-0">
+                                  Pagado el {format(parseISO(pl.paid_at), "d 'de' MMMM yyyy, HH:mm", { locale: es })}
+                                  {pl.flow_order && <> · Flow #{pl.flow_order}</>}
+                                  {/* Arrow */}
+                                  <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
+                                </span>
+                              </button>
+                            )}
+                          </span>
+                          <p className="text-[10px] text-slate-400 font-medium pl-3">{pl.description}</p>
+                        </div>
+                        <span className="text-sm font-bold text-emerald-600 shrink-0 ml-4">−{fmt(pl.amount)}</span>
+                      </div>
+                    ))}
+
+                    {/* Links pendientes */}
+                    {paymentLinks.filter(pl => pl.status === 'pending').map(pl => (
+                      <div key={pl.id} className="flex justify-between items-start px-5 py-3 hover:bg-slate-50/50 transition-colors cursor-default border-b border-slate-50 last:border-0 focus-within:relative focus-within:z-50">
+                        <div className="space-y-0.5">
+                          <span className="text-xs font-medium flex items-center gap-1.5 text-slate-500">
+                            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+                            Esperando pago
+                            <button type="button" className="relative group/info ml-1 flex items-center outline-none">
+                              <Info className="w-3.5 h-3.5 text-slate-300 hover:text-slate-500 transition-colors cursor-pointer" />
+                              {/* Tooltip UP */}
+                              <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1.5 text-[10px] font-bold text-white shadow-lg opacity-0 translate-y-1 transition-all duration-150 group-focus/info:opacity-100 group-focus/info:translate-y-0">
+                                Creado el {format(parseISO(pl.created_at), "d 'de' MMMM yyyy, HH:mm", { locale: es })}
+                                <span className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-900" />
+                              </span>
+                            </button>
+                          </span>
+                          <p className="text-[10px] text-slate-400 font-medium pl-3">{pl.description}</p>
+                          <div className="pl-3 pt-1.5">
+                            <button
+                              type="button"
+                              className="text-[9px] font-black text-slate-500 bg-white border border-slate-200 hover:text-slate-900 hover:border-slate-300 hover:shadow-sm tracking-widest transition-all flex items-center gap-1.5 px-3 py-1 rounded-full uppercase"
+                              onClick={() => navigator.clipboard.writeText(pl.payment_url)}
+                            >
+                              <Copy className="w-3 h-3" /> Copiar link
+                            </button>
+                          </div>
+                        </div>
+                        <span className="text-sm font-bold text-amber-600 shrink-0 ml-4">{fmt(pl.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Total */}
+                  <div className={`flex justify-between items-center px-5 py-4 border-t-2 rounded-b-[inherit] ${saldoPendiente === 0 ? 'border-emerald-100 bg-emerald-50/60' : 'border-slate-100 bg-slate-50/60'}`}>
+                    <div>
+                      <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Saldo Pendiente</p>
+                      {saldoPendiente === 0 && (
+                        <p className="text-[10px] text-emerald-600 font-bold mt-0.5">Cuenta completamente saldada</p>
+                      )}
+                    </div>
+                    <span className={`text-xl font-black ${saldoPendiente === 0 ? 'text-emerald-600' : 'text-slate-900'}`}>
+                      {saldoPendiente === 0 ? '✓ $0' : fmt(saldoPendiente)}
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })()}
+
+
           <Card className="border-slate-200 overflow-hidden shadow-sm">
             <CardHeader className="bg-slate-50/50 border-b border-slate-100">
               <CardTitle className="text-sm uppercase tracking-widest font-black text-slate-400">Información del Cliente</CardTitle>
@@ -923,6 +1134,20 @@ export default function AdminTicketDetail() {
              </Button>
           )}
 
+          {['accepted', 'repairing', 'ready'].includes(ticket.status) && (
+            <Button
+              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 px-4 gap-2 font-bold text-xs transition-all active:scale-95"
+              onClick={() => {
+                setShowPaymentModal(true);
+                setPaymentEmail(ticket.appointment?.customer_email || '');
+                setPaymentLink(null);
+                setPaymentForm({ description: '', amount: '' });
+              }}
+            >
+              <CreditCard className="w-4 h-4" /> LINK DE PAGO
+            </Button>
+          )}
+
           {ticket.status === 'quoted' && (
              <Button 
                 className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-10 px-4 gap-2 font-bold text-xs transition-all active:scale-95"
@@ -952,6 +1177,297 @@ export default function AdminTicketDetail() {
           )}
         </div>
       </div>
+
+      {/* Payment Link Modal */}
+      {showPaymentModal && (
+        <div className="fixed inset-0 z-[100] overflow-y-auto">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"
+            onClick={() => {
+              if (!isCreatingLink && !isSendingPaymentEmail) {
+                setShowPaymentModal(false);
+                setPaymentLink(null);
+                setPaymentForm({ description: '', amount: '' });
+                setLinkCopied(false);
+              }
+            }}
+          />
+
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Card className="relative z-10 w-full max-w-xl shadow-2xl overflow-hidden rounded-[32px] border border-slate-100 bg-white">
+
+              {/* Header — mismo patrón que Enviar Presupuesto */}
+              <CardHeader className="bg-slate-50/50 border-b border-slate-100/60 pb-6">
+                <div className="flex justify-between items-center">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-slate-900 p-1.5 rounded-lg text-white">
+                        <CreditCard className="w-4 h-4" />
+                      </div>
+                      <CardTitle className="text-xl font-black text-slate-900">
+                        {!paymentLink ? 'Crear Link de Pago' : 'Link Generado'}
+                      </CardTitle>
+                    </div>
+                    <CardDescription className="text-xs font-medium text-slate-500">
+                      {!paymentLink
+                        ? `Ticket #${ticket.appointment?.short_id} · ${ticket.appointment?.customer_name}`
+                        : 'Revisa el link y envíalo al cliente por correo'
+                      }
+                    </CardDescription>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="rounded-full hover:bg-red-50 hover:text-red-500 transition-colors"
+                    onClick={() => {
+                      setShowPaymentModal(false);
+                      setPaymentLink(null);
+                      setPaymentForm({ description: '', amount: '' });
+                      setLinkCopied(false);
+                    }}
+                  >
+                    <XCircle className="w-6 h-6" />
+                  </Button>
+                </div>
+
+              </CardHeader>
+
+              <CardContent className="p-6 space-y-6">
+
+                {/* ── Fase 1: Formulario ── */}
+                {!paymentLink ? (
+                  <div className="space-y-6">
+
+                    {/* Monto total de reparación — referencia */}
+                    {findings.length > 0 && (() => {
+                      const subtotal = findings.reduce((acc, f) => acc + f.price, 0);
+                      const evaluacionAbono = ticket.appointment?.service?.price || 0;
+                      const abonosPagados = paymentLinks
+                        .filter(pl => pl.status === 'paid')
+                        .reduce((acc, pl) => acc + pl.amount, 0);
+                      const saldoPendiente = Math.max(0, subtotal - evaluacionAbono - abonosPagados);
+
+                      return (
+                        <div>
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-3">
+                            Resumen del Ticket
+                          </p>
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="text-slate-500 font-medium">Subtotal reparación</span>
+                              <span className="font-bold text-slate-700">
+                                {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(subtotal)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between items-center text-sm">
+                              <span className="text-slate-500 font-medium">Abono evaluación</span>
+                              <span className="font-bold text-blue-600">
+                                -{new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(evaluacionAbono)}
+                              </span>
+                            </div>
+                            {abonosPagados > 0 && (
+                              <div className="flex justify-between items-center text-sm">
+                                <span className="text-emerald-600 font-medium flex items-center gap-1">
+                                  <CheckCircle className="w-3 h-3" />
+                                  Abono{paymentLinks.filter(pl => pl.status === 'paid').length > 1 ? 's' : ''} pagado{paymentLinks.filter(pl => pl.status === 'paid').length > 1 ? 's' : ''}
+                                </span>
+                                <span className="font-bold text-emerald-600">
+                                  -{new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(abonosPagados)}
+                                </span>
+                              </div>
+                            )}
+                            <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+                              <span className="text-slate-900 font-black text-sm">Saldo Pendiente</span>
+                              <span className={`font-black text-base ${saldoPendiente === 0 ? 'text-emerald-600' : 'text-slate-900'}`}>
+                                {saldoPendiente === 0
+                                  ? '✓ Saldado'
+                                  : new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(saldoPendiente)
+                                }
+                              </span>
+                            </div>
+                          </div>
+                          {saldoPendiente > 0 && (
+                            <div className="mt-3 flex justify-end">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="h-7 px-3 text-[10px] font-black border-slate-200 text-slate-600 hover:bg-slate-100 uppercase tracking-widest gap-1.5 rounded-lg transition-all active:scale-95"
+                                onClick={() => setPaymentForm(prev => ({ ...prev, amount: String(saldoPendiente) }))}
+                              >
+                                <ArrowUpCircle className="w-3 h-3" />
+                                Usar saldo pendiente · {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(saldoPendiente)}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                        Descripción del Cobro <span className="text-red-500">*</span>
+                      </label>
+                      <textarea
+                        className="w-full min-h-[90px] p-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm resize-none bg-slate-50 font-medium text-slate-900 placeholder:text-slate-400"
+                        placeholder="Ej: Abono por reparación de placa base, repuesto batería..."
+                        value={paymentForm.description}
+                        onChange={(e) => setPaymentForm({ ...paymentForm, description: e.target.value })}
+                        disabled={isCreatingLink}
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                        Monto a Cobrar (CLP)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-black text-sm">$</span>
+                        <Input
+                          type="number"
+                          placeholder="50000"
+                          value={paymentForm.amount}
+                          onChange={(e) => setPaymentForm({ ...paymentForm, amount: e.target.value })}
+                          className="pl-7 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-slate-900 rounded-xl h-12 font-bold text-slate-900 text-sm"
+                          disabled={isCreatingLink}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 pt-2 border-t border-slate-100">
+                      <Button
+                        variant="outline"
+                        className="flex-1 h-12 border-slate-200 text-slate-700 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95"
+                        onClick={() => {
+                          setShowPaymentModal(false);
+                          setPaymentForm({ description: '', amount: '' });
+                        }}
+                        disabled={isCreatingLink}
+                      >
+                        Cancelar
+                      </Button>
+                      <Button
+                        className="flex-1 bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex flex-col items-center justify-center gap-0.5"
+                        disabled={!paymentForm.description || !paymentForm.amount || isCreatingLink}
+                        onClick={handleCreatePaymentLink}
+                      >
+                        {isCreatingLink ? (
+                          <><Loader2 className="w-4 h-4 animate-spin" /> Generando...</>
+                        ) : (
+                          <>
+                            <span className="flex items-center gap-1.5"><Link className="w-3.5 h-3.5" /> Generar Link</span>
+                            {paymentForm.amount && (
+                              <span className="text-[9px] font-bold text-white/60 tracking-widest">
+                                {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(parseFloat(paymentForm.amount) || 0)}
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  /* ── Fase 2: Link listo → enviar email ── */
+                  <div className="space-y-5">
+                    {/* Resumen del cobro */}
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Resumen del Cobro</p>
+                      <div className="flex justify-between items-center text-sm p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <span className="text-slate-500 font-medium">Concepto</span>
+                        <span className="font-bold text-slate-900 text-right max-w-[55%] truncate">{paymentForm.description}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <span className="text-slate-500 font-medium">Monto</span>
+                        <span className="font-black text-slate-900 text-lg">
+                          {new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', minimumFractionDigits: 0 }).format(parseFloat(paymentForm.amount) || 0)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Link generado */}
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                        Link de Pago Generado
+                      </label>
+                      <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <p className="flex-1 text-xs text-slate-500 truncate font-medium">{paymentLink}</p>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg"
+                          onClick={handleCopyLink}
+                        >
+                          {linkCopied
+                            ? <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                            : <Copy className="w-3.5 h-3.5" />
+                          }
+                        </Button>
+                        <a
+                          href={paymentLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="h-7 w-7 shrink-0 flex items-center justify-center text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                      {linkCopied && (
+                        <p className="text-[10px] font-bold text-emerald-600 mt-1.5 flex items-center gap-1">
+                          <CheckCircle className="w-3 h-3" /> Copiado al portapapeles
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Email destino */}
+                    <div>
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">
+                        Email de Envío
+                      </label>
+                      <Input
+                        type="email"
+                        value={paymentEmail}
+                        onChange={(e) => setPaymentEmail(e.target.value)}
+                        className="bg-slate-50 border-slate-200 focus:ring-2 focus:ring-slate-900 rounded-xl h-12 font-bold text-slate-900 text-sm"
+                        placeholder="email@cliente.com"
+                        disabled={isSendingPaymentEmail}
+                      />
+                      <p className="text-[9px] font-medium text-slate-400 mt-1">
+                        Puedes modificar el email antes de enviar el link.
+                      </p>
+                    </div>
+
+                    <div className="flex gap-3 pt-2 border-t border-slate-100">
+                      <Button
+                        variant="outline"
+                        className="flex-1 h-12 border-slate-200 text-slate-700 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95"
+                        onClick={() => {
+                          setPaymentLink(null);
+                          setLinkCopied(false);
+                        }}
+                        disabled={isSendingPaymentEmail}
+                      >
+                        ← Editar
+                      </Button>
+                      <Button
+                        className="flex-1 bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center justify-center gap-2"
+                        disabled={!paymentEmail || isSendingPaymentEmail}
+                        onClick={handleSendPaymentEmail}
+                      >
+                        {isSendingPaymentEmail ? (
+                          <><Loader2 className="w-4 h-4 animate-spin" /> Enviando...</>
+                        ) : (
+                          <><Mail className="w-4 h-4" /> Enviar por Correo</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
 
       {showSendModal && (
         <div className="fixed inset-0 z-[100] overflow-y-auto">

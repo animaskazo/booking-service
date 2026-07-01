@@ -61,6 +61,24 @@ export type Database = {
         Row: any;
         Insert: any;
       };
+      ticket_payment_links: {
+        Row: {
+          id: string;
+          ticket_id: string;
+          description: string;
+          amount: number;
+          commerce_order: string;
+          flow_token: string | null;
+          payment_url: string;
+          status: 'pending' | 'paid' | 'rejected';
+          flow_order: number | null;
+          paid_at: string | null;
+          voucher_url: string | null;
+          created_at: string;
+        };
+        Insert: any;
+        Update: any;
+      };
     };
   };
 };
@@ -1019,3 +1037,44 @@ export const createFlowPayment = async (input: FlowPaymentInput): Promise<{ url:
 
   return data as { url: string; token: string; commerceOrder: string };
 };
+
+// ============================================================================
+// HOOKS - TICKET PAYMENT LINKS
+// ============================================================================
+
+export type TicketPaymentLink = {
+  id: string;
+  ticket_id: string;
+  description: string;
+  amount: number;
+  commerce_order: string;
+  flow_token: string | null;
+  payment_url: string;
+  status: 'pending' | 'paid' | 'rejected';
+  flow_order: number | null;
+  paid_at: string | null;
+  voucher_url: string | null;
+  created_at: string;
+};
+
+/**
+ * Obtiene todos los links de pago de un ticket
+ */
+export const useTicketPaymentLinks = (ticketId: string | undefined) => {
+  return useQuery({
+    queryKey: ['ticket_payment_links', ticketId],
+    queryFn: async () => {
+      if (!ticketId) return [];
+      const { data, error } = await supabase
+        .from('ticket_payment_links')
+        .select('*')
+        .eq('ticket_id', ticketId)
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+      return data as TicketPaymentLink[];
+    },
+    refetchInterval: 30_000, // Refresca cada 30s para detectar pagos confirmados
+    enabled: !!ticketId,
+  });
+};
+

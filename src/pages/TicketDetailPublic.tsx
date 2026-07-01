@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePublicTracking } from '../lib/public-tracking-context';
-import { useTicketById, useTicketFindings, useTicketHistory, useUpdateTicket } from '../lib/supabase-client';
+import { useTicketById, useTicketFindings, useTicketHistory, useUpdateTicket, useTicketPaymentLinks } from '../lib/supabase-client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -37,6 +37,7 @@ export default function TicketDetailPublic() {
   const { data: ticket } = useTicketById(contextTicket?.id);
   const { data: findings = [] } = useTicketFindings(contextTicket?.id);
   const { data: history = [] } = useTicketHistory(contextTicket?.id);
+  const { data: paymentLinks = [] } = useTicketPaymentLinks(contextTicket?.id);
 
   if (!appointment || !contextTicket) return null;
 
@@ -175,13 +176,38 @@ export default function TicketDetailPublic() {
                     </div>
                   )}
 
+                  {/* Abonos adicionales pagados via link de pago */}
+                  {paymentLinks
+                    .filter(pl => pl.status === 'paid')
+                    .map(pl => (
+                      <div key={pl.id} className="flex justify-between items-center text-xs font-bold bg-emerald-50/50 px-2 py-1 rounded-lg">
+                        <span className="text-emerald-600 flex items-center gap-1">
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                          Abono pagado
+                        </span>
+                        <span className="text-emerald-600">- {formatPrice(pl.amount)}</span>
+                      </div>
+                    ))
+                  }
+
                   <div className="flex justify-between items-center pt-2.5 border-t border-slate-100 font-bold text-slate-900">
                     <span className="text-sm">Saldo Pendiente</span>
                     <span className="text-lg text-slate-950 font-black">
-                      {formatPrice(Math.max(0, 
-                        (currentTicket.budget || currentTicket.total_budget || 0) - 
-                        (appointment.service_name?.toLowerCase().includes('express') ? 0 : (appointment.amount || 0))
-                      ))}
+                      {(() => {
+                        const isExpress = appointment.service_name?.toLowerCase().includes('express');
+                        const evaluacionDesc = isExpress ? 0 : (appointment.amount || 0);
+                        const abonosPagados = paymentLinks
+                          .filter(pl => pl.status === 'paid')
+                          .reduce((acc, pl) => acc + pl.amount, 0);
+                        const saldo = Math.max(0,
+                          (currentTicket.budget || currentTicket.total_budget || 0)
+                          - evaluacionDesc
+                          - abonosPagados
+                        );
+                        return saldo === 0
+                          ? <span className="text-emerald-600">✓ Saldado</span>
+                          : formatPrice(saldo);
+                      })()}
                     </span>
                   </div>
 
