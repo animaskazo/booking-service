@@ -16,6 +16,7 @@ import {
   supabase,
   useBusinessSettings,
   useTicketPaymentLinks,
+  useAddManualPayment,
 } from '../lib/supabase-client';
 import { Button } from '@/components/ui/button';
 import { useDialog } from '@/components/ui/dialog-provider';
@@ -98,6 +99,11 @@ export default function AdminTicketDetail() {
   const [isCreatingLink, setIsCreatingLink] = useState(false);
   const [isSendingPaymentEmail, setIsSendingPaymentEmail] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
+  
+  // Transfer modal state
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferForm, setTransferForm] = useState({ description: '', amount: '', paid_at: format(new Date(), "yyyy-MM-dd'T'HH:mm") });
+  const addManualPaymentMutation = useAddManualPayment();
   
   const { showAlert, showError } = useDialog();
 
@@ -420,6 +426,23 @@ export default function AdminTicketDetail() {
     setTimeout(() => setLinkCopied(false), 2000);
   };
 
+  const handleAddTransfer = async () => {
+    if (!ticket || !transferForm.description || !transferForm.amount) return;
+    try {
+      await addManualPaymentMutation.mutateAsync({
+        ticket_id: ticket.id,
+        description: transferForm.description,
+        amount: parseFloat(transferForm.amount),
+        paid_at: new Date(transferForm.paid_at).toISOString(),
+      });
+      showAlert('Abono Registrado', 'La transferencia se ha registrado exitosamente.');
+      setShowTransferModal(false);
+      setTransferForm({ description: '', amount: '', paid_at: format(new Date(), "yyyy-MM-dd'T'HH:mm") });
+    } catch (err) {
+      showError('Error al registrar', 'No se pudo registrar la transferencia.');
+    }
+  };
+
   return (
     <div className="space-y-8 pb-20">
       {/* Header */}
@@ -453,7 +476,6 @@ export default function AdminTicketDetail() {
           {[
             { key: 'evaluating_quoted', label: 'Evaluación y presupuesto' },
             { key: 'repairing', label: 'Reparación' },
-            { key: 'repuestos', label: 'Repuestos' },
             { key: 'ready', label: 'Retiro' },
             { key: 'closed', label: 'Retirado' }
           ].map((step, index) => {
@@ -462,8 +484,8 @@ export default function AdminTicketDetail() {
               quoted: 0,
               accepted: 1,
               repairing: 1,
-              ready: 3,
-              closed: 4,
+              ready: 2,
+              closed: 3,
               rejected: -1
             };
             const currentStepIndex = stepsMap[ticket.status] ?? 0;
@@ -477,8 +499,6 @@ export default function AdminTicketDetail() {
                 onClick={() => {
                   if (step.key === 'evaluating_quoted') {
                     setActiveView('presupuesto');
-                  } else if (step.key === 'repuestos') {
-                    setActiveView('repuestos');
                   } else {
                     setActiveView('reparacion');
                   }
@@ -745,7 +765,7 @@ export default function AdminTicketDetail() {
           )}
 
           {/* Phase 3: Spare Parts Tracking */}
-          {activeView === 'repuestos' && (
+          {activeView === 'reparacion' && (
             <Card className="border-slate-200 overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
               <CardHeader className="bg-slate-50/50 border-b border-slate-100">
                 <div className="flex justify-between items-center">
@@ -1038,7 +1058,7 @@ export default function AdminTicketDetail() {
                   </div>
 
                   {/* Total */}
-                  <div className={`flex justify-between items-center px-5 py-4 border-t-2 rounded-b-[inherit] ${saldoPendiente === 0 ? 'border-emerald-100 bg-emerald-50/60' : 'border-slate-100 bg-slate-50/60'}`}>
+                  <div className={`flex justify-between items-center px-5 py-4 border-t-2 ${saldoPendiente === 0 ? 'border-emerald-100 bg-emerald-50/60' : 'border-slate-100 bg-slate-50/60'} ${['accepted', 'repairing', 'ready'].includes(ticket.status) ? '' : 'rounded-b-[inherit]'}`}>
                     <div>
                       <p className="text-xs font-black text-slate-500 uppercase tracking-widest">Saldo Pendiente</p>
                       {saldoPendiente === 0 && (
@@ -1049,6 +1069,33 @@ export default function AdminTicketDetail() {
                       {saldoPendiente === 0 ? '✓ $0' : fmt(saldoPendiente)}
                     </span>
                   </div>
+
+                  {['accepted', 'repairing', 'ready'].includes(ticket.status) && (
+                    <div className="flex flex-col sm:flex-row gap-2 p-5 border-t border-slate-100 bg-white rounded-b-[inherit]">
+                      <Button
+                        variant="outline"
+                        className="flex-1 border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-300 rounded-xl h-10 px-4 gap-2 font-bold text-xs transition-all active:scale-95"
+                        onClick={() => {
+                          setShowTransferModal(true);
+                          setTransferForm({ description: 'Abono vía transferencia', amount: '', paid_at: format(new Date(), "yyyy-MM-dd'T'HH:mm") });
+                        }}
+                      >
+                        <Plus className="w-4 h-4" /> ABONO MANUAL
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="flex-1 border-indigo-200 text-indigo-700 hover:bg-indigo-50 hover:border-indigo-300 rounded-xl h-10 px-4 gap-2 font-bold text-xs transition-all active:scale-95"
+                        onClick={() => {
+                          setShowPaymentModal(true);
+                          setPaymentEmail(ticket.appointment?.customer_email || '');
+                          setPaymentLink(null);
+                          setPaymentForm({ description: '', amount: '' });
+                        }}
+                      >
+                        <CreditCard className="w-4 h-4" /> LINK DE PAGO
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );
@@ -1132,20 +1179,6 @@ export default function AdminTicketDetail() {
              >
                 <Save className="w-4 h-4" /> ENVIAR PRESUPUESTO
              </Button>
-          )}
-
-          {['accepted', 'repairing', 'ready'].includes(ticket.status) && (
-            <Button
-              className="bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl h-10 px-4 gap-2 font-bold text-xs transition-all active:scale-95"
-              onClick={() => {
-                setShowPaymentModal(true);
-                setPaymentEmail(ticket.appointment?.customer_email || '');
-                setPaymentLink(null);
-                setPaymentForm({ description: '', amount: '' });
-              }}
-            >
-              <CreditCard className="w-4 h-4" /> LINK DE PAGO
-            </Button>
           )}
 
           {ticket.status === 'quoted' && (
@@ -1539,6 +1572,94 @@ export default function AdminTicketDetail() {
               </div>
             </CardContent>
           </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Transfer Modal */}
+      {showTransferModal && (
+        <div className="fixed inset-0 z-[100] overflow-y-auto">
+          {/* Backdrop */}
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowTransferModal(false)} />
+          
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Card className="relative z-10 w-full max-w-md shadow-2xl overflow-hidden rounded-[32px] border border-slate-100 bg-white">
+              <CardHeader className="bg-slate-50/50 border-b border-slate-100/60 pb-6">
+                <div className="flex justify-between items-center">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-indigo-100 p-1.5 rounded-lg text-indigo-700">
+                        <CheckCircle className="w-4 h-4" />
+                      </div>
+                      <CardTitle className="text-xl font-black text-slate-900">Registrar Abono</CardTitle>
+                    </div>
+                    <CardDescription className="text-xs font-medium text-slate-500">
+                      Registra una transferencia o pago manual
+                    </CardDescription>
+                  </div>
+                  <Button variant="ghost" size="icon" className="rounded-full hover:bg-red-50 hover:text-red-500 transition-colors" onClick={() => setShowTransferModal(false)}>
+                    <XCircle className="w-6 h-6" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-4">
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Fecha y Hora</label>
+                    <Input 
+                      type="datetime-local"
+                      value={transferForm.paid_at}
+                      onChange={(e) => setTransferForm({...transferForm, paid_at: e.target.value})}
+                      className="bg-slate-50 border-slate-200 focus:ring-2 focus:ring-slate-900 rounded-xl h-12 font-bold text-slate-900 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Monto (CLP)</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-black text-sm">$</span>
+                      <Input 
+                        type="number"
+                        placeholder="Ej: 25000"
+                        value={transferForm.amount}
+                        onChange={(e) => setTransferForm({...transferForm, amount: e.target.value})}
+                        className="pl-7 bg-slate-50 border-slate-200 focus:ring-2 focus:ring-slate-900 rounded-xl h-12 font-bold text-slate-900 text-sm"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Comentario / Descripción</label>
+                    <textarea 
+                      className="w-full p-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm resize-none bg-slate-50 font-medium text-slate-900 placeholder:text-slate-400"
+                      placeholder="Ej: Transferencia Banco Estado..."
+                      rows={2}
+                      value={transferForm.description}
+                      onChange={(e) => setTransferForm({...transferForm, description: e.target.value})}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-4 border-t border-slate-100">
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-12 border-slate-200 text-slate-700 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95"
+                    onClick={() => setShowTransferModal(false)}
+                  >
+                    Cancelar
+                  </Button>
+                  <Button
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white h-12 font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 flex items-center justify-center gap-2"
+                    disabled={addManualPaymentMutation.isPending || !transferForm.amount || !transferForm.description}
+                    onClick={handleAddTransfer}
+                  >
+                    {addManualPaymentMutation.isPending ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" /> Guardando...</>
+                    ) : (
+                      <><Save className="w-4 h-4" /> Registrar Pago</>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       )}

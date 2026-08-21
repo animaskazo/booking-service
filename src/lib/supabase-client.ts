@@ -1078,3 +1078,36 @@ export const useTicketPaymentLinks = (ticketId: string | undefined) => {
   });
 };
 
+/**
+ * Hook para agregar un pago manual (ej. transferencia)
+ */
+export const useAddManualPayment = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (paymentData: {
+      ticket_id: string;
+      description: string;
+      amount: number;
+      paid_at: string;
+    }) => {
+      const { data, error } = await supabase
+        .from('ticket_payment_links')
+        .insert([{
+          ticket_id: paymentData.ticket_id,
+          description: paymentData.description,
+          amount: paymentData.amount,
+          commerce_order: `manual-${Date.now()}`,
+          payment_url: 'transferencia',
+          status: 'paid',
+          paid_at: paymentData.paid_at
+        }])
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['ticket_payment_links', variables.ticket_id] });
+    },
+  });
+};
