@@ -957,9 +957,6 @@ export default function AdminTicketDetail() {
                         </div>
                         <div>
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <Badge className={`${PART_STATUS[part.status as keyof typeof PART_STATUS]?.color || ''} border shadow-none font-bold uppercase text-[9px]`}>
-                              {PART_STATUS[part.status as keyof typeof PART_STATUS]?.label || part.status}
-                            </Badge>
                             <Badge className="bg-blue-100 text-blue-700 border-blue-200 border shadow-none font-bold uppercase text-[9px]">
                               Stock
                             </Badge>
