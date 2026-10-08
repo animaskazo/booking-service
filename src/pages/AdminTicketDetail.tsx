@@ -1898,7 +1898,7 @@ export default function AdminTicketDetail() {
         </div>
 
         <div className="mt-8 pt-6 border-t border-slate-200 text-center">
-          <div className="flex items-center justify-center gap-4 mb-3 mx-auto w-fit bg-slate-200 px-4 py-2 rounded-lg">
+          <div className="flex items-center justify-center gap-4 mb-3 mx-auto w-fit bg-black px-4 py-2 rounded-lg">
             <img
               src="/logo-msi.png"
               alt="MSI"
