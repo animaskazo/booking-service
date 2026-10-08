@@ -1797,6 +1797,7 @@ export default function AdminTicketDetail() {
           body * { visibility: hidden; background: white !important; }
           .print-area, .print-area * { visibility: visible; }
           .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+          .print-area .print-keep-bg, .print-area .print-keep-bg * { background: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-hidden { display: none !important; }
           .card { border: none !important; box-shadow: none !important; }
         }
@@ -1898,7 +1899,7 @@ export default function AdminTicketDetail() {
         </div>
 
         <div className="mt-8 pt-6 border-t border-slate-200 text-center">
-          <div className="flex items-center justify-center gap-4 mb-3 mx-auto w-fit bg-black px-4 py-2 rounded-lg">
+          <div className="print-keep-bg flex items-center justify-center gap-4 mb-3 mx-auto w-fit bg-black px-4 py-2 rounded-lg">
             <img
               src="/logo-msi.png"
               alt="MSI"
