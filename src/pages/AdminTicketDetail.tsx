@@ -52,7 +52,8 @@ import {
   Link,
   ArrowUpCircle,
   Info,
-  Pencil
+  Pencil,
+  X
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -964,10 +965,11 @@ export default function AdminTicketDetail() {
                     {editingDevice && (
                       <button
                         type="button"
+                        title="Cancelar edición"
                         onClick={handleCancelDeviceEdit}
-                        className="h-7 px-2 rounded-lg text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                        className="h-7 w-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
                       >
-                        Cancelar
+                        <X className="w-4 h-4" />
                       </button>
                     )}
                     <Button
