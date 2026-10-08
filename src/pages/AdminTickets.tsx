@@ -45,7 +45,22 @@ export default function AdminTickets() {
   const { data: allParts = [] } = useAllTicketParts();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
-  const [showClosed, setShowClosed] = useState(true);
+  const [showClosed, setShowClosed] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('tickets:showClosed');
+      return saved === null ? false : saved === '1'; // oculta por defecto
+    } catch {
+      return false;
+    }
+  });
+  const handleToggleClosed = (value: boolean) => {
+    setShowClosed(value);
+    try {
+      localStorage.setItem('tickets:showClosed', value ? '1' : '0');
+    } catch {
+      /* almacenamiento no disponible */
+    }
+  };
   const [searchTerm, setSearchTerm] = useState('');
   const updateTicketMutation = useUpdateTicket();
   const { showAlert, showError } = useDialog();
@@ -179,7 +194,7 @@ export default function AdminTickets() {
               <input
                 type="checkbox"
                 checked={showClosed}
-                onChange={(e) => setShowClosed(e.target.checked)}
+                onChange={(e) => handleToggleClosed(e.target.checked)}
                 className="w-3.5 h-3.5 accent-slate-900"
               />
               Finalizados
