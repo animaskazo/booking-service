@@ -1810,7 +1810,21 @@ export default function AdminTicketDetail() {
             <p className="text-lg font-bold text-slate-500">#{ticket.appointment?.short_id}</p>
           </div>
           <div className="text-right">
-            <h2 className="text-xl font-black uppercase">BookingPro</h2>
+            <img src="/powerfix-negro.png" alt="PowerFix" className="h-10 ml-auto mb-2" />
+            <div className="flex items-center justify-end gap-3 mb-2">
+              <img
+                src="/msi.png"
+                alt="MSI"
+                className="h-6 w-auto"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+              <img
+                src="/gigabyte.png"
+                alt="Gigabyte"
+                className="h-6 w-auto"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+            </div>
             <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">Servicio Técnico Especializado</p>
             <p className="text-xs font-medium text-slate-500">{format(new Date(), "dd 'de' MMMM, yyyy", { locale: es })}</p>
           </div>
@@ -1898,7 +1912,7 @@ export default function AdminTicketDetail() {
         </div>
 
         <div className="mt-8 pt-6 border-t border-slate-200 text-center text-[9px] text-slate-400 uppercase tracking-[0.2em]">
-          Este presupuesto es válido por 15 días - BookingPro System
+          Este presupuesto es válido por 15 días - PowerFix
         </div>
       </div>
     </div>
