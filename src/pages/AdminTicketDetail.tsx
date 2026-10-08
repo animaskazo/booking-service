@@ -1806,7 +1806,7 @@ export default function AdminTicketDetail() {
       <div className="hidden print:block print-area p-4 font-sans text-slate-900">
         <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6">
           <div>
-            <h1 className="text-3xl font-black tracking-tighter uppercase mb-1">Presupuesto Técnico</h1>
+            <h1 className="text-3xl font-black tracking-tighter uppercase mb-1">{activeView === 'reparacion' ? 'Resumen de Reparación' : 'Presupuesto Técnico'}</h1>
             <p className="text-lg font-bold text-slate-500">#{ticket.appointment?.short_id}</p>
           </div>
           <div className="text-right">
@@ -1912,7 +1912,7 @@ export default function AdminTicketDetail() {
         </div>
 
         <div className="mt-8 pt-6 border-t border-slate-200 text-center text-[9px] text-slate-400 uppercase tracking-[0.2em]">
-          Este presupuesto es válido por 15 días - PowerFix
+          {activeView === 'reparacion' ? 'Documento de respaldo de la reparación - PowerFix' : 'Este presupuesto es válido por 15 días - PowerFix'}
         </div>
       </div>
     </div>
