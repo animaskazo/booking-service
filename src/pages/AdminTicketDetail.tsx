@@ -50,6 +50,7 @@ import {
   Package,
   Truck,
   ExternalLink,
+  Boxes,
   CreditCard,
   Copy,
   Link,
@@ -841,32 +842,6 @@ export default function AdminTicketDetail() {
                 {/* Add Part Form */}
                 {['evaluating', 'quoted', 'accepted', 'repairing'].includes(ticket.status) && (
                   <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                    {/* Desde stock (sincronizado: descuenta 1 unidad) */}
-                    <div className="space-y-2 pb-4 border-b border-slate-200/70">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Agregar componente del stock</label>
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        <select
-                          className="flex-1 h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium focus:ring-2 focus:ring-slate-900 outline-none transition-all"
-                          value={selectedStockId}
-                          onChange={(e) => setSelectedStockId(e.target.value)}
-                        >
-                          <option value="">Selecciona del inventario...</option>
-                          {stockItems.map((s) => (
-                            <option key={s.id} value={s.id} disabled={s.quantity < 1}>
-                              {s.name} (x{s.quantity}){s.quantity < 1 ? ' — sin stock' : ''}
-                            </option>
-                          ))}
-                        </select>
-                        <Button
-                          onClick={handleAddPartFromStock}
-                          disabled={!selectedStockId || addPartFromStockMutation.isPending}
-                          className="bg-blue-600 hover:bg-blue-700 gap-2 font-bold uppercase text-[11px] tracking-widest h-11 rounded-xl px-5 whitespace-nowrap"
-                        >
-                          <Package className="w-4 h-4" /> Usar de stock
-                        </Button>
-                      </div>
-                      <p className="text-[10px] text-slate-400 font-medium">Al agregarlo se descuenta 1 unidad del inventario. Al quitarlo del ticket, se devuelve.</p>
-                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nombre Repuesto</label>
@@ -928,9 +903,9 @@ export default function AdminTicketDetail() {
                   </div>
                 )}
 
-                {/* Parts List */}
+                {/* Parts List (manuales; los de stock van en su propia tarjeta) */}
                 <div className="space-y-4">
-                  {ticketParts.map((part) => (
+                  {ticketParts.filter((part: any) => !part.stock_item_id).map((part) => (
                     <div key={part.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl border border-slate-100 bg-white hover:shadow-sm transition-all">
                       <div className="flex items-start gap-4">
                         <div className="bg-slate-100 p-2.5 rounded-xl">
@@ -941,11 +916,6 @@ export default function AdminTicketDetail() {
                             <Badge className={`${PART_STATUS[part.status as keyof typeof PART_STATUS]?.color || ''} border shadow-none font-bold uppercase text-[9px]`}>
                               {PART_STATUS[part.status as keyof typeof PART_STATUS]?.label || part.status}
                             </Badge>
-                            {part.stock_item_id && (
-                              <Badge className="bg-blue-100 text-blue-700 border-blue-200 border shadow-none font-bold uppercase text-[9px]">
-                                Stock
-                              </Badge>
-                            )}
                           </div>
                           <h4 className="font-bold text-slate-900">{part.name}</h4>
                           <div className="flex flex-wrap gap-3 mt-1">
@@ -989,10 +959,114 @@ export default function AdminTicketDetail() {
                       </div>
                     </div>
                   ))}
-                  {ticketParts.length === 0 && (
+                  {ticketParts.filter((part: any) => !part.stock_item_id).length === 0 && (
                     <div className="text-center py-12 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
                       <Package className="w-10 h-10 text-slate-200 mx-auto mb-3" />
-                      <p className="text-slate-400 text-sm font-medium italic">No hay repuestos registrados para este ticket.</p>
+                      <p className="text-slate-400 text-sm font-medium italic">No hay repuestos manuales registrados para este ticket.</p>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Stock usado en este ticket (módulo separado, sincronizado con inventario) */}
+          {activeView === 'reparacion' && (
+            <Card className="border-blue-200 overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <CardHeader className="bg-blue-50/60 border-b border-blue-100">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-100 p-2 rounded-lg">
+                      <Boxes className="w-5 h-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">Componentes del Stock</CardTitle>
+                      <CardDescription>Partes del inventario usadas en esta reparación</CardDescription>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 space-y-6">
+
+                {['evaluating', 'quoted', 'accepted', 'repairing'].includes(ticket.status) && (
+                  <div className="space-y-2 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Agregar componente del stock</label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <select
+                        className="flex-1 h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium focus:ring-2 focus:ring-slate-900 outline-none transition-all"
+                        value={selectedStockId}
+                        onChange={(e) => setSelectedStockId(e.target.value)}
+                      >
+                        <option value="">Selecciona del inventario...</option>
+                        {stockItems.map((s) => (
+                          <option key={s.id} value={s.id} disabled={s.quantity < 1}>
+                            {s.name} (x{s.quantity}){s.quantity < 1 ? ' — sin stock' : ''}
+                          </option>
+                        ))}
+                      </select>
+                      <Button
+                        onClick={handleAddPartFromStock}
+                        disabled={!selectedStockId || addPartFromStockMutation.isPending}
+                        className="bg-blue-600 hover:bg-blue-700 gap-2 font-bold uppercase text-[11px] tracking-widest h-11 rounded-xl px-5 whitespace-nowrap"
+                      >
+                        <Package className="w-4 h-4" /> Usar de stock
+                      </Button>
+                    </div>
+                    <p className="text-[10px] text-slate-400 font-medium">Al agregarlo se descuenta 1 unidad del inventario. Al quitarlo del ticket, se devuelve.</p>
+                  </div>
+                )}
+
+                <div className="space-y-4">
+                  {ticketParts.filter((part: any) => part.stock_item_id).map((part) => (
+                    <div key={part.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl border border-blue-100 bg-blue-50/40 hover:shadow-sm transition-all">
+                      <div className="flex items-start gap-4">
+                        <div className="bg-blue-100 p-2.5 rounded-xl">
+                          <Boxes className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            <Badge className={`${PART_STATUS[part.status as keyof typeof PART_STATUS]?.color || ''} border shadow-none font-bold uppercase text-[9px]`}>
+                              {PART_STATUS[part.status as keyof typeof PART_STATUS]?.label || part.status}
+                            </Badge>
+                            <Badge className="bg-blue-100 text-blue-700 border-blue-200 border shadow-none font-bold uppercase text-[9px]">
+                              Stock
+                            </Badge>
+                          </div>
+                          <h4 className="font-bold text-slate-900">{part.name}</h4>
+                          {part.tracking_number && (
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 font-mono">S/N: {part.tracking_number}</p>
+                          )}
+                          <div className="flex gap-1 mt-3">
+                            {Object.entries(PART_STATUS).map(([key, _]) => (
+                              <button
+                                key={key}
+                                onClick={() => handleUpdatePartStatus(part.id, key)}
+                                className={`px-2 py-1 rounded-md text-[8px] font-bold border transition-all ${part.status === key ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
+                              >
+                                {key === 'pending' ? 'Pendiente' : key === 'purchased' ? 'Comprado' : key === 'shipped' ? 'En camino' : 'Recibido'}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-slate-50">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 text-slate-300 hover:text-red-500 hover:bg-red-50"
+                          onClick={() => handleDeletePart(part.id)}
+                          title="Quitar y devolver al stock"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                  {ticketParts.filter((part: any) => part.stock_item_id).length === 0 && (
+                    <div className="text-center py-12 bg-slate-50/50 rounded-2xl border border-dashed border-slate-200">
+                      <Boxes className="w-10 h-10 text-slate-200 mx-auto mb-3" />
+                      <p className="text-slate-400 text-sm font-medium italic">No se han usado componentes del stock en este ticket.</p>
                     </div>
                   )}
                 </div>
