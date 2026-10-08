@@ -51,7 +51,8 @@ import {
   Copy,
   Link,
   ArrowUpCircle,
-  Info
+  Info,
+  Pencil
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -86,6 +87,8 @@ export default function AdminTicketDetail() {
   const [newHistory, setNewHistory] = useState({ description: '', evidence_url: '' });
   const [localDescription, setLocalDescription] = useState<string | null>(null);
   const [deviceForm, setDeviceForm] = useState<{ device_model: string; reported_issue: string; serial_number: string; device_password: string } | null>(null);
+  const [editingDevice, setEditingDevice] = useState(false);
+  const isDeviceLocked = ['closed', 'ready', 'rejected'].includes(ticket?.status ?? '');
   const [isSending, setIsSending] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [customEmail, setCustomEmail] = useState('');
@@ -245,12 +248,23 @@ export default function AdminTicketDetail() {
         device_password: deviceForm.device_password || null,
       } as any,
       {
+        onSuccess: () => setEditingDevice(false),
         onError: () => showError(
           'No se pudo guardar',
           'Es probable que falte ejecutar la migración SQL (sql/tickets_device_fields_migration.sql) en Supabase.'
         ),
       }
     );
+  };
+
+  const handleCancelDeviceEdit = () => {
+    setDeviceForm({
+      device_model: ticket.device_model || '',
+      reported_issue: ticket.reported_issue || (ticket.appointment as any)?.notes || '',
+      serial_number: ticket.serial_number || '',
+      device_password: ticket.device_password || '',
+    });
+    setEditingDevice(false);
   };
 
   const compressImage = (file: File): Promise<File> => {
@@ -943,7 +957,20 @@ export default function AdminTicketDetail() {
           {/* ── Ficha del equipo: Modelo, Falla, N° Serie, Password ── */}
           <Card className="border-slate-200 overflow-hidden shadow-sm">
             <CardHeader className="bg-slate-50/50 border-b border-slate-100">
-              <CardTitle className="text-sm uppercase tracking-widest font-black text-slate-400">Datos del Equipo</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm uppercase tracking-widest font-black text-slate-400">Datos del Equipo</CardTitle>
+                {!isDeviceLocked && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title={editingDevice ? 'Cancelar edición' : 'Editar datos del equipo'}
+                    className={`h-7 w-7 rounded-lg transition-colors ${editingDevice ? 'text-red-500 hover:bg-red-50 hover:text-red-600' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700'}`}
+                    onClick={() => (editingDevice ? handleCancelDeviceEdit() : setEditingDevice(true))}
+                  >
+                    {editingDevice ? <XCircle className="w-4 h-4" /> : <Pencil className="w-3.5 h-3.5" />}
+                  </Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
               <div className="space-y-2">
@@ -952,18 +979,18 @@ export default function AdminTicketDetail() {
                   placeholder="Ej: MacBook Pro 14 M3 / RTX 4070 / PS5"
                   value={deviceForm?.device_model ?? ''}
                   onChange={(e) => setDeviceForm(prev => prev ? { ...prev, device_model: e.target.value } : prev)}
-                  readOnly={['closed', 'ready', 'rejected'].includes(ticket.status)}
-                  className="bg-slate-50 border-slate-200"
+                  disabled={!editingDevice || isDeviceLocked}
+                  className="bg-slate-50 border-slate-200 disabled:opacity-100 disabled:cursor-default"
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Falla reportada</label>
                 <textarea
-                  className="w-full min-h-[80px] p-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm resize-none bg-slate-50"
+                  className="w-full min-h-[80px] p-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm resize-none bg-slate-50 disabled:opacity-100 disabled:cursor-default"
                   placeholder="Ej: No enciende, se calienta y se apaga..."
                   value={deviceForm?.reported_issue ?? ''}
                   onChange={(e) => setDeviceForm(prev => prev ? { ...prev, reported_issue: e.target.value } : prev)}
-                  readOnly={['closed', 'ready', 'rejected'].includes(ticket.status)}
+                  disabled={!editingDevice || isDeviceLocked}
                 />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -973,8 +1000,8 @@ export default function AdminTicketDetail() {
                     placeholder="Ej: C02XG0KGJHD3"
                     value={deviceForm?.serial_number ?? ''}
                     onChange={(e) => setDeviceForm(prev => prev ? { ...prev, serial_number: e.target.value } : prev)}
-                    readOnly={['closed', 'ready', 'rejected'].includes(ticket.status)}
-                    className="bg-slate-50 border-slate-200 font-mono"
+                    disabled={!editingDevice || isDeviceLocked}
+                    className="bg-slate-50 border-slate-200 font-mono disabled:opacity-100 disabled:cursor-default"
                   />
                 </div>
                 <div className="space-y-2">
@@ -983,12 +1010,12 @@ export default function AdminTicketDetail() {
                     placeholder="Clave / PIN / patrón"
                     value={deviceForm?.device_password ?? ''}
                     onChange={(e) => setDeviceForm(prev => prev ? { ...prev, device_password: e.target.value } : prev)}
-                    readOnly={['closed', 'ready', 'rejected'].includes(ticket.status)}
-                    className="bg-slate-50 border-slate-200 font-mono"
+                    disabled={!editingDevice || isDeviceLocked}
+                    className="bg-slate-50 border-slate-200 font-mono disabled:opacity-100 disabled:cursor-default"
                   />
                 </div>
               </div>
-              {isDeviceDirty && (
+              {editingDevice && isDeviceDirty && (
                 <div className="flex flex-col gap-2 items-start pt-1">
                   <Button
                     size="sm"
