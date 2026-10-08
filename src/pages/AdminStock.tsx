@@ -169,40 +169,54 @@ export default function AdminStock() {
           {!search.trim() && <p className="text-sm text-slate-400">Agrega el primer componente con el botón superior.</p>}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((item) => (
-            <Card key={item.id} className="overflow-hidden border-slate-200 hover:shadow-md transition-all">
-              {item.photo_url ? (
-                <img src={item.photo_url} alt={item.name} className="w-full h-40 object-cover bg-slate-50" />
-              ) : (
-                <div className="w-full h-40 bg-slate-50 flex items-center justify-center">
-                  <Package className="w-10 h-10 text-slate-200" />
-                </div>
-              )}
-              <CardContent className="p-4 space-y-2">
-                <div className="flex items-start justify-between gap-2">
-                  <h3 className="font-bold text-slate-900 leading-tight">{item.name}</h3>
-                  <Badge className={`${item.quantity > 0 ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-red-100 text-red-700 border-red-200'} border shadow-none font-black text-[11px] shrink-0`}>
-                    x{item.quantity}
-                  </Badge>
-                </div>
-                {(item.serial_number || item.rma) && (
-                  <div className="text-[11px] text-slate-500 font-medium space-y-0.5">
-                    {item.serial_number && <p className="font-mono">S/N: {item.serial_number}</p>}
-                    {item.rma && <p>RMA: {item.rma}</p>}
-                  </div>
-                )}
-                <div className="flex gap-2 pt-2">
-                  <Button variant="outline" size="sm" className="flex-1 h-9 rounded-lg border-slate-200 gap-2 text-[11px] font-bold" onClick={() => openEdit(item)}>
-                    <Pencil className="w-3.5 h-3.5" /> EDITAR
-                  </Button>
-                  <Button variant="ghost" size="icon" className="h-9 w-9 text-slate-300 hover:text-red-500 hover:bg-red-50" onClick={() => handleDelete(item.id, item.name)}>
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead className="bg-white border-b">
+                <tr>
+                  <th className="p-4 text-xs font-black text-slate-400 uppercase tracking-widest">Foto</th>
+                  <th className="p-4 text-xs font-black text-slate-400 uppercase tracking-widest">Nombre</th>
+                  <th className="p-4 text-xs font-black text-slate-400 uppercase tracking-widest">N° Serie</th>
+                  <th className="p-4 text-xs font-black text-slate-400 uppercase tracking-widest">RMA</th>
+                  <th className="p-4 text-xs font-black text-slate-400 uppercase tracking-widest">Cantidad</th>
+                  <th className="p-4 text-xs font-black text-slate-400 uppercase tracking-widest text-right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {filtered.map((item) => (
+                  <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="p-4">
+                      {item.photo_url ? (
+                        <img src={item.photo_url} alt={item.name} className="w-12 h-12 rounded-lg object-cover border border-slate-100 bg-slate-50" />
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-slate-50 border border-slate-100 flex items-center justify-center">
+                          <Package className="w-5 h-5 text-slate-300" />
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-4 font-bold text-slate-900">{item.name}</td>
+                    <td className="p-4 font-mono text-xs text-slate-600">{item.serial_number || '---'}</td>
+                    <td className="p-4 font-mono text-xs text-slate-600">{item.rma || '---'}</td>
+                    <td className="p-4">
+                      <Badge className={`${item.quantity > 0 ? 'bg-emerald-100 text-emerald-700 border-emerald-200' : 'bg-red-100 text-red-700 border-red-200'} border shadow-none font-black text-xs`}>
+                        x{item.quantity}
+                      </Badge>
+                    </td>
+                    <td className="p-4">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button size="icon" variant="ghost" className="text-slate-900 h-8 w-8" title="Editar" onClick={() => openEdit(item)}>
+                          <Pencil className="w-4 h-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="text-red-500 h-8 w-8" title="Eliminar" onClick={() => handleDelete(item.id, item.name)}>
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
