@@ -1810,7 +1810,7 @@ export default function AdminTicketDetail() {
             <p className="text-lg font-bold text-slate-500">#{ticket.appointment?.short_id}</p>
           </div>
           <div className="text-right">
-            <img src="/powerfix-negro.png" alt="PowerFix" style={{ height: '40px', width: 'auto', marginLeft: 'auto', marginBottom: '8px' }} />
+            <img src="/powerfix-negro.png" alt="PowerFix" style={{ height: '13px', width: 'auto', marginLeft: 'auto', marginBottom: '8px' }} />
             <div className="flex items-center justify-end gap-3 mb-2">
               <img
                 src="/msi.png"
