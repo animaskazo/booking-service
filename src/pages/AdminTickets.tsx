@@ -1,24 +1,69 @@
-import { useState } from 'react';
-import { useTickets } from '../lib/supabase-client';
+import { useState, useMemo, useRef } from 'react';
+import { useTickets, useAllTicketParts, useUpdateTicket, sendReadyEmail } from '../lib/supabase-client';
 import { formatPrice } from '../lib/utils-booking';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Clock, ChevronRight, LayoutGrid, List } from 'lucide-react';
+import { FileText, Clock, ChevronRight, LayoutGrid, List, Plane, AlertCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useDialog } from '@/components/ui/dialog-provider';
 
 const KANBAN_STATUSES = [
   { id: 'evaluating', label: 'Evaluación', color: 'border-t-blue-500' },
   { id: 'accepted', label: 'Aprobado', color: 'border-t-emerald-500' },
+  { id: 'waiting_parts', label: 'Espera repuestos', color: 'border-t-sky-500' },
   { id: 'repairing', label: 'Reparación', color: 'border-t-purple-500' },
   { id: 'ready', label: 'Retiro', color: 'border-t-green-500' },
   { id: 'closed', label: 'Finalizado', color: 'border-t-slate-300' }
 ];
 
+// Cambios de estado que exigen confirmación (procesos delicados)
+const CONFIRM_MOVE: Record<string, { title: string; description: string; button: string; buttonClass: string }> = {
+  accepted: {
+    title: 'Aprobar presupuesto',
+    description: 'El ticket pasará a Reparación. Asegúrate de que el cliente aprobó el presupuesto antes de continuar.',
+    button: 'APROBAR',
+    buttonClass: 'bg-emerald-600 hover:bg-emerald-700',
+  },
+  ready: {
+    title: 'Marcar pendiente de retiro',
+    description: 'El ticket quedará listo para que el cliente retire el equipo.',
+    button: 'MARCAR LISTO',
+    buttonClass: 'bg-emerald-600 hover:bg-emerald-700',
+  },
+  closed: {
+    title: 'Entregar equipo',
+    description: 'El ticket se cerrará y ya no permitirá modificaciones operativas. Verifica que el saldo esté saldado.',
+    button: 'ENTREGAR',
+    buttonClass: 'bg-slate-900 hover:bg-slate-800',
+  },
+};
+
 export default function AdminTickets() {
   const { data: tickets = [], isLoading } = useTickets();
+  const { data: allParts = [] } = useAllTicketParts();
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
+  const [showClosed, setShowClosed] = useState(true);
+  const updateTicketMutation = useUpdateTicket();
+  const { showAlert, showError } = useDialog();
+
+  // Drag & drop
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dropTarget, setDropTarget] = useState<string | null>(null);
+  const [confirmMove, setConfirmMove] = useState<{ id: string; from: string; to: string } | null>(null);
+  const justDragged = useRef(false);
+
+  // Tickets con repuestos en espera (todo lo que no esté recibido)
+  const waitingPartsByTicket = useMemo(() => {
+    const map: Record<string, number> = {};
+    for (const part of allParts as any[]) {
+      if (part?.ticket_id && part.status !== 'received') {
+        map[part.ticket_id] = (map[part.ticket_id] || 0) + 1;
+      }
+    }
+    return map;
+  }, [allParts]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -44,6 +89,50 @@ export default function AdminTickets() {
     }
   };
 
+  const handleDropOnColumn = (ticketId: string | null, targetCol: string) => {
+    setDropTarget(null);
+    if (!ticketId || targetCol === 'waiting_parts') return; // columna virtual, no es un estado
+    const ticket = tickets.find(t => t.id === ticketId);
+    if (!ticket || ticket.status === targetCol) return;
+    if (CONFIRM_MOVE[targetCol]) {
+      setConfirmMove({ id: ticket.id, from: ticket.status, to: targetCol });
+    } else {
+      updateTicketMutation.mutate({ id: ticket.id, status: targetCol } as any);
+    }
+  };
+
+  const handleConfirmMove = () => {
+    if (!confirmMove) return;
+    const target = confirmMove.to;
+    const ticketId = confirmMove.id;
+    updateTicketMutation.mutate(
+      { id: ticketId, status: target } as any,
+      {
+        onSuccess: async () => {
+          setConfirmMove(null);
+          if (target === 'ready') {
+            const sent = await sendReadyEmail(ticketId);
+            const ticket = tickets.find(t => t.id === ticketId);
+            if (sent) {
+              showAlert('Listo para retiro', `El ticket #${ticket?.appointment?.short_id} quedó pendiente de retiro y se avisó al cliente por email.`);
+            } else {
+              showError('Estado actualizado', 'El ticket quedó listo para retiro, pero el email al cliente no pudo enviarse. Revisa la configuración de correo.');
+            }
+          }
+        },
+        onError: () => setConfirmMove(null),
+      }
+    );
+  };
+
+  const handleCardClick = (ticketId: string) => {
+    if (justDragged.current) {
+      justDragged.current = false;
+      return;
+    }
+    navigate(`/admin/tickets/${ticketId}`);
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -60,7 +149,19 @@ export default function AdminTickets() {
           <p className="text-slate-500 font-medium">Gestiona el proceso de reparación técnica</p>
         </div>
 
-        <div className="bg-slate-100 p-1 rounded-xl flex gap-1">
+        <div className="flex items-center gap-2">
+          {viewMode === 'kanban' && (
+            <label className="flex items-center gap-2 bg-slate-100 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-500 cursor-pointer hover:text-slate-700 transition-colors select-none">
+              <input
+                type="checkbox"
+                checked={showClosed}
+                onChange={(e) => setShowClosed(e.target.checked)}
+                className="w-3.5 h-3.5 accent-slate-900"
+              />
+              Finalizados
+            </label>
+          )}
+          <div className="bg-slate-100 p-1 rounded-xl flex gap-1">
           <button 
             onClick={() => setViewMode('kanban')}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all ${viewMode === 'kanban' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
@@ -73,6 +174,7 @@ export default function AdminTickets() {
           >
             <List className="w-4 h-4" /> Lista
           </button>
+          </div>
         </div>
       </div>
 
@@ -90,13 +192,24 @@ export default function AdminTickets() {
                 <CardContent className="p-0">
                   <div className="flex flex-col md:flex-row md:items-center">
                     <div className="p-6 flex-1">
-                      <div className="flex items-center gap-3 mb-2">
+                      <div className="flex items-center gap-3 mb-2 flex-wrap">
                         <Badge variant="outline" className="font-mono text-xs bg-slate-50">#{ticket.appointment?.short_id}</Badge>
                         <Badge className={`${getStatusColor(ticket.status)} border shadow-none font-bold uppercase text-[10px]`}>
                           {getStatusLabel(ticket.status)}
                         </Badge>
+                        {waitingPartsByTicket[ticket.id] > 0 && (
+                          <Badge className="bg-blue-100 text-blue-700 border-blue-200 border shadow-none font-bold uppercase text-[10px] flex items-center gap-1">
+                            <Plane className="w-3 h-3" />
+                            En espera de repuesto{waitingPartsByTicket[ticket.id] > 1 ? `s (${waitingPartsByTicket[ticket.id]})` : ''}
+                          </Badge>
+                        )}
                       </div>
                       <h3 className="text-xl font-bold text-slate-900 mb-1">{ticket.appointment?.customer_name}</h3>
+                      {(ticket.device_model || ticket.serial_number) && (
+                        <p className="text-xs text-slate-500 font-medium mb-1">
+                          {ticket.device_model}{ticket.device_model && ticket.serial_number ? ' · ' : ''}{ticket.serial_number && `S/N: ${ticket.serial_number}`}
+                        </p>
+                      )}
                       <div className="flex items-center gap-4 text-sm text-slate-500">
                         <div className="flex items-center gap-1.5 font-bold px-2 py-0.5 rounded-md text-xs border" style={{ backgroundColor: ticket.appointment?.service?.color ? `${ticket.appointment.service.color}15` : '#f1f5f9', color: ticket.appointment?.service?.color || '#475569', borderColor: ticket.appointment?.service?.color ? `${ticket.appointment.service.color}30` : '#e2e8f0' }}>
                           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ticket.appointment?.service?.color || '#475569' }} />
@@ -127,8 +240,11 @@ export default function AdminTickets() {
         </div>
       ) : (
         <div className="flex gap-3 h-[calc(100vh-180px)] min-w-min">
-          {KANBAN_STATUSES.map(col => {
+          {KANBAN_STATUSES.filter(col => col.id !== 'closed' || showClosed).map(col => {
             const colTickets = tickets.filter(t => {
+              if (col.id === 'waiting_parts') return (waitingPartsByTicket[t.id] || 0) > 0;
+              if (col.id === 'accepted') return t.status === 'accepted' && !(waitingPartsByTicket[t.id] > 0);
+              if (col.id === 'evaluating') return t.status === 'evaluating' || t.status === 'quoted';
               return t.status === col.id;
             });
 
@@ -139,12 +255,36 @@ export default function AdminTickets() {
                   <Badge variant="secondary" className="bg-slate-200 text-slate-700 font-bold text-[9px] h-4 px-1.5">{colTickets.length}</Badge>
                 </div>
 
-                <div className="flex-1 space-y-2 overflow-y-auto pr-1 scrollbar-hide">
+                <div
+                  className={`flex-1 space-y-2 overflow-y-auto pr-1 scrollbar-hide rounded-xl transition-all p-1 -m-1 ${dropTarget === col.id && col.id !== 'waiting_parts' ? 'bg-slate-900/5 ring-2 ring-slate-900/20 ring-inset' : ''}`}
+                  onDragOver={(e) => {
+                    if (col.id === 'waiting_parts') return;
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    setDropTarget(col.id);
+                  }}
+                  onDragLeave={() => setDropTarget((prev) => (prev === col.id ? null : prev))}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    handleDropOnColumn(e.dataTransfer.getData('text/plain') || draggingId, col.id);
+                  }}
+                >
                   {colTickets.map(ticket => (
                     <Card 
                       key={ticket.id} 
-                      className="border-slate-200 hover:border-slate-900 hover:shadow-sm transition-all cursor-pointer group relative overflow-hidden" 
-                      onClick={() => navigate(`/admin/tickets/${ticket.id}`)}
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('text/plain', ticket.id);
+                        e.dataTransfer.effectAllowed = 'move';
+                        justDragged.current = true;
+                        setDraggingId(ticket.id);
+                      }}
+                      onDragEnd={() => {
+                        setDraggingId(null);
+                        setDropTarget(null);
+                      }}
+                      className={`border-slate-200 hover:border-slate-900 hover:shadow-sm transition-all cursor-grab active:cursor-grabbing group relative overflow-hidden ${draggingId === ticket.id ? 'opacity-40' : ''}`}
+                      onClick={() => handleCardClick(ticket.id)}
                     >
                       <div 
                         className="absolute left-0 top-0 bottom-0 w-1" 
@@ -159,6 +299,9 @@ export default function AdminTickets() {
                         <h4 className="font-bold text-slate-900 text-xs group-hover:text-blue-600 transition-colors line-clamp-1">
                           {ticket.appointment?.customer_name}
                         </h4>
+                        {ticket.device_model && (
+                          <p className="text-[10px] text-slate-500 font-medium line-clamp-1">{ticket.device_model}</p>
+                        )}
                         
                         <div className="flex items-center justify-between items-end mt-1">
                           <div className="text-[9px] font-bold text-slate-500 line-clamp-1 max-w-[100px]">
@@ -166,6 +309,12 @@ export default function AdminTickets() {
                           </div>
                           <p className="text-xs font-black text-slate-900">{formatPrice(ticket.total_budget || 0)}</p>
                         </div>
+                        {waitingPartsByTicket[ticket.id] > 0 && (
+                          <div className="flex items-center gap-1 w-fit px-1.5 py-0.5 rounded-md text-[9px] font-bold uppercase bg-blue-100 text-blue-700 border border-blue-200">
+                            <Plane className="w-3 h-3" />
+                            En espera de repuesto{waitingPartsByTicket[ticket.id] > 1 ? `s (${waitingPartsByTicket[ticket.id]})` : ''}
+                          </div>
+                        )}
                       </CardContent>
                     </Card>
                   ))}
@@ -180,6 +329,60 @@ export default function AdminTickets() {
           })}
         </div>
       )}
+
+      {/* Modal de confirmación para cambios de estado delicados */}
+      {confirmMove && (() => {
+        const ticket = tickets.find(t => t.id === confirmMove.id);
+        const cfg = CONFIRM_MOVE[confirmMove.to];
+        if (!cfg) return null;
+        return (
+          <div className="fixed inset-0 z-[100] overflow-y-auto">
+            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => !updateTicketMutation.isPending && setConfirmMove(null)} />
+            <div className="flex min-h-full items-center justify-center p-4">
+              <Card className="relative z-10 w-full max-w-md shadow-2xl overflow-hidden rounded-[32px] border border-slate-100 bg-white">
+                <CardHeader className="bg-slate-50/50 border-b border-slate-100/60 pb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-amber-100 p-2 rounded-xl">
+                      <AlertCircle className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg">{cfg.title}</CardTitle>
+                      <CardDescription>
+                        Ticket #{ticket?.appointment?.short_id} · {ticket?.appointment?.customer_name}
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-6 space-y-4">
+                  <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest">
+                    <Badge variant="outline" className="font-bold uppercase text-[10px]">{getStatusLabel(confirmMove.from)}</Badge>
+                    <ChevronRight className="w-4 h-4 text-slate-400" />
+                    <Badge className="bg-slate-900 text-white font-bold uppercase text-[10px] border-none">{getStatusLabel(confirmMove.to)}</Badge>
+                  </div>
+                  <p className="text-sm text-slate-600 leading-relaxed">{cfg.description}</p>
+                  <div className="flex gap-3 pt-2 border-t border-slate-100">
+                    <Button
+                      variant="outline"
+                      className="flex-1 h-12 border-slate-200 font-bold uppercase tracking-widest text-[10px]"
+                      onClick={() => setConfirmMove(null)}
+                      disabled={updateTicketMutation.isPending}
+                    >
+                      Cancelar
+                    </Button>
+                    <Button
+                      className={`flex-1 h-12 text-white font-bold uppercase tracking-widest text-[10px] ${cfg.buttonClass}`}
+                      onClick={handleConfirmMove}
+                      disabled={updateTicketMutation.isPending}
+                    >
+                      {updateTicketMutation.isPending ? 'PROCESANDO...' : cfg.button}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }

@@ -68,6 +68,10 @@ export interface TicketRecord {
   created_at: string;
   updated_at: string;
   appointment?: AppointmentRecord;
+  device_model?: string | null;
+  reported_issue?: string | null;
+  serial_number?: string | null;
+  device_password?: string | null;
 }
 
 export interface TicketFinding {
@@ -408,7 +412,8 @@ export const generateShortId = () => {
 // ============================================================================
 
 /**
- * Prepara los datos para insertar una cita en Supabase
+ * Prepara los datos para insertar una cita en Supabase.
+ * El short_id lo asigna la BD (secuencia numérica next_short_id), no el cliente.
  */
 export const prepareAppointmentData = (
   serviceId: string,
@@ -432,7 +437,6 @@ export const prepareAppointmentData = (
     end_time: slotEnd.toISOString(),
     status: 'pending' as 'pending' | 'confirmed' | 'cancelled' | 'completed',
     notes: notes || null,
-    short_id: generateShortId(),
   };
 };
 

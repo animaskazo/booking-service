@@ -625,6 +625,29 @@ export const sendBudgetEmail = async (budgetData: {
 };
 
 /**
+ * Notifica al cliente que su equipo está listo para retiro.
+ * Debe llamarse al momento de la transición a 'ready', no al abrir el detalle.
+ * Retorna true si el envío fue exitoso.
+ */
+export const sendReadyEmail = async (ticketId: string): Promise<boolean> => {
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/send-ready-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticket_id: ticketId }),
+    });
+    if (!res.ok) {
+      console.error('Error sending ready‑for‑pickup email:', await res.text());
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error('Exception sending ready email:', e);
+    return false;
+  }
+};
+
+/**
  * Invoca la Edge Function para enviar el email de confirmación
  */
 export const sendBookingEmail = async (bookingData: {
@@ -690,7 +713,8 @@ export const useTickets = () => {
         .from('tickets')
         .select(`
           id, status, total_budget, description, created_at, updated_at, appointment_id,
-          appointment:appointments(id, short_id, customer_name, customer_email, customer_phone, start_time, end_time, status, paid, paid_amount,
+          device_model, reported_issue, serial_number, device_password,
+          appointment:appointments(id, short_id, customer_name, customer_email, customer_phone, start_time, end_time, status, paid, paid_amount, notes,
             service:services(id, name, color, price, category)
           )
         `)
@@ -750,25 +774,63 @@ export const useTicketByAppointment = (appointmentId: string | undefined) => {
 };
 
 /**
- * Crea un nuevo ticket a partir de una reserva
+ * Crea un nuevo ticket a partir de una reserva (hereda notes como falla reportada).
+ * Acepta string (appointmentId) o objeto con datos de ingreso del equipo.
  */
 export const useCreateTicket = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
   return useMutation({
-    mutationFn: async (appointmentId: string) => {
+    mutationFn: async (
+      input: string | {
+        appointment_id: string;
+        device_model?: string | null;
+        reported_issue?: string | null;
+        serial_number?: string | null;
+        device_password?: string | null;
+      }
+    ) => {
       if (!user) throw new Error("Debes estar logueado");
-      const { data, error } = await supabase
+      const appointmentId = typeof input === 'string' ? input : input.appointment_id;
+      const extras = typeof input === 'string' ? {} : {
+        device_model: input.device_model || null,
+        reported_issue: input.reported_issue || null,
+        serial_number: input.serial_number || null,
+        device_password: input.device_password || null,
+      };
+      let reported_issue = (extras as any).reported_issue as string | null;
+      if (!reported_issue) {
+        const { data: appt } = await supabase
+          .from('appointments')
+          .select('notes')
+          .eq('id', appointmentId)
+          .maybeSingle();
+        if (appt?.notes) reported_issue = appt.notes;
+      }
+      const fullPayload: any = { appointment_id: appointmentId, user_id: user.id, ...extras };
+      if (reported_issue) fullPayload.reported_issue = reported_issue;
+      // Intento con columnas nuevas; si aún no se ejecutó la migración, reintenta sin ellas
+      let { data, error } = await supabase
         .from('tickets')
-        .insert([{ appointment_id: appointmentId, user_id: user.id }])
+        .insert([fullPayload])
         .select()
         .single();
+      if (error && /reported_issue|device_model|serial_number|device_password|column|schema cache/i.test(error.message)) {
+        const retry = await supabase
+          .from('tickets')
+          .insert([{ appointment_id: appointmentId, user_id: user.id }])
+          .select()
+          .single();
+        data = retry.data;
+        error = retry.error;
+      }
       if (error) throw error;
       return data as TicketRecord;
     },
-    onSuccess: (_data, appointmentId) => {
+    onSuccess: (_data, input) => {
       queryClient.invalidateQueries({ queryKey: ['tickets'] });
+      const appointmentId = typeof input === 'string' ? input : input.appointment_id;
       queryClient.invalidateQueries({ queryKey: ['ticket', appointmentId] });
     },
   });

@@ -33,7 +33,7 @@ import {
   useUpdateTicket,
   useAppointmentsAdmin
 } from '../lib/supabase-client';
-import { isSlotOccupied, generateShortId, formatPrice, formatDateForDisplay, formatTimeRange } from '../lib/utils-booking';
+import { isSlotOccupied, formatPrice, formatDateForDisplay, formatTimeRange } from '../lib/utils-booking';
 import { format, startOfWeek, addDays, isSameDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
@@ -59,6 +59,39 @@ export default function AdminAppointments() {
   const { data: existingTicket } = useTicketByAppointment(selectedApp?.id);
   const createTicketMutation = useCreateTicket();
   const updateTicketMutation = useUpdateTicket();
+
+  // Modal de ingreso: pide datos del equipo al crear el ticket
+  const [ticketIntakeApp, setTicketIntakeApp] = useState<any | null>(null);
+  const [ticketForm, setTicketForm] = useState({ device_model: '', reported_issue: '', serial_number: '', device_password: '' });
+
+  const openTicketIntake = (app: any) => {
+    setTicketForm({
+      device_model: '',
+      reported_issue: app?.notes || '',
+      serial_number: '',
+      device_password: '',
+    });
+    setTicketIntakeApp(app);
+    setSelectedApp(null);
+  };
+
+  const handleConfirmTicketIntake = async () => {
+    if (!ticketIntakeApp) return;
+    try {
+      const newTicket = await createTicketMutation.mutateAsync({
+        appointment_id: ticketIntakeApp.id,
+        device_model: ticketForm.device_model || null,
+        reported_issue: ticketForm.reported_issue || null,
+        serial_number: ticketForm.serial_number || null,
+        device_password: ticketForm.device_password || null,
+      });
+      setTicketIntakeApp(null);
+      setSelectedApp(null);
+      navigate(`/admin/tickets/${newTicket.id}`);
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   React.useEffect(() => {
     const checkMobile = () => setIsMobile(window.innerWidth < 768);
@@ -193,7 +226,6 @@ export default function AdminAppointments() {
         end_time: endTime.toISOString(),
         status: 'confirmed' as 'pending' | 'confirmed' | 'cancelled' | 'completed',
         notes: formData.get('notes') as string || 'Creado manualmente por admin',
-        short_id: generateShortId()
       });
 
       // Enviar email de confirmación para reserva manual
@@ -518,10 +550,7 @@ export default function AdminAppointments() {
                                   <FileText className="w-4 h-4" />
                                 </Button>
                               ) : app.status !== 'pending' ? (
-                                <Button size="icon" variant="ghost" className="text-slate-900 h-8 w-8" title="Iniciar Ticket" disabled={createTicketMutation.isPending} onClick={async () => {
-                                  const newTicket = await createTicketMutation.mutateAsync(app.id);
-                                  navigate(`/admin/tickets/${newTicket.id}`);
-                                }}>
+                                <Button size="icon" variant="ghost" className="text-slate-900 h-8 w-8" title="Iniciar Ticket" disabled={createTicketMutation.isPending} onClick={() => openTicketIntake(app)}>
                                   <Plus className="w-4 h-4" />
                                 </Button>
                               ) : null;
@@ -913,10 +942,7 @@ export default function AdminAppointments() {
                     variant="outline"
                     className="border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300 h-12 font-bold uppercase tracking-widest text-[10px] rounded-xl px-4 transition-all shadow-sm flex items-center justify-center gap-2"
                     disabled={createTicketMutation.isPending}
-                    onClick={async () => {
-                      const t = await createTicketMutation.mutateAsync(selectedApp.id);
-                      navigate(`/admin/tickets/${t.id}`);
-                    }}
+                    onClick={() => openTicketIntake(selectedApp)}
                   >
                     <Plus className="w-4 h-4 text-blue-500" />
                     Iniciar Ticket
@@ -948,6 +974,96 @@ export default function AdminAppointments() {
               </div>
             </CardContent>
           </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Ingreso del Equipo — se pide al crear el ticket */}
+      {ticketIntakeApp && (
+        <div className="fixed inset-0 z-[1000] overflow-y-auto">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setTicketIntakeApp(null)} />
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Card className="relative z-10 w-full max-w-lg shadow-2xl overflow-hidden rounded-[32px] border border-slate-100 bg-white" onClick={(e) => e.stopPropagation()}>
+              <CardHeader className="bg-white border-b border-slate-100/60 pb-6">
+                <div className="flex justify-between items-center">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div className="bg-slate-900 p-1.5 rounded-lg text-white">
+                        <FileText className="w-4 h-4" />
+                      </div>
+                      <CardTitle className="text-xl">Ingreso del Equipo</CardTitle>
+                    </div>
+                    <CardDescription className="flex items-center gap-1.5 font-medium text-slate-500">
+                      <User className="w-3.5 h-3.5" />
+                      {ticketIntakeApp.customer_name} · #{ticketIntakeApp.short_id || ticketIntakeApp.id?.slice(0, 5)}
+                    </CardDescription>
+                  </div>
+                  <Button variant="ghost" size="icon" className="rounded-full hover:bg-red-50 hover:text-red-500 transition-colors" onClick={() => setTicketIntakeApp(null)}>
+                    <XCircle className="w-6 h-6" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-8 space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-700">Modelo del equipo</Label>
+                  <Input
+                    placeholder="Ej: MacBook Pro 14 M3 / RTX 4070 / PS5"
+                    value={ticketForm.device_model}
+                    onChange={(e) => setTicketForm({ ...ticketForm, device_model: e.target.value })}
+                    className="h-12 rounded-xl bg-slate-50/50 border-slate-200"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-xs font-bold text-slate-700">Falla reportada</Label>
+                  <textarea
+                    placeholder="Ej: No enciende, se calienta y se apaga..."
+                    value={ticketForm.reported_issue}
+                    onChange={(e) => setTicketForm({ ...ticketForm, reported_issue: e.target.value })}
+                    rows={3}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/50 p-4 text-sm outline-none focus:ring-2 focus:ring-slate-900 transition-all resize-none"
+                  />
+                  {ticketIntakeApp.notes && !ticketForm.reported_issue && (
+                    <p className="text-[11px] text-slate-400">Nota de la reserva: “{ticketIntakeApp.notes}” — se usará como falla si lo dejas vacío.</p>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-700">N° de Serie</Label>
+                    <Input
+                      placeholder="Ej: C02XG0KGJHD3"
+                      value={ticketForm.serial_number}
+                      onChange={(e) => setTicketForm({ ...ticketForm, serial_number: e.target.value })}
+                      className="h-12 rounded-xl bg-slate-50/50 border-slate-200 font-mono"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-700">Password del equipo</Label>
+                    <Input
+                      placeholder="Clave / PIN / patrón"
+                      value={ticketForm.device_password}
+                      onChange={(e) => setTicketForm({ ...ticketForm, device_password: e.target.value })}
+                      className="h-12 rounded-xl bg-slate-50/50 border-slate-200 font-mono"
+                    />
+                  </div>
+                </div>
+              </CardContent>
+              <div className="p-8 bg-white border-t flex flex-row-reverse gap-4">
+                <Button
+                  onClick={handleConfirmTicketIntake}
+                  className="flex-1 bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs transition-all active:scale-95"
+                  disabled={createTicketMutation.isPending}
+                >
+                  {createTicketMutation.isPending ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" /> CREANDO...
+                    </div>
+                  ) : 'CREAR TICKET'}
+                </Button>
+                <Button type="button" variant="outline" className="h-12 px-6 border-slate-200 font-bold uppercase tracking-widest text-xs transition-all active:scale-95" onClick={() => setTicketIntakeApp(null)}>
+                  CANCELAR
+                </Button>
+              </div>
+            </Card>
           </div>
         </div>
       )}
