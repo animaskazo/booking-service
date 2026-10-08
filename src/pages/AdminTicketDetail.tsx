@@ -1811,20 +1811,6 @@ export default function AdminTicketDetail() {
           </div>
           <div className="text-right">
             <img src="/powerfix-negro.png" alt="PowerFix" style={{ height: '24px', width: 'auto', marginLeft: 'auto', marginBottom: '8px' }} />
-            <div className="flex items-center justify-end gap-3 mb-2 ml-auto w-fit bg-slate-200 px-3 py-1.5 rounded-lg">
-              <img
-                src="/logo-msi.png"
-                alt="MSI"
-                className="h-6 w-auto"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-              />
-              <img
-                src="/logo-giga.png"
-                alt="Gigabyte"
-                className="h-6 w-auto"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-              />
-            </div>
             <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">Servicio Técnico Especializado</p>
             <p className="text-xs font-medium text-slate-500">{format(new Date(), "dd 'de' MMMM, yyyy", { locale: es })}</p>
           </div>
@@ -1911,8 +1897,24 @@ export default function AdminTicketDetail() {
           </table>
         </div>
 
-        <div className="mt-8 pt-6 border-t border-slate-200 text-center text-[9px] text-slate-400 uppercase tracking-[0.2em]">
-          {activeView === 'reparacion' ? 'Documento de respaldo de la reparación - PowerFix' : 'Este presupuesto es válido por 15 días - PowerFix'}
+        <div className="mt-8 pt-6 border-t border-slate-200 text-center">
+          <div className="flex items-center justify-center gap-4 mb-3 mx-auto w-fit bg-slate-200 px-4 py-2 rounded-lg">
+            <img
+              src="/logo-msi.png"
+              alt="MSI"
+              className="h-6 w-auto"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+            <img
+              src="/logo-giga.png"
+              alt="Gigabyte"
+              className="h-6 w-auto"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          </div>
+          <p className="text-[9px] text-slate-400 uppercase tracking-[0.2em]">
+            {activeView === 'reparacion' ? 'Documento de respaldo de la reparación - PowerFix' : 'Este presupuesto es válido por 15 días - PowerFix'}
+          </p>
         </div>
       </div>
     </div>
