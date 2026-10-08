@@ -4,9 +4,10 @@ import { formatPrice } from '../lib/utils-booking';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { FileText, Clock, ChevronRight, LayoutGrid, List, Plane, AlertCircle } from 'lucide-react';
+import { FileText, Clock, ChevronRight, LayoutGrid, List, Plane, AlertCircle, Search, X } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDialog } from '@/components/ui/dialog-provider';
+import { Input } from '@/components/ui/input';
 
 const KANBAN_STATUSES = [
   { id: 'evaluating', label: 'Evaluación', color: 'border-t-blue-500' },
@@ -45,6 +46,7 @@ export default function AdminTickets() {
   const navigate = useNavigate();
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('kanban');
   const [showClosed, setShowClosed] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
   const updateTicketMutation = useUpdateTicket();
   const { showAlert, showError } = useDialog();
 
@@ -64,6 +66,20 @@ export default function AdminTickets() {
     }
     return map;
   }, [allParts]);
+
+  // Buscador global: identificador, cliente, modelo, serie, email, teléfono
+  const filteredTickets = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return tickets;
+    return tickets.filter((t) => [
+      t.appointment?.short_id,
+      t.appointment?.customer_name,
+      t.appointment?.customer_email,
+      t.appointment?.customer_phone,
+      (t as any).device_model,
+      (t as any).serial_number,
+    ].some((v) => (v || '').toString().toLowerCase().includes(q)));
+  }, [tickets, searchTerm]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -178,16 +194,41 @@ export default function AdminTickets() {
         </div>
       </div>
 
+      {/* Buscador global */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+        <Input
+          placeholder="Buscar por identificador, cliente, modelo, serie, email o teléfono..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10 pr-10 h-11 rounded-xl bg-white border-slate-200"
+        />
+        {searchTerm && (
+          <button
+            onClick={() => setSearchTerm('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700 transition-colors"
+            title="Limpiar búsqueda"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        )}
+      </div>
+      {searchTerm.trim() && (
+        <p className="text-xs font-bold text-slate-500 -mt-3">
+          {filteredTickets.length} resultado{filteredTickets.length === 1 ? '' : 's'} para “{searchTerm.trim()}”
+        </p>
+      )}
+
       {viewMode === 'list' ? (
         <div className="grid gap-4">
-          {tickets.length === 0 ? (
+          {filteredTickets.length === 0 ? (
             <div className="bg-white rounded-2xl border-2 border-dashed border-slate-200 p-20 text-center">
               <FileText className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-500 font-bold">No hay tickets generados aún.</p>
-              <p className="text-sm text-slate-400">Genera uno desde el detalle de una cita confirmada.</p>
+              <p className="text-slate-500 font-bold">{searchTerm.trim() ? 'Sin resultados para esta búsqueda.' : 'No hay tickets generados aún.'}</p>
+              {!searchTerm.trim() && <p className="text-sm text-slate-400">Genera uno desde el detalle de una cita confirmada.</p>}
             </div>
           ) : (
-            tickets.map((ticket) => (
+            filteredTickets.map((ticket) => (
               <Card key={ticket.id} className="overflow-hidden hover:shadow-md transition-all border-slate-200">
                 <CardContent className="p-0">
                   <div className="flex flex-col md:flex-row md:items-center">
@@ -241,7 +282,7 @@ export default function AdminTickets() {
       ) : (
         <div className="flex gap-3 h-[calc(100vh-180px)] min-w-min">
           {KANBAN_STATUSES.filter(col => col.id !== 'closed' || showClosed).map(col => {
-            const colTickets = tickets.filter(t => {
+            const colTickets = filteredTickets.filter(t => {
               if (col.id === 'waiting_parts') return (waitingPartsByTicket[t.id] || 0) > 0;
               if (col.id === 'accepted') return t.status === 'accepted' && !(waitingPartsByTicket[t.id] > 0);
               if (col.id === 'evaluating') return t.status === 'evaluating' || t.status === 'quoted';
