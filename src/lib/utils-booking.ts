@@ -68,6 +68,10 @@ export interface TicketRecord {
   created_at: string;
   updated_at: string;
   appointment?: AppointmentRecord;
+  device_model?: string | null;
+  reported_issue?: string | null;
+  serial_number?: string | null;
+  device_password?: string | null;
 }
 
 export interface TicketFinding {

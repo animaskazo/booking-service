@@ -84,6 +84,7 @@ export default function AdminTicketDetail() {
   const [newFinding, setNewFinding] = useState({ description: '', price: '' });
   const [newHistory, setNewHistory] = useState({ description: '', evidence_url: '' });
   const [localDescription, setLocalDescription] = useState<string | null>(null);
+  const [deviceForm, setDeviceForm] = useState<{ device_model: string; reported_issue: string; serial_number: string; device_password: string } | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
   const [customEmail, setCustomEmail] = useState('');
@@ -113,6 +114,18 @@ export default function AdminTicketDetail() {
       setLocalDescription(ticket.description || '');
     }
   }, [ticket, localDescription]);
+
+  // Sincronizar ficha del equipo (Modelo, Falla, Serie, Password)
+  React.useEffect(() => {
+    if (ticket && deviceForm === null) {
+      setDeviceForm({
+        device_model: ticket.device_model || '',
+        reported_issue: ticket.reported_issue || (ticket.appointment as any)?.notes || '',
+        serial_number: ticket.serial_number || '',
+        device_password: ticket.device_password || '',
+      });
+    }
+  }, [ticket, deviceForm]);
 
   // Sincronizar la vista activa según el estado inicial
   React.useEffect(() => {
@@ -236,6 +249,32 @@ export default function AdminTicketDetail() {
     if (localDescription !== null) {
       updateTicketMutation.mutate({ id: ticket.id, description: localDescription });
     }
+  };
+
+  const isDeviceDirty = deviceForm !== null && (
+    (deviceForm.device_model || '') !== (ticket.device_model || '') ||
+    (deviceForm.reported_issue || '') !== (ticket.reported_issue || '') ||
+    (deviceForm.serial_number || '') !== (ticket.serial_number || '') ||
+    (deviceForm.device_password || '') !== (ticket.device_password || '')
+  );
+
+  const handleSaveDevice = () => {
+    if (!deviceForm) return;
+    updateTicketMutation.mutate(
+      {
+        id: ticket.id,
+        device_model: deviceForm.device_model || null,
+        reported_issue: deviceForm.reported_issue || null,
+        serial_number: deviceForm.serial_number || null,
+        device_password: deviceForm.device_password || null,
+      } as any,
+      {
+        onError: () => showError(
+          'No se pudo guardar',
+          'Es probable que falte ejecutar la migración SQL (sql/tickets_device_fields_migration.sql) en Supabase.'
+        ),
+      }
+    );
   };
 
   const compressImage = (file: File): Promise<File> => {
@@ -925,6 +964,73 @@ export default function AdminTicketDetail() {
 
         {/* Columna Derecha: Contexto del Ticket */}
         <div className="space-y-6">
+          {/* ── Ficha del equipo: Modelo, Falla, N° Serie, Password ── */}
+          <Card className="border-slate-200 overflow-hidden shadow-sm">
+            <CardHeader className="bg-slate-50/50 border-b border-slate-100">
+              <CardTitle className="text-sm uppercase tracking-widest font-black text-slate-400">Datos del Equipo</CardTitle>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Modelo</label>
+                <Input
+                  placeholder="Ej: MacBook Pro 14 M3 / RTX 4070 / PS5"
+                  value={deviceForm?.device_model ?? ''}
+                  onChange={(e) => setDeviceForm(prev => prev ? { ...prev, device_model: e.target.value } : prev)}
+                  readOnly={['closed', 'ready', 'rejected'].includes(ticket.status)}
+                  className="bg-slate-50 border-slate-200"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Falla reportada</label>
+                <textarea
+                  className="w-full min-h-[80px] p-3 rounded-xl border border-slate-200 outline-none focus:ring-2 focus:ring-slate-900 transition-all text-sm resize-none bg-slate-50"
+                  placeholder="Ej: No enciende, se calienta y se apaga..."
+                  value={deviceForm?.reported_issue ?? ''}
+                  onChange={(e) => setDeviceForm(prev => prev ? { ...prev, reported_issue: e.target.value } : prev)}
+                  readOnly={['closed', 'ready', 'rejected'].includes(ticket.status)}
+                />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">N° de Serie</label>
+                  <Input
+                    placeholder="Ej: C02XG0KGJHD3"
+                    value={deviceForm?.serial_number ?? ''}
+                    onChange={(e) => setDeviceForm(prev => prev ? { ...prev, serial_number: e.target.value } : prev)}
+                    readOnly={['closed', 'ready', 'rejected'].includes(ticket.status)}
+                    className="bg-slate-50 border-slate-200 font-mono"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Password del equipo</label>
+                  <Input
+                    placeholder="Clave / PIN / patrón"
+                    value={deviceForm?.device_password ?? ''}
+                    onChange={(e) => setDeviceForm(prev => prev ? { ...prev, device_password: e.target.value } : prev)}
+                    readOnly={['closed', 'ready', 'rejected'].includes(ticket.status)}
+                    className="bg-slate-50 border-slate-200 font-mono"
+                  />
+                </div>
+              </div>
+              {isDeviceDirty && (
+                <div className="flex flex-col gap-2 items-start pt-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="rounded-lg border-amber-200 bg-amber-50 text-amber-700 gap-2 font-bold text-xs hover:bg-amber-100 h-8 transition-all active:scale-95"
+                    onClick={handleSaveDevice}
+                    disabled={updateTicketMutation.isPending}
+                  >
+                    <Save className="w-3.5 h-3.5" /> GUARDAR DATOS DEL EQUIPO
+                  </Button>
+                  <p className="text-xs text-amber-600 font-medium flex items-center gap-1.5">
+                    <AlertCircle className="w-3 h-3" /> Tienes cambios sin guardar.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card className="border-slate-200 overflow-hidden shadow-sm">
             <CardHeader className="bg-slate-50/50 border-b border-slate-100">
               <CardTitle className="text-sm uppercase tracking-widest font-black text-slate-400">Descripción General</CardTitle>
@@ -1701,6 +1807,16 @@ export default function AdminTicketDetail() {
             <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Servicio Base</h3>
             <p className="text-md font-bold">{ticket.appointment?.service?.name}</p>
             <p className="text-xs text-slate-600">ID Reserva: {ticket.appointment?.id.slice(0,8)}</p>
+          </div>
+        </div>
+
+        <div className="mb-6">
+          <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Datos del Equipo</h3>
+          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs leading-relaxed grid grid-cols-2 gap-2">
+            <p><span className="font-bold">Modelo: </span>{deviceForm?.device_model || ticket.device_model || '---'}</p>
+            <p><span className="font-bold">N° Serie: </span>{deviceForm?.serial_number || ticket.serial_number || '---'}</p>
+            <p className="col-span-2"><span className="font-bold">Falla reportada: </span>{deviceForm?.reported_issue || ticket.reported_issue || '---'}</p>
+            <p><span className="font-bold">Password: </span>{deviceForm?.device_password || ticket.device_password || '---'}</p>
           </div>
         </div>
 

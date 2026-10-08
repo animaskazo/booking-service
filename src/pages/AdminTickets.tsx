@@ -97,6 +97,11 @@ export default function AdminTickets() {
                         </Badge>
                       </div>
                       <h3 className="text-xl font-bold text-slate-900 mb-1">{ticket.appointment?.customer_name}</h3>
+                      {(ticket.device_model || ticket.serial_number) && (
+                        <p className="text-xs text-slate-500 font-medium mb-1">
+                          {ticket.device_model}{ticket.device_model && ticket.serial_number ? ' · ' : ''}{ticket.serial_number && `S/N: ${ticket.serial_number}`}
+                        </p>
+                      )}
                       <div className="flex items-center gap-4 text-sm text-slate-500">
                         <div className="flex items-center gap-1.5 font-bold px-2 py-0.5 rounded-md text-xs border" style={{ backgroundColor: ticket.appointment?.service?.color ? `${ticket.appointment.service.color}15` : '#f1f5f9', color: ticket.appointment?.service?.color || '#475569', borderColor: ticket.appointment?.service?.color ? `${ticket.appointment.service.color}30` : '#e2e8f0' }}>
                           <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ticket.appointment?.service?.color || '#475569' }} />
@@ -159,6 +164,9 @@ export default function AdminTickets() {
                         <h4 className="font-bold text-slate-900 text-xs group-hover:text-blue-600 transition-colors line-clamp-1">
                           {ticket.appointment?.customer_name}
                         </h4>
+                        {ticket.device_model && (
+                          <p className="text-[10px] text-slate-500 font-medium line-clamp-1">{ticket.device_model}</p>
+                        )}
                         
                         <div className="flex items-center justify-between items-end mt-1">
                           <div className="text-[9px] font-bold text-slate-500 line-clamp-1 max-w-[100px]">
