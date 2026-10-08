@@ -1811,15 +1811,15 @@ export default function AdminTicketDetail() {
           </div>
           <div className="text-right">
             <img src="/powerfix-negro.png" alt="PowerFix" style={{ height: '24px', width: 'auto', marginLeft: 'auto', marginBottom: '8px' }} />
-            <div className="flex items-center justify-end gap-3 mb-2">
+            <div className="flex items-center justify-end gap-3 mb-2 ml-auto w-fit bg-slate-200 px-3 py-1.5 rounded-lg">
               <img
-                src="/msi.png"
+                src="/logo-msi.png"
                 alt="MSI"
                 className="h-6 w-auto"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
               <img
-                src="/gigabyte.png"
+                src="/logo-giga.png"
                 alt="Gigabyte"
                 className="h-6 w-auto"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
