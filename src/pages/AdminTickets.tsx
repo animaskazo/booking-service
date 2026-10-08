@@ -67,20 +67,6 @@ export default function AdminTickets() {
     return map;
   }, [allParts]);
 
-  // Buscador global: identificador, cliente, modelo, serie, email, teléfono
-  const filteredTickets = useMemo(() => {
-    const q = searchTerm.trim().toLowerCase();
-    if (!q) return tickets;
-    return tickets.filter((t) => [
-      t.appointment?.short_id,
-      t.appointment?.customer_name,
-      t.appointment?.customer_email,
-      t.appointment?.customer_phone,
-      (t as any).device_model,
-      (t as any).serial_number,
-    ].some((v) => (v || '').toString().toLowerCase().includes(q)));
-  }, [tickets, searchTerm]);
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'evaluating': return 'bg-blue-100 text-blue-700 border-blue-200';
@@ -104,6 +90,28 @@ export default function AdminTickets() {
       default: return status;
     }
   };
+
+  // Buscador global: cualquier coincidencia en los datos del ticket
+  const filteredTickets = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return tickets;
+    return tickets.filter((t) => [
+      t.id,
+      t.appointment?.short_id,
+      t.appointment?.customer_name,
+      t.appointment?.customer_email,
+      t.appointment?.customer_phone,
+      t.appointment?.service?.name,
+      getStatusLabel(t.status),
+      t.status,
+      t.description,
+      (t as any).device_model,
+      (t as any).reported_issue,
+      (t as any).serial_number,
+      (t as any).device_password,
+      String(t.total_budget ?? ''),
+    ].some((v) => (v || '').toString().toLowerCase().includes(q)));
+  }, [tickets, searchTerm]);
 
   const handleDropOnColumn = (ticketId: string | null, targetCol: string) => {
     setDropTarget(null);
