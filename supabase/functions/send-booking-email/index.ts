@@ -165,7 +165,21 @@ serve(async (req) => {
               </p>
 
               <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                ${isBudget ? `
+              ${(!isBudget && !isTest) ? `
+              <div style="margin-top:28px;background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px 20px;text-align:center;">
+                <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;">
+                  📍 &nbsp;Dónde te esperamos
+                </p>
+                <p style="margin:0 0 10px;font-size:14px;color:#0f172a;font-weight:600;line-height:1.5;">
+                  Avenida Francisco Bilbao 4620 • Las Condes • Santiago
+                </p>
+                <a href="https://www.google.com/maps/search/?api=1&query=Avenida+Francisco+Bilbao+4620+Las+Condes+Santiago" target="_blank" style="display:inline-block;color:#2563eb;font-size:13px;font-weight:700;text-decoration:none;border:1px solid #bfdbfe;border-radius:8px;padding:8px 18px;">
+                  Ver en el mapa
+                </a>
+              </div>
+              ` : ''}
+
+              ${isBudget ? `
                   ${(findings || []).map((f: any) => `
                     <tr>
                       <td style="padding:14px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;">${f.description}</td>
