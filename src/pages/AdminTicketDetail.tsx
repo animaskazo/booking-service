@@ -1899,25 +1899,23 @@ export default function AdminTicketDetail() {
         </div>
 
         <div className="mt-8 pt-6 border-t border-slate-200 text-center">
-          <div className="print-keep-bg mb-3 mx-auto w-fit bg-black px-6 py-3 rounded-lg text-center">
-            <div className="flex items-center justify-center gap-4 mb-2">
-              <img
-                src="/logo-msi.png"
-                alt="MSI"
-                className="h-6 w-auto"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-              />
-              <img
-                src="/logo-giga.png"
-                alt="Gigabyte"
-                className="h-6 w-auto"
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
-              />
-            </div>
-            <p className="text-[10px] font-bold text-white uppercase tracking-widest">
-              Somos el Servicio Técnico Oficial para tus productos MSI y Gigabyte
-            </p>
+          <div className="print-keep-bg flex items-center justify-center gap-4 mb-2 mx-auto w-fit bg-black px-6 py-2 rounded-lg">
+            <img
+              src="/logo-msi.png"
+              alt="MSI"
+              className="h-6 w-auto"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+            <img
+              src="/logo-giga.png"
+              alt="Gigabyte"
+              className="h-6 w-auto"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
           </div>
+          <p className="text-[10px] font-bold text-slate-900 uppercase tracking-widest mb-3">
+            Somos el Servicio Técnico Oficial para tus productos MSI y Gigabyte
+          </p>
           <p className="text-[9px] text-slate-400 uppercase tracking-[0.2em]">
             {activeView === 'reparacion' ? 'Documento de respaldo de la reparación - PowerFix' : 'Este presupuesto es válido por 15 días - PowerFix'}
           </p>
