@@ -90,7 +90,20 @@ export interface TicketPart {
   tracking_number?: string;
   reference_link?: string;
   status: 'pending' | 'purchased' | 'shipped' | 'received';
+  stock_item_id?: string | null;
   created_at: string;
+}
+
+export interface StockItem {
+  id: string;
+  user_id: string;
+  name: string;
+  photo_url?: string | null;
+  serial_number?: string | null;
+  rma?: string | null;
+  quantity: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface TicketHistoryItem {

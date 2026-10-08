@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { useQuery, useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
-import { ServiceWithAvailability, AppointmentRecord, AvailabilityRecord, prepareAppointmentData, TicketRecord, TicketFinding, TicketHistoryItem } from './utils-booking';
+import { ServiceWithAvailability, AppointmentRecord, AvailabilityRecord, prepareAppointmentData, TicketRecord, TicketFinding, TicketHistoryItem, StockItem } from './utils-booking';
 
 // ============================================================================
 // INICIALIZAR CLIENTE SUPABASE
@@ -60,6 +60,11 @@ export type Database = {
       ticket_parts: {
         Row: any;
         Insert: any;
+      };
+      stock_items: {
+        Row: StockItem;
+        Insert: Omit<StockItem, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<StockItem>;
       };
       ticket_payment_links: {
         Row: {
@@ -1022,6 +1027,163 @@ export const useDeleteTicketFinding = () => {
     },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['ticket_findings', variables.ticket_id] });
+    },
+  });
+};
+
+// ============================================================================
+// HOOKS - STOCK (CONTROL DE INVENTARIO)
+// ============================================================================
+
+/**
+ * Obtiene todos los ítems de stock del usuario
+ */
+export const useStockItems = () => {
+  const { user } = useAuth();
+  return useQuery({
+    queryKey: ['stock_items', user?.id],
+    queryFn: async () => {
+      if (!user) return [];
+      const { data, error } = await supabase
+        .from('stock_items')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('name', { ascending: true });
+      if (error) throw error;
+      return data as StockItem[];
+    },
+    enabled: !!user,
+  });
+};
+
+/**
+ * Crea un ítem de stock
+ */
+export const useCreateStockItem = () => {
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async (item: { name: string; photo_url?: string | null; serial_number?: string | null; rma?: string | null; quantity: number }) => {
+      if (!user) throw new Error("Debes estar logueado");
+      const { data, error } = await supabase
+        .from('stock_items')
+        .insert([{ ...item, user_id: user.id }])
+        .select()
+        .single();
+      if (error) throw error;
+      return data as StockItem;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock_items'] });
+    },
+  });
+};
+
+/**
+ * Actualiza un ítem de stock (incluye ajustar cantidad)
+ */
+export const useUpdateStockItem = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...updates }: Partial<StockItem> & { id: string }) => {
+      const { data, error } = await supabase
+        .from('stock_items')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as StockItem;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock_items'] });
+    },
+  });
+};
+
+/**
+ * Elimina un ítem de stock
+ */
+export const useDeleteStockItem = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from('stock_items').delete().eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock_items'] });
+    },
+  });
+};
+
+/**
+ * Agrega un componente del stock a un ticket y descuenta 1 unidad (sincronizado).
+ * Falla si no hay stock disponible.
+ */
+export const useAddTicketPartFromStock = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ ticket_id, stock_item_id, status }: { ticket_id: string; stock_item_id: string; status?: string }) => {
+      const { data: stock, error: stockError } = await supabase
+        .from('stock_items')
+        .select('*')
+        .eq('id', stock_item_id)
+        .single();
+      if (stockError) throw stockError;
+      if (!stock || (stock.quantity ?? 0) < 1) throw new Error('Sin stock disponible');
+
+      const { data: part, error: partError } = await supabase
+        .from('ticket_parts')
+        .insert([{
+          ticket_id,
+          stock_item_id,
+          name: stock.name,
+          value: 0,
+          tracking_number: stock.serial_number || null,
+          reference_link: null,
+          status: status || 'pending',
+        }])
+        .select()
+        .single();
+      if (partError) throw partError;
+
+      const { error: decError } = await supabase
+        .from('stock_items')
+        .update({ quantity: stock.quantity - 1 })
+        .eq('id', stock_item_id);
+      if (decError) throw decError;
+
+      return part;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['ticket_parts'] });
+      queryClient.invalidateQueries({ queryKey: ['stock_items'] });
+    },
+  });
+};
+
+/**
+ * Devuelve 1 unidad al stock (al quitar del ticket un repuesto proveniente del stock)
+ */
+export const useReturnStockItem = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (stock_item_id: string) => {
+      const { data: stock, error: stockError } = await supabase
+        .from('stock_items')
+        .select('quantity')
+        .eq('id', stock_item_id)
+        .single();
+      if (stockError) throw stockError;
+      const { error } = await supabase
+        .from('stock_items')
+        .update({ quantity: (stock?.quantity ?? 0) + 1 })
+        .eq('id', stock_item_id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock_items'] });
     },
   });
 };

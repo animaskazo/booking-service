@@ -9,7 +9,8 @@ import {
   X,
   ChevronRight,
   FileText,
-  Package
+  Package,
+  Boxes
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase, useAuth } from '../lib/supabase-client';
@@ -19,6 +20,7 @@ const sidebarItems = [
   { name: 'Servicios', path: '/admin/services', icon: Briefcase },
   { name: 'Tickets Soporte', path: '/admin/tickets', icon: FileText },
   { name: 'Repuestos', path: '/admin/spare-parts', icon: Package },
+  { name: 'Stock', path: '/admin/stock', icon: Boxes },
   { name: 'Configuración', path: '/admin/settings', icon: Settings },
 ];
 

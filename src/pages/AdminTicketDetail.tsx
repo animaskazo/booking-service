@@ -12,6 +12,9 @@ import {
   useAddTicketPart,
   useUpdateTicketPart,
   useDeleteTicketPart,
+  useStockItems,
+  useAddTicketPartFromStock,
+  useReturnStockItem,
   sendBudgetEmail,
   sendReadyEmail,
   supabase,
@@ -75,6 +78,7 @@ export default function AdminTicketDetail() {
   const { data: history = [] } = useTicketHistory(id);
   const { data: ticketParts = [] } = useTicketParts(id);
   const { data: paymentLinks = [] } = useTicketPaymentLinks(id);
+  const { data: stockItems = [] } = useStockItems();
   
   const updateTicketMutation = useUpdateTicket();
   const addFindingMutation = useAddTicketFinding();
@@ -83,6 +87,9 @@ export default function AdminTicketDetail() {
   const addPartMutation = useAddTicketPart();
   const updatePartMutation = useUpdateTicketPart();
   const deletePartMutation = useDeleteTicketPart();
+  const addPartFromStockMutation = useAddTicketPartFromStock();
+  const returnStockMutation = useReturnStockItem();
+  const [selectedStockId, setSelectedStockId] = useState('');
 
   const [newFinding, setNewFinding] = useState({ description: '', price: '' });
   const [newHistory, setNewHistory] = useState({ description: '', evidence_url: '' });
@@ -209,7 +216,26 @@ export default function AdminTicketDetail() {
   };
 
   const handleDeletePart = async (partId: string) => {
+    const part = ticketParts.find((p: any) => p.id === partId);
     await deletePartMutation.mutateAsync(partId);
+    // Si venía del stock, devolver 1 unidad (sincronizado)
+    if (part?.stock_item_id) {
+      try {
+        await returnStockMutation.mutateAsync(part.stock_item_id);
+      } catch (e) {
+        console.error('No se pudo devolver el stock:', e);
+      }
+    }
+  };
+
+  const handleAddPartFromStock = async () => {
+    if (!selectedStockId || !id) return;
+    try {
+      await addPartFromStockMutation.mutateAsync({ ticket_id: id, stock_item_id: selectedStockId });
+      setSelectedStockId('');
+    } catch (e: any) {
+      showError('Sin stock', e?.message || 'No se pudo agregar el componente del stock.');
+    }
   };
 
   const getStatusLabel = (status: string) => {
@@ -815,6 +841,32 @@ export default function AdminTicketDetail() {
                 {/* Add Part Form */}
                 {['evaluating', 'quoted', 'accepted', 'repairing'].includes(ticket.status) && (
                   <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                    {/* Desde stock (sincronizado: descuenta 1 unidad) */}
+                    <div className="space-y-2 pb-4 border-b border-slate-200/70">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Agregar componente del stock</label>
+                      <div className="flex flex-col sm:flex-row gap-2">
+                        <select
+                          className="flex-1 h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium focus:ring-2 focus:ring-slate-900 outline-none transition-all"
+                          value={selectedStockId}
+                          onChange={(e) => setSelectedStockId(e.target.value)}
+                        >
+                          <option value="">Selecciona del inventario...</option>
+                          {stockItems.map((s) => (
+                            <option key={s.id} value={s.id} disabled={s.quantity < 1}>
+                              {s.name} (x{s.quantity}){s.quantity < 1 ? ' — sin stock' : ''}
+                            </option>
+                          ))}
+                        </select>
+                        <Button
+                          onClick={handleAddPartFromStock}
+                          disabled={!selectedStockId || addPartFromStockMutation.isPending}
+                          className="bg-blue-600 hover:bg-blue-700 gap-2 font-bold uppercase text-[11px] tracking-widest h-11 rounded-xl px-5 whitespace-nowrap"
+                        >
+                          <Package className="w-4 h-4" /> Usar de stock
+                        </Button>
+                      </div>
+                      <p className="text-[10px] text-slate-400 font-medium">Al agregarlo se descuenta 1 unidad del inventario. Al quitarlo del ticket, se devuelve.</p>
+                    </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nombre Repuesto</label>
@@ -885,10 +937,15 @@ export default function AdminTicketDetail() {
                           <Package className="w-5 h-5 text-slate-400" />
                         </div>
                         <div>
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <Badge className={`${PART_STATUS[part.status as keyof typeof PART_STATUS]?.color || ''} border shadow-none font-bold uppercase text-[9px]`}>
                               {PART_STATUS[part.status as keyof typeof PART_STATUS]?.label || part.status}
                             </Badge>
+                            {part.stock_item_id && (
+                              <Badge className="bg-blue-100 text-blue-700 border-blue-200 border shadow-none font-bold uppercase text-[9px]">
+                                Stock
+                              </Badge>
+                            )}
                           </div>
                           <h4 className="font-bold text-slate-900">{part.name}</h4>
                           <div className="flex flex-wrap gap-3 mt-1">
