@@ -957,7 +957,7 @@ export default function AdminTicketDetail() {
                         </div>
                         <div>
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
-                            <Badge className="bg-blue-100 text-blue-700 border-blue-200 border shadow-none font-bold uppercase text-[9px]">
+                            <Badge className="bg-blue-100 text-blue-700 border-blue-200 border shadow-none font-bold uppercase text-[9px] pointer-events-none hover:bg-blue-100">
                               Stock
                             </Badge>
                           </div>
