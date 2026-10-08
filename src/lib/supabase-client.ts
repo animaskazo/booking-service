@@ -1119,6 +1119,7 @@ export const useDeleteStockItem = () => {
 
 /**
  * Agrega un componente del stock a un ticket y descuenta 1 unidad (sincronizado).
+ * El stock no tiene estado: si existe en inventario, entra directo como recibido.
  * Falla si no hay stock disponible.
  */
 export const useAddTicketPartFromStock = () => {
@@ -1142,7 +1143,7 @@ export const useAddTicketPartFromStock = () => {
           value: 0,
           tracking_number: stock.serial_number || null,
           reference_link: null,
-          status: status || 'pending',
+          status: status || 'received',
         }])
         .select()
         .single();

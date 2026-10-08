@@ -968,17 +968,6 @@ export default function AdminTicketDetail() {
                           {part.tracking_number && (
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1 font-mono">S/N: {part.tracking_number}</p>
                           )}
-                          <div className="flex gap-1 mt-3">
-                            {Object.entries(PART_STATUS).map(([key, _]) => (
-                              <button
-                                key={key}
-                                onClick={() => handleUpdatePartStatus(part.id, key)}
-                                className={`px-2 py-1 rounded-md text-[8px] font-bold border transition-all ${part.status === key ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-400 border-slate-100 hover:border-slate-200'}`}
-                              >
-                                {key === 'pending' ? 'Pendiente' : key === 'purchased' ? 'Comprado' : key === 'shipped' ? 'En camino' : 'Recibido'}
-                              </button>
-                            ))}
-                          </div>
                         </div>
                       </div>
 
