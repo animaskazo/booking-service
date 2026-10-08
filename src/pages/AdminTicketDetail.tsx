@@ -91,6 +91,8 @@ export default function AdminTicketDetail() {
   const addPartFromStockMutation = useAddTicketPartFromStock();
   const returnStockMutation = useReturnStockItem();
   const [selectedStockId, setSelectedStockId] = useState('');
+  const [showPartModal, setShowPartModal] = useState(false);
+  const [showStockModal, setShowStockModal] = useState(false);
 
   const [newFinding, setNewFinding] = useState({ description: '', price: '' });
   const [newHistory, setNewHistory] = useState({ description: '', evidence_url: '' });
@@ -210,6 +212,7 @@ export default function AdminTicketDetail() {
       status: newPart.status
     });
     setNewPart({ name: '', value: '', tracking: '', link: '', status: 'pending' });
+    setShowPartModal(false);
   };
 
   const handleUpdatePartStatus = async (partId: string, newStatus: string) => {
@@ -234,6 +237,7 @@ export default function AdminTicketDetail() {
     try {
       await addPartFromStockMutation.mutateAsync({ ticket_id: id, stock_item_id: selectedStockId });
       setSelectedStockId('');
+      setShowStockModal(false);
     } catch (e: any) {
       showError('Sin stock', e?.message || 'No se pudo agregar el componente del stock.');
     }
@@ -835,73 +839,19 @@ export default function AdminTicketDetail() {
                       <CardDescription>Control de partes y componentes para esta reparación</CardDescription>
                     </div>
                   </div>
+                  {['evaluating', 'quoted', 'accepted', 'repairing'].includes(ticket.status) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-3 rounded-lg border-slate-200 gap-1.5 text-[10px] font-bold uppercase tracking-widest shrink-0"
+                      onClick={() => setShowPartModal(true)}
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Agregar
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="p-6 space-y-6">
-                
-                {/* Add Part Form */}
-                {['evaluating', 'quoted', 'accepted', 'repairing'].includes(ticket.status) && (
-                  <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nombre Repuesto</label>
-                        <Input 
-                          placeholder="Ej: Batería Original" 
-                          value={newPart.name}
-                          onChange={(e) => setNewPart({...newPart, name: e.target.value})}
-                          className="bg-white border-slate-200 h-11"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor Costo</label>
-                        <Input 
-                          type="number"
-                          placeholder="0" 
-                          value={newPart.value}
-                          onChange={(e) => setNewPart({...newPart, value: e.target.value})}
-                          className="bg-white border-slate-200 h-11"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nº Seguimiento</label>
-                        <Input 
-                          placeholder="Tracking ID" 
-                          value={newPart.tracking}
-                          onChange={(e) => setNewPart({...newPart, tracking: e.target.value})}
-                          className="bg-white border-slate-200 h-11"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Link Referencia</label>
-                        <Input 
-                          placeholder="https://..." 
-                          value={newPart.link}
-                          onChange={(e) => setNewPart({...newPart, link: e.target.value})}
-                          className="bg-white border-slate-200 h-11"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado Inicial</label>
-                        <select 
-                          className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium focus:ring-2 focus:ring-slate-900 outline-none transition-all"
-                          value={newPart.status}
-                          onChange={(e) => setNewPart({...newPart, status: e.target.value})}
-                        >
-                          {Object.entries(PART_STATUS).map(([key, value]) => (
-                            <option key={key} value={key}>{value.label}</option>
-                          ))}
-                        </select>
-                      </div>
-                    </div>
-                    <Button 
-                      onClick={handleAddPart} 
-                      className="w-full bg-slate-900 hover:bg-slate-800 gap-2 font-bold uppercase text-xs tracking-widest h-12 rounded-xl"
-                      disabled={!newPart.name || !newPart.value}
-                    >
-                      <Plus className="w-4 h-4" /> AGREGAR REPUESTO
-                    </Button>
-                  </div>
-                )}
 
                 {/* Parts List (manuales; los de stock van en su propia tarjeta) */}
                 <div className="space-y-4">
@@ -984,37 +934,18 @@ export default function AdminTicketDetail() {
                       <CardDescription>Partes del inventario usadas en esta reparación</CardDescription>
                     </div>
                   </div>
+                  {['evaluating', 'quoted', 'accepted', 'repairing'].includes(ticket.status) && (
+                    <Button
+                      size="sm"
+                      className="h-8 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 gap-1.5 text-[10px] font-bold uppercase tracking-widest shrink-0"
+                      onClick={() => setShowStockModal(true)}
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Agregar
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="p-6 space-y-6">
-
-                {['evaluating', 'quoted', 'accepted', 'repairing'].includes(ticket.status) && (
-                  <div className="space-y-2 bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Agregar componente del stock</label>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <select
-                        className="flex-1 h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium focus:ring-2 focus:ring-slate-900 outline-none transition-all"
-                        value={selectedStockId}
-                        onChange={(e) => setSelectedStockId(e.target.value)}
-                      >
-                        <option value="">Selecciona del inventario...</option>
-                        {stockItems.map((s) => (
-                          <option key={s.id} value={s.id} disabled={s.quantity < 1}>
-                            {s.name} (x{s.quantity}){s.quantity < 1 ? ' — sin stock' : ''}
-                          </option>
-                        ))}
-                      </select>
-                      <Button
-                        onClick={handleAddPartFromStock}
-                        disabled={!selectedStockId || addPartFromStockMutation.isPending}
-                        className="bg-blue-600 hover:bg-blue-700 gap-2 font-bold uppercase text-[11px] tracking-widest h-11 rounded-xl px-5 whitespace-nowrap"
-                      >
-                        <Package className="w-4 h-4" /> Usar de stock
-                      </Button>
-                    </div>
-                    <p className="text-[10px] text-slate-400 font-medium">Al agregarlo se descuenta 1 unidad del inventario. Al quitarlo del ticket, se devuelve.</p>
-                  </div>
-                )}
 
                 <div className="space-y-4">
                   {ticketParts.filter((part: any) => part.stock_item_id).map((part) => (
@@ -1916,6 +1847,152 @@ export default function AdminTicketDetail() {
                   </Button>
                 </div>
               </CardContent>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Agregar Repuesto Manual */}
+      {showPartModal && (
+        <div className="fixed inset-0 z-[100] overflow-y-auto">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowPartModal(false)} />
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Card className="relative z-10 w-full max-w-lg shadow-2xl overflow-hidden rounded-[32px] border border-slate-100 bg-white">
+              <CardHeader className="bg-slate-50/50 border-b border-slate-100/60 pb-6">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-emerald-100 p-1.5 rounded-lg">
+                      <Package className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <CardTitle className="text-xl">Agregar Repuesto</CardTitle>
+                  </div>
+                  <Button variant="ghost" size="icon" className="rounded-full hover:bg-red-50 hover:text-red-500" onClick={() => setShowPartModal(false)}>
+                    <XCircle className="w-6 h-6" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-8 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nombre Repuesto</label>
+                    <Input
+                      placeholder="Ej: Batería Original"
+                      value={newPart.name}
+                      onChange={(e) => setNewPart({ ...newPart, name: e.target.value })}
+                      className="bg-slate-50 border-slate-200 h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Valor Costo</label>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={newPart.value}
+                      onChange={(e) => setNewPart({ ...newPart, value: e.target.value })}
+                      className="bg-slate-50 border-slate-200 h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Nº Seguimiento</label>
+                    <Input
+                      placeholder="Tracking ID"
+                      value={newPart.tracking}
+                      onChange={(e) => setNewPart({ ...newPart, tracking: e.target.value })}
+                      className="bg-slate-50 border-slate-200 h-11"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Link Referencia</label>
+                    <Input
+                      placeholder="https://..."
+                      value={newPart.link}
+                      onChange={(e) => setNewPart({ ...newPart, link: e.target.value })}
+                      className="bg-slate-50 border-slate-200 h-11"
+                    />
+                  </div>
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Estado Inicial</label>
+                    <select
+                      className="w-full h-11 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium focus:ring-2 focus:ring-slate-900 outline-none transition-all"
+                      value={newPart.status}
+                      onChange={(e) => setNewPart({ ...newPart, status: e.target.value })}
+                    >
+                      {Object.entries(PART_STATUS).map(([key, value]) => (
+                        <option key={key} value={key}>{value.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </CardContent>
+              <div className="p-8 bg-white border-t flex flex-row-reverse gap-4">
+                <Button
+                  onClick={handleAddPart}
+                  className="flex-1 bg-slate-900 hover:bg-slate-800 text-white h-12 font-bold uppercase tracking-widest text-xs"
+                  disabled={!newPart.name || !newPart.value || addPartMutation.isPending}
+                >
+                  {addPartMutation.isPending ? 'GUARDANDO...' : 'AGREGAR REPUESTO'}
+                </Button>
+                <Button type="button" variant="outline" className="h-12 px-6 border-slate-200 font-bold uppercase tracking-widest text-xs" onClick={() => setShowPartModal(false)}>
+                  CANCELAR
+                </Button>
+              </div>
+            </Card>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Agregar Componente del Stock */}
+      {showStockModal && (
+        <div className="fixed inset-0 z-[100] overflow-y-auto">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowStockModal(false)} />
+          <div className="flex min-h-full items-center justify-center p-4">
+            <Card className="relative z-10 w-full max-w-lg shadow-2xl overflow-hidden rounded-[32px] border border-slate-100 bg-white">
+              <CardHeader className="bg-blue-50/60 border-b border-blue-100 pb-6">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <div className="bg-blue-100 p-1.5 rounded-lg">
+                      <Boxes className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl">Usar del Stock</CardTitle>
+                      <CardDescription>Se descuenta 1 unidad del inventario</CardDescription>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="icon" className="rounded-full hover:bg-red-50 hover:text-red-500" onClick={() => setShowStockModal(false)}>
+                    <XCircle className="w-6 h-6" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-8 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Componente del inventario</label>
+                  <select
+                    className="w-full h-12 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium focus:ring-2 focus:ring-slate-900 outline-none transition-all"
+                    value={selectedStockId}
+                    onChange={(e) => setSelectedStockId(e.target.value)}
+                  >
+                    <option value="">Selecciona del inventario...</option>
+                    {stockItems.map((s) => (
+                      <option key={s.id} value={s.id} disabled={s.quantity < 1}>
+                        {s.name} (x{s.quantity}){s.quantity < 1 ? ' — sin stock' : ''}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[10px] text-slate-400 font-medium">Al agregarlo se descuenta 1 unidad. Al quitarlo del ticket, se devuelve.</p>
+                </div>
+              </CardContent>
+              <div className="p-8 bg-white border-t flex flex-row-reverse gap-4">
+                <Button
+                  onClick={handleAddPartFromStock}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white h-12 font-bold uppercase tracking-widest text-xs"
+                  disabled={!selectedStockId || addPartFromStockMutation.isPending}
+                >
+                  {addPartFromStockMutation.isPending ? 'AGREGANDO...' : 'USAR DE STOCK'}
+                </Button>
+                <Button type="button" variant="outline" className="h-12 px-6 border-slate-200 font-bold uppercase tracking-widest text-xs" onClick={() => setShowStockModal(false)}>
+                  CANCELAR
+                </Button>
+              </div>
             </Card>
           </div>
         </div>
