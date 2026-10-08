@@ -960,15 +960,28 @@ export default function AdminTicketDetail() {
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm uppercase tracking-widest font-black text-slate-400">Datos del Equipo</CardTitle>
                 {!isDeviceLocked && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    title={editingDevice ? 'Cancelar edición' : 'Editar datos del equipo'}
-                    className={`h-7 w-7 rounded-lg transition-colors ${editingDevice ? 'text-red-500 hover:bg-red-50 hover:text-red-600' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700'}`}
-                    onClick={() => (editingDevice ? handleCancelDeviceEdit() : setEditingDevice(true))}
-                  >
-                    {editingDevice ? <XCircle className="w-4 h-4" /> : <Pencil className="w-3.5 h-3.5" />}
-                  </Button>
+                  <div className="flex items-center gap-1">
+                    {editingDevice && (
+                      <button
+                        type="button"
+                        onClick={handleCancelDeviceEdit}
+                        className="h-7 px-2 rounded-lg text-[10px] font-bold uppercase tracking-widest text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                      >
+                        Cancelar
+                      </button>
+                    )}
+                    <Button
+                      variant={editingDevice ? 'default' : 'ghost'}
+                      size="sm"
+                      title={editingDevice ? 'Guardar datos del equipo' : 'Editar datos del equipo'}
+                      className={`h-7 px-2.5 rounded-lg gap-1.5 text-[10px] font-bold uppercase tracking-widest transition-all active:scale-95 ${editingDevice ? 'bg-slate-900 hover:bg-slate-800 text-white' : 'text-slate-400 hover:bg-slate-100 hover:text-slate-700'}`}
+                      onClick={() => (editingDevice ? handleSaveDevice() : setEditingDevice(true))}
+                      disabled={editingDevice && (!isDeviceDirty || updateTicketMutation.isPending)}
+                    >
+                      {editingDevice ? <Save className="w-3.5 h-3.5" /> : <Pencil className="w-3.5 h-3.5" />}
+                      {editingDevice ? 'Guardar' : 'Editar'}
+                    </Button>
+                  </div>
                 )}
               </div>
             </CardHeader>
@@ -1016,20 +1029,9 @@ export default function AdminTicketDetail() {
                 </div>
               </div>
               {editingDevice && isDeviceDirty && (
-                <div className="flex flex-col gap-2 items-start pt-1">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="rounded-lg border-amber-200 bg-amber-50 text-amber-700 gap-2 font-bold text-xs hover:bg-amber-100 h-8 transition-all active:scale-95"
-                    onClick={handleSaveDevice}
-                    disabled={updateTicketMutation.isPending}
-                  >
-                    <Save className="w-3.5 h-3.5" /> GUARDAR DATOS DEL EQUIPO
-                  </Button>
-                  <p className="text-xs text-amber-600 font-medium flex items-center gap-1.5">
-                    <AlertCircle className="w-3 h-3" /> Tienes cambios sin guardar.
-                  </p>
-                </div>
+                <p className="text-xs text-amber-600 font-medium flex items-center gap-1.5 pt-1">
+                  <AlertCircle className="w-3 h-3" /> Tienes cambios sin guardar.
+                </p>
               )}
             </CardContent>
           </Card>
