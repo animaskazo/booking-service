@@ -412,7 +412,8 @@ export const generateShortId = () => {
 // ============================================================================
 
 /**
- * Prepara los datos para insertar una cita en Supabase
+ * Prepara los datos para insertar una cita en Supabase.
+ * El short_id lo asigna la BD (secuencia numérica next_short_id), no el cliente.
  */
 export const prepareAppointmentData = (
   serviceId: string,
@@ -436,7 +437,6 @@ export const prepareAppointmentData = (
     end_time: slotEnd.toISOString(),
     status: 'pending' as 'pending' | 'confirmed' | 'cancelled' | 'completed',
     notes: notes || null,
-    short_id: generateShortId(),
   };
 };
 

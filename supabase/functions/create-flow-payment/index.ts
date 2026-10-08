@@ -73,9 +73,9 @@ serve(async (req) => {
       );
     }
 
-    // Generar commerceOrder único para Flow y shortId corto (6 caracteres) para DB
+    // Generar commerceOrder único para Flow. El short_id lo asigna la BD
+    // (secuencia numérica next_short_id como DEFAULT de appointments.short_id).
     const commerceOrder = `BK-${Date.now()}-${Math.random().toString(36).slice(2, 7).toUpperCase()}`;
-    const shortId = Math.random().toString(36).slice(2, 8).toUpperCase();
     
     // Crear reserva con pago pendiente en Supabase
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
@@ -102,7 +102,6 @@ serve(async (req) => {
         end_time: slotEnd,
         notes: notes ?? "",
         status: "pending",
-        short_id: shortId,
         flow_commerce_order: commerceOrder,
         paid: false,
       })
@@ -123,7 +122,7 @@ serve(async (req) => {
       commerceOrder,
       currency: "CLP",
       email: customerEmail,
-      subject: `Reserva #${shortId}: ${serviceName.slice(0, 30)}`,
+      subject: `Reserva #${appt.short_id}: ${serviceName.slice(0, 30)}`,
       urlConfirmation: `${Deno.env.get("SUPABASE_URL")}/functions/v1/confirm-flow-payment`,
       urlReturn: `${Deno.env.get("SUPABASE_URL")}/functions/v1/flow-return-handler`,
       optional: commerceOrder, // Sólo guardamos el commerceOrder

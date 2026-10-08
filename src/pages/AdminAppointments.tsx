@@ -33,7 +33,7 @@ import {
   useUpdateTicket,
   useAppointmentsAdmin
 } from '../lib/supabase-client';
-import { isSlotOccupied, generateShortId, formatPrice, formatDateForDisplay, formatTimeRange } from '../lib/utils-booking';
+import { isSlotOccupied, formatPrice, formatDateForDisplay, formatTimeRange } from '../lib/utils-booking';
 import { format, startOfWeek, addDays, isSameDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { useNavigate } from 'react-router-dom';
@@ -226,7 +226,6 @@ export default function AdminAppointments() {
         end_time: endTime.toISOString(),
         status: 'confirmed' as 'pending' | 'confirmed' | 'cancelled' | 'completed',
         notes: formData.get('notes') as string || 'Creado manualmente por admin',
-        short_id: generateShortId()
       });
 
       // Enviar email de confirmación para reserva manual
