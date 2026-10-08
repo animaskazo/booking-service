@@ -1831,20 +1831,22 @@ export default function AdminTicketDetail() {
           </div>
         </div>
 
-        <div className="mb-6">
-          <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Datos del Equipo</h3>
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs leading-relaxed grid grid-cols-2 gap-2">
-            <p><span className="font-bold">Modelo: </span>{deviceForm?.device_model || ticket.device_model || '---'}</p>
-            <p><span className="font-bold">N° Serie: </span>{deviceForm?.serial_number || ticket.serial_number || '---'}</p>
-            <p className="col-span-2"><span className="font-bold">Falla reportada: </span>{deviceForm?.reported_issue || ticket.reported_issue || '---'}</p>
-            <p><span className="font-bold">Password: </span>{deviceForm?.device_password || ticket.device_password || '---'}</p>
+        <div className="grid grid-cols-2 gap-6 mb-6">
+          <div>
+            <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Datos del Equipo</h3>
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs leading-relaxed space-y-1">
+              <p><span className="font-bold">Modelo: </span>{deviceForm?.device_model || ticket.device_model || '---'}</p>
+              <p><span className="font-bold">N° Serie: </span>{deviceForm?.serial_number || ticket.serial_number || '---'}</p>
+              <p><span className="font-bold">Falla reportada: </span>{deviceForm?.reported_issue || ticket.reported_issue || '---'}</p>
+              <p><span className="font-bold">Password: </span>{deviceForm?.device_password || ticket.device_password || '---'}</p>
+            </div>
           </div>
-        </div>
 
-        <div className="mb-6">
-          <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Descripción del Servicio</h3>
-          <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs leading-relaxed whitespace-pre-wrap italic">
-            "{localDescription || ticket.description || 'Sin descripción detallada'}"
+          <div>
+            <h3 className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-2">Descripción del Servicio</h3>
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs leading-relaxed whitespace-pre-wrap italic h-full">
+              "{localDescription || ticket.description || 'Sin descripción detallada'}"
+            </div>
           </div>
         </div>
 
