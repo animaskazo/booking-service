@@ -174,9 +174,20 @@ serve(async (req) => {
 
               <!-- Retiro instructions -->
               <p style="margin:0 0 8px;font-size:15px;font-weight:700;color:#0f172a;">¿Dónde retirar?</p>
-              <p style="margin:0;font-size:14px;color:#475569;line-height:1.6;">
+              <p style="margin:0 0 12px;font-size:14px;color:#475569;line-height:1.6;">
                 Te esperamos en nuestras instalaciones. Recuerda indicar tu código <strong>${appointment.short_id}</strong> al momento de retirar.
               </p>
+              <div style="background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px 20px;text-align:center;">
+                <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;">
+                  📍 &nbsp;Nuestra dirección
+                </p>
+                <p style="margin:0 0 10px;font-size:14px;color:#0f172a;font-weight:600;line-height:1.5;">
+                  Avenida Francisco Bilbao 4620 • Las Condes • Santiago
+                </p>
+                <a href="https://www.google.com/maps/search/?api=1&query=Avenida+Francisco+Bilbao+4620+Las+Condes+Santiago" target="_blank" style="display:inline-block;color:#10b981;font-size:13px;font-weight:700;text-decoration:none;border:1px solid #a7f3d0;border-radius:8px;padding:8px 18px;">
+                  Ver en el mapa
+                </a>
+              </div>
 
               <!-- Botón interactivo directo -->
               <div style="margin-top:32px;text-align:center;">

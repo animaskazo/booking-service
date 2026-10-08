@@ -145,6 +145,18 @@ serve(async (req) => {
                 </p>
               </div>
 
+              <div style="margin-top:24px;background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px 20px;text-align:center;">
+                <p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;">
+                  📍 &nbsp;Nuestra dirección
+                </p>
+                <p style="margin:0 0 10px;font-size:14px;color:#0f172a;font-weight:600;line-height:1.5;">
+                  Avenida Francisco Bilbao 4620 • Las Condes • Santiago
+                </p>
+                <a href="https://www.google.com/maps/search/?api=1&query=Avenida+Francisco+Bilbao+4620+Las+Condes+Santiago" target="_blank" style="display:inline-block;color:#2563eb;font-size:13px;font-weight:700;text-decoration:none;border:1px solid #bfdbfe;border-radius:8px;padding:8px 18px;">
+                  Ver en el mapa
+                </a>
+              </div>
+
               <div style="border-top:1px solid #f1f5f9;margin:32px 0;"></div>
 
               <p style="margin:0;font-size:12px;color:#94a3b8;text-align:center;line-height:1.6;">
