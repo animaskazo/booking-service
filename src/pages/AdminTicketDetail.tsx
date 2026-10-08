@@ -922,8 +922,8 @@ export default function AdminTicketDetail() {
 
           {/* Stock usado en este ticket (módulo separado, sincronizado con inventario) */}
           {activeView === 'reparacion' && (
-            <Card className="border-blue-200 overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <CardHeader className="bg-blue-50/60 border-b border-blue-100">
+            <Card className="border-slate-200 overflow-hidden shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <CardHeader className="bg-slate-50/50 border-b border-slate-100">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-3">
                     <div className="bg-blue-100 p-2 rounded-lg">
@@ -936,8 +936,9 @@ export default function AdminTicketDetail() {
                   </div>
                   {['evaluating', 'quoted', 'accepted', 'repairing'].includes(ticket.status) && (
                     <Button
+                      variant="outline"
                       size="sm"
-                      className="h-8 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 gap-1.5 text-[10px] font-bold uppercase tracking-widest shrink-0"
+                      className="h-8 px-3 rounded-lg border-slate-200 gap-1.5 text-[10px] font-bold uppercase tracking-widest shrink-0"
                       onClick={() => setShowStockModal(true)}
                     >
                       <Plus className="w-3.5 h-3.5" /> Agregar
@@ -949,7 +950,7 @@ export default function AdminTicketDetail() {
 
                 <div className="space-y-4">
                   {ticketParts.filter((part: any) => part.stock_item_id).map((part) => (
-                    <div key={part.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl border border-blue-100 bg-blue-50/40 hover:shadow-sm transition-all">
+                    <div key={part.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-xl border border-slate-100 bg-white hover:shadow-sm transition-all">
                       <div className="flex items-start gap-4">
                         <div className="bg-blue-100 p-2.5 rounded-xl">
                           <Boxes className="w-5 h-5 text-blue-600" />
@@ -1947,7 +1948,7 @@ export default function AdminTicketDetail() {
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowStockModal(false)} />
           <div className="flex min-h-full items-center justify-center p-4">
             <Card className="relative z-10 w-full max-w-lg shadow-2xl overflow-hidden rounded-[32px] border border-slate-100 bg-white">
-              <CardHeader className="bg-blue-50/60 border-b border-blue-100 pb-6">
+              <CardHeader className="bg-slate-50/50 border-b border-slate-100/60 pb-6">
                 <div className="flex justify-between items-center">
                   <div className="flex items-center gap-2">
                     <div className="bg-blue-100 p-1.5 rounded-lg">
