@@ -625,6 +625,29 @@ export const sendBudgetEmail = async (budgetData: {
 };
 
 /**
+ * Notifica al cliente que su equipo está listo para retiro.
+ * Debe llamarse al momento de la transición a 'ready', no al abrir el detalle.
+ * Retorna true si el envío fue exitoso.
+ */
+export const sendReadyEmail = async (ticketId: string): Promise<boolean> => {
+  try {
+    const res = await fetch(`${supabaseUrl}/functions/v1/send-ready-email`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticket_id: ticketId }),
+    });
+    if (!res.ok) {
+      console.error('Error sending ready‑for‑pickup email:', await res.text());
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error('Exception sending ready email:', e);
+    return false;
+  }
+};
+
+/**
  * Invoca la Edge Function para enviar el email de confirmación
  */
 export const sendBookingEmail = async (bookingData: {

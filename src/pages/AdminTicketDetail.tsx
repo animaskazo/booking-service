@@ -13,6 +13,7 @@ import {
   useUpdateTicketPart,
   useDeleteTicketPart,
   sendBudgetEmail,
+  sendReadyEmail,
   supabase,
   useBusinessSettings,
   useTicketPaymentLinks,
@@ -134,33 +135,8 @@ export default function AdminTicketDetail() {
     }
   }, [ticket?.status]);
 
-  // Email notification when ticket becomes ready for pickup
-  const [readyEmailSent, setReadyEmailSent] = useState(false);
-
-  const sendReadyEmail = async (ticketId: string) => {
-    try {
-      const res = await fetch(`${(import.meta as any).env.VITE_SUPABASE_URL}/functions/v1/send-ready-email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticket_id: ticketId }),
-      });
-      if (!res.ok) {
-        const err = await res.text();
-        console.error('Error sending ready‑for‑pickup email:', err);
-      } else {
-        console.log('Ready‑for‑pickup email sent');
-        setReadyEmailSent(true);
-      }
-    } catch (e) {
-      console.error('Exception sending ready email:', e);
-    }
-  };
-
-  React.useEffect(() => {
-    if (ticket && ticket.status === 'ready' && !readyEmailSent) {
-      sendReadyEmail(ticket.id);
-    }
-  }, [ticket?.status, readyEmailSent]);
+  // El aviso de "listo para retiro" se envía al momento de la transición a 'ready'
+  // (botón MARCAR PENDIENTE DE RETIRO), no al abrir el detalle.
 
   if (isLoadingTicket) {
     return (
@@ -1300,7 +1276,20 @@ export default function AdminTicketDetail() {
           {(ticket.status === 'accepted' || ticket.status === 'repairing') && (
             <Button 
               className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-10 px-4 gap-2 font-bold text-xs transition-all active:scale-95"
-              onClick={() => updateTicketMutation.mutate({ id: ticket.id, status: 'ready' })}
+              disabled={updateTicketMutation.isPending}
+              onClick={() => updateTicketMutation.mutate(
+                { id: ticket.id, status: 'ready' },
+                {
+                  onSuccess: async () => {
+                    const sent = await sendReadyEmail(ticket.id);
+                    if (sent) {
+                      showAlert('Listo para retiro', `Se marcó el ticket #${ticket.appointment?.short_id} como pendiente de retiro y se avisó al cliente por email.`);
+                    } else {
+                      showError('Estado actualizado', 'El ticket quedó listo para retiro, pero el email al cliente no pudo enviarse. Revisa la configuración de correo.');
+                    }
+                  },
+                }
+              )}
             >
               <CheckCircle className="w-4 h-4" /> MARCAR PENDIENTE DE RETIRO
             </Button>
