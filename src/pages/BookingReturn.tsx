@@ -26,12 +26,28 @@ interface AppointmentData {
 export default function BookingReturn() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
+  const isMock = searchParams.get('mock') === '1';
 
   const [status, setStatus] = useState<PaymentStatus>('loading');
   const [appointment, setAppointment] = useState<AppointmentData | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
 
   useEffect(() => {
+    // Modo mock: previsualizar el comprobante sin pagar (?mock=1)
+    if (isMock) {
+      setAppointment({
+        shortId: '000123',
+        serviceName: 'Servicio de ejemplo',
+        customerName: 'Juan Pérez',
+        customerEmail: 'juan@ejemplo.com',
+        slotStart: new Date().toISOString(),
+        slotEnd: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+        paidAmount: 19990,
+      });
+      setStatus('success');
+      return;
+    }
+
     if (!token) {
       setStatus('error');
       setErrorMsg('No se encontró el token de pago.');
@@ -95,7 +111,7 @@ export default function BookingReturn() {
 
     // Dar 3 segundos de gracia para que Flow notifique al servidor
     setTimeout(check, 3000);
-  }, [token]);
+  }, [token, isMock]);
 
   const formatDateStr = (iso: string) =>
     format(parseISO(iso), "EEEE d 'de' MMMM, yyyy", { locale: es });
