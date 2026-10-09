@@ -415,26 +415,24 @@ export default function AdminTicketDetail() {
     if (!ticket || !paymentForm.description || !paymentForm.amount) return;
     setIsCreatingLink(true);
     try {
-      const res = await fetch(
-        `${(import.meta as any).env.VITE_SUPABASE_URL}/functions/v1/create-ticket-payment-link`,
+      const { data, error } = await supabase.functions.invoke(
+        'create-ticket-payment-link',
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+          body: {
             ticket_id: ticket.id,
             description: paymentForm.description,
             amount: parseFloat(paymentForm.amount),
             customer_email: paymentEmail || ticket.appointment?.customer_email || '',
             customer_name: ticket.appointment?.customer_name || '',
             short_id: ticket.appointment?.short_id || '',
-          }),
+          },
         }
       );
-      const data = await res.json();
-      if (data.paymentUrl) {
-        setPaymentLink(data.paymentUrl);
+      if (error) throw error;
+      if ((data as any)?.paymentUrl) {
+        setPaymentLink((data as any).paymentUrl);
       } else {
-        showError('Error al crear link', data.error || 'No se pudo generar el link de pago en Flow.');
+        showError('Error al crear link', (data as any)?.error || 'No se pudo generar el link de pago en Flow.');
       }
     } catch (err) {
       showError('Error inesperado', 'No se pudo conectar con el servidor de pagos.');
@@ -447,12 +445,10 @@ export default function AdminTicketDetail() {
     if (!ticket || !paymentLink) return;
     setIsSendingPaymentEmail(true);
     try {
-      const res = await fetch(
-        `${(import.meta as any).env.VITE_SUPABASE_URL}/functions/v1/send-payment-link-email`,
+      const { data, error } = await supabase.functions.invoke(
+        'send-payment-link-email',
         {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+          body: {
             customer_name: ticket.appointment?.customer_name || '',
             customer_email: paymentEmail || ticket.appointment?.customer_email || '',
             short_id: ticket.appointment?.short_id || '',
@@ -460,18 +456,18 @@ export default function AdminTicketDetail() {
             amount: parseFloat(paymentForm.amount),
             payment_url: paymentLink,
             tech_support_email: bSettings?.notification_email || 'contacto@powerfix.cl',
-          }),
+          },
         }
       );
-      const data = await res.json();
-      if (data.success) {
+      if (error) throw error;
+      if ((data as any)?.success) {
         showAlert('Email Enviado', `El link de pago fue enviado correctamente a ${paymentEmail || ticket.appointment?.customer_email}.`);
         setShowPaymentModal(false);
         setPaymentForm({ description: '', amount: '' });
         setPaymentLink(null);
         setLinkCopied(false);
       } else {
-        showError('Error al enviar', data.error || 'No se pudo enviar el correo.');
+        showError('Error al enviar', (data as any)?.error || 'No se pudo enviar el correo.');
       }
     } catch (err) {
       showError('Error inesperado', 'No se pudo conectar con el servidor de correo.');

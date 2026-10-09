@@ -636,13 +636,15 @@ export const sendBudgetEmail = async (budgetData: {
  */
 export const sendReadyEmail = async (ticketId: string): Promise<boolean> => {
   try {
-    const res = await fetch(`${supabaseUrl}/functions/v1/send-ready-email`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ticket_id: ticketId }),
+    const { data, error } = await supabase.functions.invoke('send-ready-email', {
+      body: { ticket_id: ticketId },
     });
-    if (!res.ok) {
-      console.error('Error sending ready‑for‑pickup email:', await res.text());
+    if (error) {
+      console.error('Error sending ready‑for‑pickup email:', error);
+      return false;
+    }
+    if (data && (data as any).error) {
+      console.error('Error sending ready‑for‑pickup email:', (data as any).error);
       return false;
     }
     return true;
