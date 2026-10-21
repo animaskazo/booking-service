@@ -64,11 +64,15 @@ serve(async (req) => {
       notes,
       phone,
       rut,
+      termsAccepted,
+      termsTitle,
+      termsContent,
+      termsUpdatedAt,
     } = body;
 
-    if (!amount || !customerEmail || !serviceName) {
+    if (!amount || !customerEmail || !serviceName || termsAccepted !== true || !termsTitle || !termsContent || !termsUpdatedAt) {
       return new Response(
-        JSON.stringify({ error: "Faltan datos requeridos" }),
+        JSON.stringify({ error: termsAccepted !== true ? "Debes aceptar los términos y condiciones" : "Faltan datos requeridos" }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -83,11 +87,38 @@ serve(async (req) => {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     // Obtener el user_id del dueño del servicio
-    const { data: serviceData } = await supabase
+    const { data: serviceData, error: serviceError } = await supabase
       .from("services")
       .select("user_id")
       .eq("id", serviceId)
-      .single();
+      .maybeSingle();
+
+    if (serviceError || !serviceData?.user_id) {
+      return new Response(
+        JSON.stringify({ error: "No se encontró la configuración del servicio" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { data: terms, error: termsError } = await supabase
+      .from("business_settings")
+      .select("terms_title, terms_content, terms_updated_at")
+      .eq("user_id", serviceData.user_id)
+      .maybeSingle();
+
+    if (termsError || !terms?.terms_title?.trim() || !terms?.terms_content?.trim()) {
+      return new Response(
+        JSON.stringify({ error: "Los términos y condiciones no están configurados. Contacta al administrador." }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    if (terms.terms_title !== termsTitle || terms.terms_content !== termsContent || terms.terms_updated_at !== termsUpdatedAt) {
+      return new Response(
+        JSON.stringify({ error: "Los términos cambiaron. Revísalos nuevamente antes de confirmar." }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const { data: appt, error: dbError } = await supabase
       .from("appointments")
@@ -104,6 +135,9 @@ serve(async (req) => {
         status: "pending",
         flow_commerce_order: commerceOrder,
         paid: false,
+        terms_accepted_at: new Date().toISOString(),
+        terms_title_snapshot: terms.terms_title,
+        terms_content_snapshot: terms.terms_content,
       })
       .select()
       .single();

@@ -38,12 +38,20 @@ export default function AdminSettings() {
   const [isTestingEmail, setIsTestingEmail] = useState(false);
   const [notificationEmail, setNotificationEmail] = useState('');
   const [emailSaved, setEmailSaved] = useState(false);
+  const [termsTitle, setTermsTitle] = useState('Términos y condiciones');
+  const [termsContent, setTermsContent] = useState('');
+  const [termsSaved, setTermsSaved] = useState(false);
 
   useEffect(() => {
     if ((settings as any).notification_email) {
       setNotificationEmail((settings as any).notification_email);
     }
   }, [(settings as any).notification_email]);
+
+  useEffect(() => {
+    setTermsTitle((settings as any)?.terms_title || 'Términos y condiciones');
+    setTermsContent((settings as any)?.terms_content || '');
+  }, [(settings as any)?.terms_title, (settings as any)?.terms_content]);
 
   const { showAlert, showConfirm } = useDialog();
 
@@ -273,6 +281,58 @@ export default function AdminSettings() {
                     </div>
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-slate-200 shadow-sm overflow-hidden bg-white">
+            <CardHeader className="bg-white border-b py-4">
+              <CardTitle className="text-base font-black uppercase tracking-widest text-slate-400">Contrato y términos del agendamiento</CardTitle>
+              <CardDescription>Esta información se mostrará antes de confirmar cada reserva y se conservará con la cita aceptada.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 space-y-5">
+              <div className="space-y-2">
+                <label htmlFor="terms-title" className="text-xs font-black text-slate-900 uppercase tracking-widest">Título</label>
+                <input
+                  id="terms-title"
+                  value={termsTitle}
+                  onChange={(event) => { setTermsTitle(event.target.value); setTermsSaved(false); }}
+                  maxLength={120}
+                  required
+                  className="w-full h-11 px-4 border border-slate-200 rounded-xl text-sm bg-slate-50/50 focus:bg-white outline-none focus:ring-2 focus:ring-slate-900"
+                  placeholder="Términos y condiciones"
+                />
+              </div>
+              <div className="space-y-2">
+                <label htmlFor="terms-content" className="text-xs font-black text-slate-900 uppercase tracking-widest">Contenido</label>
+                <textarea
+                  id="terms-content"
+                  value={termsContent}
+                  onChange={(event) => { setTermsContent(event.target.value); setTermsSaved(false); }}
+                  required
+                  rows={10}
+                  className="w-full resize-y rounded-xl border border-slate-200 bg-slate-50/50 p-4 text-sm leading-6 outline-none focus:bg-white focus:ring-2 focus:ring-slate-900"
+                  placeholder="Escribe aquí las condiciones que el cliente debe revisar y aceptar antes de reservar."
+                />
+                <p className="text-xs text-slate-500">Al guardar cambios, las reservas nuevas mostrarán esta versión. Las reservas anteriores conservarán el texto aceptado.</p>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => updateSettings.mutate(
+                    {
+                      terms_title: termsTitle.trim(),
+                      terms_content: termsContent.trim(),
+                      terms_updated_at: new Date().toISOString(),
+                    } as any,
+                    { onSuccess: () => setTermsSaved(true) }
+                  )}
+                  disabled={!termsTitle.trim() || !termsContent.trim() || updateSettings.isPending}
+                  className={`h-11 px-5 rounded-xl font-bold uppercase tracking-widest text-xs transition-all active:scale-95 flex items-center gap-2 disabled:opacity-40 ${termsSaved ? 'bg-emerald-500 text-white' : 'bg-slate-900 hover:bg-slate-700 text-white'}`}
+                >
+                  {updateSettings.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : termsSaved ? <Check className="h-4 w-4" /> : <Save className="h-4 w-4" />}
+                  {updateSettings.isPending ? 'Guardando…' : termsSaved ? 'Guardado' : 'Guardar términos'}
+                </button>
               </div>
             </CardContent>
           </Card>

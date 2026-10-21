@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { useQuery, useMutation, useQueryClient, QueryClient } from '@tanstack/react-query';
-import { ServiceWithAvailability, AppointmentRecord, AvailabilityRecord, prepareAppointmentData, TicketRecord, TicketFinding, TicketHistoryItem, StockItem } from './utils-booking';
+import { ServiceWithAvailability, AppointmentRecord, AvailabilityRecord, prepareAppointmentData, TicketRecord, TicketFinding, TicketHistoryItem, StockItem, BookingTerms } from './utils-booking';
 
 // ============================================================================
 // INICIALIZAR CLIENTE SUPABASE
@@ -232,7 +232,7 @@ export const useCreateAppointment = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (appointmentData: ReturnType<typeof prepareAppointmentData>) => {
+    mutationFn: async (appointmentData: ReturnType<typeof prepareAppointmentData> & Partial<Pick<AppointmentRecord, 'terms_accepted_at' | 'terms_title_snapshot' | 'terms_content_snapshot'>>) => {
       const { data, error } = await supabase
         .from('appointments')
         .insert([appointmentData])
@@ -309,7 +309,7 @@ export const useBusinessSettings = () => {
 
       if (error && error.code !== 'PGRST116') throw error;
       return data || { 
-        user_id: user.id, 
+        user_id: user.id,
         slot_interval: 30,
         lunch_start: '13:00',
         lunch_end: '14:00',
@@ -334,7 +334,10 @@ export const useUpdateBusinessSettings = () => {
       lunch_start?: string, 
       lunch_end?: string, 
       has_lunch_break?: boolean,
-      notification_email?: string
+      notification_email?: string,
+      terms_title?: string,
+      terms_content?: string,
+      terms_updated_at?: string
     }) => {
       if (!user) throw new Error("Debes estar logueado");
       
@@ -1247,7 +1250,27 @@ export interface FlowPaymentInput {
   notes?: string;
   phone?: string;
   rut?: string;
+  termsAccepted: boolean;
+  termsTitle: string;
+  termsContent: string;
+  termsUpdatedAt: string;
 }
+
+export const getPublicBookingTerms = async (serviceId: string): Promise<BookingTerms> => {
+  const { data, error } = await supabase.functions.invoke('get-booking-terms', {
+    body: { serviceId },
+  });
+  if (error) throw new Error(error.message || 'No se pudieron cargar los términos y condiciones');
+  if (data?.error) throw new Error(data.error);
+  return data as BookingTerms;
+};
+
+export const usePublicBookingTerms = (serviceId: string | undefined) => useQuery({
+  queryKey: ['public-booking-terms', serviceId],
+  queryFn: () => getPublicBookingTerms(serviceId!),
+  enabled: Boolean(serviceId),
+  staleTime: 0,
+});
 
 /**
  * Llama al Edge Function create-flow-payment y redirige al usuario a la URL de pago.

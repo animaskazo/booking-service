@@ -27,6 +27,7 @@ import {
   useAppointmentsByDateRange,
   checkSlotAvailability,
   useBusinessSettings,
+  usePublicBookingTerms,
   createFlowPayment,
   useCreateAppointment,
   sendBookingEmail,
@@ -40,6 +41,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import TermsConsent from './TermsConsent';
 
 // ============================================================================
 // TIPOS LOCALES
@@ -81,12 +83,15 @@ export const BookingSystemMVP: React.FC = () => {
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [shortId, setShortId] = useState<string | null>(null);
   const [isPaying, setIsPaying] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   // Mutations
   const createAppointmentMutation = useCreateAppointment();
 
   // Queries
   const { data: services = [], isLoading: servicesLoading } = useServices();
+  const { data: bookingTerms, isLoading: areTermsLoading, error: termsError, refetch: refetchBookingTerms } = usePublicBookingTerms(state.selectedService?.id);
+  const hasBookingTerms = Boolean(bookingTerms?.terms_title?.trim() && bookingTerms?.terms_content?.trim());
 
   const servicesByCategory = useMemo(() => {
     const grouped: Record<string, ServiceWithAvailability[]> = {};
@@ -149,7 +154,9 @@ export const BookingSystemMVP: React.FC = () => {
         selectedService: service,
         selectedDate: null,
         selectedSlot: null,
+        errors: [],
       }));
+      setTermsAccepted(false);
     }
   };
 
@@ -193,6 +200,14 @@ export const BookingSystemMVP: React.FC = () => {
       setState((prev) => ({
         ...prev,
         errors: ['Datos incompletos. Por favor intenta nuevamente.'],
+      }));
+      return;
+    }
+
+    if (!hasBookingTerms || !bookingTerms || !termsAccepted) {
+      setState((prev) => ({
+        ...prev,
+        errors: [termsError ? 'No se pudieron cargar los términos y condiciones.' : 'Debes revisar y aceptar los términos y condiciones antes de continuar.'],
       }));
       return;
     }
@@ -249,6 +264,10 @@ export const BookingSystemMVP: React.FC = () => {
           notes: state.notes || undefined,
           phone: state.customerPhone || undefined,
           rut: state.customerRut || undefined,
+          termsAccepted: true,
+          termsTitle: bookingTerms.terms_title,
+          termsContent: bookingTerms.terms_content,
+          termsUpdatedAt: bookingTerms.terms_updated_at,
         });
 
         // Redirigir a Flow — el usuario sale del sitio
@@ -271,7 +290,10 @@ export const BookingSystemMVP: React.FC = () => {
           ...appointmentData,
           status: 'confirmed', // Marcar como confirmada de inmediato
           paid: true,
-          paid_amount: 0
+          paid_amount: 0,
+          terms_accepted_at: new Date().toISOString(),
+          terms_title_snapshot: bookingTerms.terms_title,
+          terms_content_snapshot: bookingTerms.terms_content,
         } as any);
 
         if (result) {
@@ -297,6 +319,10 @@ export const BookingSystemMVP: React.FC = () => {
       }
     } catch (error: any) {
       setIsPaying(false);
+      if (error.message?.includes('Los términos cambiaron')) {
+        setTermsAccepted(false);
+        await refetchBookingTerms();
+      }
       setState((prev) => ({
         ...prev,
         errors: [error.message || 'Error al procesar la reserva. Intenta nuevamente.'],
@@ -316,6 +342,7 @@ export const BookingSystemMVP: React.FC = () => {
       notes: '',
       errors: [],
     });
+    setTermsAccepted(false);
     setCurrentStep('service');
     setBookingConfirmed(false);
     setShortId(null);
@@ -652,6 +679,24 @@ export const BookingSystemMVP: React.FC = () => {
             className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-slate-900 mt-1.5 bg-white resize-none h-12"
           />
         </div>
+        <div className="space-y-2">
+          {areTermsLoading ? (
+            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+              <Loader2 className="h-4 w-4 animate-spin" /> Cargando términos y condiciones…
+            </div>
+          ) : termsError ? (
+            <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              No se pudieron cargar los términos y condiciones. Intenta nuevamente o contacta al negocio.
+            </p>
+          ) : (
+            <TermsConsent
+              title={bookingTerms?.terms_title}
+              content={bookingTerms?.terms_content}
+              accepted={termsAccepted}
+              onAcceptedChange={setTermsAccepted}
+            />
+          )}
+        </div>
       </div>
 
       {state.errors.length > 0 && (
@@ -821,7 +866,7 @@ export const BookingSystemMVP: React.FC = () => {
           </Button>
           <Button
             onClick={handleConfirmBooking}
-            disabled={!state.customerName || !state.customerEmail || !state.customerPhone || !state.customerRut || isPaying}
+            disabled={!state.customerName || !state.customerEmail || !state.customerPhone || !state.customerRut || !hasBookingTerms || areTermsLoading || !termsAccepted || isPaying}
             className="px-10 h-10 bg-slate-900 hover:bg-slate-800 text-white font-bold uppercase tracking-widest text-[10px] transition-all active:scale-95 disabled:opacity-30"
           >
             {isPaying ? (

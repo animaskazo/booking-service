@@ -46,11 +46,13 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import TermsConsent from '@/components/TermsConsent';
 
 export default function AdminAppointments() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
   const [selectedSlot, setSelectedSlot] = useState<{ date: Date, time: string } | null>(null);
+  const [manualTermsAccepted, setManualTermsAccepted] = useState(false);
   const [selectedApp, setSelectedApp] = useState<any | null>(null);
   const [isMobile, setIsMobile] = React.useState(false);
   const navigate = useNavigate();
@@ -176,6 +178,11 @@ export default function AdminAppointments() {
 
   const { showConfirm, showError, showAlert } = useDialog();
 
+  const closeManualBooking = () => {
+    setSelectedSlot(null);
+    setManualTermsAccepted(false);
+  };
+
   const handleDelete = async (id: string) => {
     showConfirm(
       'Eliminar cita',
@@ -200,6 +207,15 @@ export default function AdminAppointments() {
     const service = services.find(s => s.id === serviceId);
 
     if (!service) return;
+
+    if (!bSettings.terms_title?.trim() || !bSettings.terms_content?.trim()) {
+      showError('Términos no configurados', 'Configura primero los términos del agendamiento en Configuración.');
+      return;
+    }
+    if (!manualTermsAccepted) {
+      showError('Falta la aceptación', 'Confirma que el cliente leyó y acepta los términos y condiciones.');
+      return;
+    }
 
     const startTime = new Date(selectedSlot.date);
     const [hours, minutes] = selectedSlot.time.split(':');
@@ -226,6 +242,9 @@ export default function AdminAppointments() {
         end_time: endTime.toISOString(),
         status: 'confirmed' as 'pending' | 'confirmed' | 'cancelled' | 'completed',
         notes: formData.get('notes') as string || 'Creado manualmente por admin',
+        terms_accepted_at: new Date().toISOString(),
+        terms_title_snapshot: bSettings.terms_title,
+        terms_content_snapshot: bSettings.terms_content,
       });
 
       // Enviar email de confirmación para reserva manual
@@ -240,7 +259,7 @@ export default function AdminAppointments() {
         techSupportEmail: bSettings.notification_email || 'contacto@powerfix.cl'
       });
 
-      setSelectedSlot(null);
+      closeManualBooking();
     } catch (err) {
       console.error(err);
     }
@@ -348,7 +367,7 @@ export default function AdminAppointments() {
                             return (
                               <button
                                 key={i}
-                                onClick={() => setSelectedSlot({ date: day, time: timeStr })}
+                                onClick={() => { setManualTermsAccepted(false); setSelectedSlot({ date: day, time: timeStr }); }}
                                 className="w-full relative hover:bg-slate-900/5 transition-colors z-0 flex items-start justify-end pr-1 pt-0.5"
                                 style={{ height: `${100 / slotsPerHover}%` }}
                               >
@@ -589,7 +608,7 @@ export default function AdminAppointments() {
       {selectedSlot && (
         <div className="fixed inset-0 z-[100] overflow-y-auto">
           {/* Backdrop */}
-          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setSelectedSlot(null)} />
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={closeManualBooking} />
           
           <div className="flex min-h-full items-center justify-center p-4">
             <Card className="relative z-10 w-full max-w-lg shadow-2xl overflow-hidden rounded-[32px] border border-slate-100 bg-white" onClick={(e) => e.stopPropagation()}>
@@ -607,7 +626,7 @@ export default function AdminAppointments() {
                     {format(selectedSlot.date, "EEEE d 'de' MMMM", { locale: es })} a las {selectedSlot.time}
                   </CardDescription>
                 </div>
-                <Button variant="ghost" size="icon" className="rounded-full hover:bg-red-50 hover:text-red-500 transition-colors" onClick={() => setSelectedSlot(null)}>
+                <Button variant="ghost" size="icon" className="rounded-full hover:bg-red-50 hover:text-red-500 transition-colors" onClick={closeManualBooking}>
                   <XCircle className="w-6 h-6" />
                 </Button>
               </div>
@@ -684,6 +703,18 @@ export default function AdminAppointments() {
                       />
                     </div>
                   </div>
+
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aceptación de condiciones</p>
+                    <TermsConsent
+                      title={bSettings.terms_title}
+                      content={bSettings.terms_content}
+                      accepted={manualTermsAccepted}
+                      onAcceptedChange={setManualTermsAccepted}
+                      acceptanceLabel="Confirmo que el cliente leyó y acepta"
+                      disabled={createAppointmentMutation.isPending}
+                    />
+                  </div>
                 </div>
               </CardContent>
               <div className="p-8 bg-white border-t flex flex-row-reverse gap-4">
@@ -698,7 +729,7 @@ export default function AdminAppointments() {
                     </div>
                   ) : 'CONFIRMAR RESERVA'}
                 </Button>
-                <Button type="button" variant="outline" className="h-12 px-6 border-slate-200 font-bold hover:bg-white uppercase tracking-widest text-xs transition-all active:scale-95" onClick={() => setSelectedSlot(null)}>
+                <Button type="button" variant="outline" className="h-12 px-6 border-slate-200 font-bold hover:bg-white uppercase tracking-widest text-xs transition-all active:scale-95" onClick={closeManualBooking}>
                   CANCELAR
                 </Button>
               </div>
