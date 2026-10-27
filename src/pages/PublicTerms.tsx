@@ -67,7 +67,7 @@ export default function PublicTerms() {
                   </p>
                   <img src="/powerfix-negro.png" alt="Powerfix" style={{ width: '150px', height: 'auto' }} />
                 </div>
-                <h1 className="mb-6 text-center text-2xl font-black uppercase tracking-widest text-slate-900 print:block print:text-black">{terms!.terms_title}</h1>
+                <h1 className="mb-6 hidden text-center text-2xl font-black uppercase tracking-widest text-black print:block">{terms!.terms_title}</h1>
                 {terms!.terms_content.trim().startsWith('<') ? (
                   <div className="prose prose-slate max-w-none text-sm leading-7 sm:text-base print:text-black" dangerouslySetInnerHTML={{ __html: terms!.terms_content }} />
                 ) : (
