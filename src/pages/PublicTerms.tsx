@@ -49,7 +49,7 @@ export default function PublicTerms() {
             )}
           </header>
 
-          <div id="booking-terms-print" className="px-6 py-8 sm:px-10">
+          <div id="booking-terms-print" className="px-6 py-10 sm:px-12">
             {isLoading ? (
               <div className="no-print flex items-center gap-3 text-sm text-slate-500">
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -61,11 +61,17 @@ export default function PublicTerms() {
               </p>
             ) : hasTerms ? (
               <>
-                <h1 className="mb-4 text-2xl font-bold text-slate-900 print:block">{terms!.terms_title}</h1>
+                <div className="mb-8 flex items-center justify-between">
+                  <img src="/powerfix-negro.png" alt="Powerfix" className="h-6 w-auto print:h-6" />
+                  <p className="text-xs text-slate-500 print:text-black">
+                    Fecha de impresión: {new Date().toLocaleDateString('es-CL')}
+                  </p>
+                </div>
+                <h1 className="mb-6 text-center text-2xl font-black uppercase tracking-widest text-slate-900 print:block print:text-black">{terms!.terms_title}</h1>
                 {terms!.terms_content.trim().startsWith('<') ? (
-                  <div className="prose prose-slate max-w-none text-sm leading-7 sm:text-base" dangerouslySetInnerHTML={{ __html: terms!.terms_content }} />
+                  <div className="prose prose-slate max-w-none text-sm leading-7 sm:text-base print:text-black" dangerouslySetInnerHTML={{ __html: terms!.terms_content }} />
                 ) : (
-                  <div className="text-sm leading-7 text-slate-700 sm:text-base">
+                  <div className="text-sm leading-7 text-slate-700 sm:text-base print:text-black">
                     {terms!.terms_content.split('\n').map((paragraph, index) => (
                       <p key={index} className={paragraph.trim() ? 'mb-4 whitespace-pre-wrap' : 'h-3'}>
                         {paragraph}
@@ -73,6 +79,9 @@ export default function PublicTerms() {
                     ))}
                   </div>
                 )}
+                <div className="mt-12 border-t border-slate-200 pt-6 text-center text-xs text-slate-400 print:text-black">
+                  PowerFix • www.powerfix.cl
+                </div>
               </>
             ) : (
               <p className="no-print rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
