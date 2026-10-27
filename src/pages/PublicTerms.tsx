@@ -31,11 +31,12 @@ export default function PublicTerms() {
                 <button
                   type="button"
                   onClick={() => window.print()}
-                  className="inline-flex items-center justify-center rounded-full p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
-                  title="Imprimir términos y condiciones"
-                  aria-label="Imprimir términos y condiciones"
+                  className="inline-flex items-center gap-2 rounded-full border border-slate-200 px-4 py-2 text-xs font-bold uppercase tracking-widest text-slate-600 hover:border-slate-900 hover:text-slate-900"
+                  title="Imprimir documento"
+                  aria-label="Imprimir documento"
                 >
                   <Printer className="h-4 w-4" />
+                  Imprimir documento
                 </button>
               )}
             </div>
