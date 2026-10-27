@@ -65,7 +65,7 @@ export default function PublicTerms() {
                   <p className="text-[8pt] text-black">
                     Fecha de impresión: {new Date().toLocaleDateString('es-CL')}
                   </p>
-                  <img src="/powerfix-negro.png" alt="Powerfix" className="h-[10px] w-auto" />
+                  <img src="/powerfix-negro.png" alt="Powerfix" style={{ width: '150px', height: 'auto' }} />
                 </div>
                 <h1 className="mb-6 text-center text-2xl font-black uppercase tracking-widest text-slate-900 print:block print:text-black">{terms!.terms_title}</h1>
                 {terms!.terms_content.trim().startsWith('<') ? (
