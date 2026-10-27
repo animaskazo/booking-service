@@ -49,7 +49,7 @@ export default function PublicTerms() {
             )}
           </header>
 
-          <div id="booking-terms-print" className="px-6 py-10 sm:px-12">
+          <div id="booking-terms-print" className="px-6 py-6 sm:px-12 print:px-0 print:py-0">
             {isLoading ? (
               <div className="no-print flex items-center gap-3 text-sm text-slate-500">
                 <Loader2 className="h-5 w-5 animate-spin" />
@@ -61,11 +61,11 @@ export default function PublicTerms() {
               </p>
             ) : hasTerms ? (
               <>
-                <div className="mb-8 hidden justify-between print:flex">
-                  <p className="text-xs text-black">
+                <div className="mb-6 hidden items-center justify-between print:flex print:mt-0">
+                  <p className="text-[9pt] text-black">
                     Fecha de impresión: {new Date().toLocaleDateString('es-CL')}
                   </p>
-                  <img src="/powerfix-negro.png" alt="Powerfix" className="h-4 w-auto" />
+                  <img src="/powerfix-negro.png" alt="Powerfix" className="h-[14px] w-auto" />
                 </div>
                 <h1 className="mb-6 text-center text-2xl font-black uppercase tracking-widest text-slate-900 print:block print:text-black">{terms!.terms_title}</h1>
                 {terms!.terms_content.trim().startsWith('<') ? (
