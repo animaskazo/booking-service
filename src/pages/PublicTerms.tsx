@@ -61,11 +61,11 @@ export default function PublicTerms() {
               </p>
             ) : hasTerms ? (
               <>
-                <div className="mb-8 flex items-start justify-between">
-                  <p className="text-xs text-slate-500 print:text-black">
+                <div className="mb-8 hidden justify-between print:flex">
+                  <p className="text-xs text-black">
                     Fecha de impresión: {new Date().toLocaleDateString('es-CL')}
                   </p>
-                  <img src="/powerfix-negro.png" alt="Powerfix" className="h-5 w-auto print:h-4" />
+                  <img src="/powerfix-negro.png" alt="Powerfix" className="h-4 w-auto" />
                 </div>
                 <h1 className="mb-6 text-center text-2xl font-black uppercase tracking-widest text-slate-900 print:block print:text-black">{terms!.terms_title}</h1>
                 {terms!.terms_content.trim().startsWith('<') ? (
