@@ -14,13 +14,13 @@ export default function PublicTerms() {
     : null;
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 sm:py-12">
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <div className="flex items-center justify-start">
+    <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6 sm:py-12 print:min-h-0 print:bg-white print:p-0">
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 print:gap-0 print:max-w-none">
+        <div className="no-print flex items-center justify-start">
           <img src="/powerfix-negro.png" alt="Powerfix" className="h-5 w-auto" />
         </div>
 
-        <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50">
+        <article className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50 print:overflow-visible print:rounded-none print:border-0 print:shadow-none">
           <header className="no-print border-b border-slate-100 px-6 py-8 sm:px-10">
             <div className="mb-4 flex items-center justify-between">
               <div className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-white">
