@@ -49,7 +49,7 @@ export default function PublicTerms() {
             )}
           </header>
 
-          <div id="booking-terms-print" className="px-6 py-6 sm:px-12 print:px-0 print:py-0">
+          <div id="booking-terms-print" className="px-6 py-6 sm:px-12 print:m-8 print:px-0 print:py-0">
             {isLoading ? (
               <div className="no-print flex items-center gap-3 text-sm text-slate-500">
                 <Loader2 className="h-5 w-5 animate-spin" />
