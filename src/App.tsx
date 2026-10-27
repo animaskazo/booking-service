@@ -18,6 +18,7 @@ import { AuthProvider } from './lib/auth-provider';
 import TrackReservation from './pages/TrackReservation';
 import ReservationStatus from './pages/ReservationStatus';
 import TicketDetailPublic from './pages/TicketDetailPublic';
+import PublicTerms from './pages/PublicTerms';
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/" element={<BookingSystemMVP />} />
           <Route path="/login" element={<Login />} />
           <Route path="/booking/return" element={<BookingReturn />} />
+          <Route path="/terminos/:serviceId" element={<PublicTerms />} />
           <Route path="/tickets/:id/upload" element={<TicketMobileUpload />} />
           
           {/* Seguimiento Público */}

@@ -45,6 +45,15 @@ export interface AppointmentRecord {
   flow_token?: string;
   service?: ServiceWithAvailability;
   notes?: string;
+  terms_accepted_at?: string | null;
+  terms_title_snapshot?: string | null;
+  terms_content_snapshot?: string | null;
+}
+
+export interface BookingTerms {
+  terms_title: string;
+  terms_content: string;
+  terms_updated_at: string;
 }
 
 export interface AvailabilityRecord {
