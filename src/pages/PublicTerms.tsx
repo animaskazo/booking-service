@@ -61,7 +61,7 @@ export default function PublicTerms() {
               </p>
             ) : hasTerms ? (
               <>
-                <div className="mb-3 hidden items-center justify-between print:flex print:mt-[-6mm]">
+                <div className="mb-4 hidden items-center justify-between print:flex print:mt-0">
                   <p className="text-[8pt] text-black">
                     Fecha de impresión: {new Date().toLocaleDateString('es-CL')}
                   </p>
