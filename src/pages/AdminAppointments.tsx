@@ -55,6 +55,7 @@ export default function AdminAppointments() {
   const [manualTermsAccepted, setManualTermsAccepted] = useState(false);
   const [manualServiceId, setManualServiceId] = useState('');
   const [selectedApp, setSelectedApp] = useState<any | null>(null);
+  const [hoveredAppId, setHoveredAppId] = useState<string | null>(null);
   const [isMobile, setIsMobile] = React.useState(false);
   const navigate = useNavigate();
   const { data: tickets = [] } = useTickets();
@@ -412,9 +413,12 @@ export default function AdminAppointments() {
                                   e.stopPropagation();
                                   setSelectedApp(app);
                                 }}
+                                onMouseEnter={() => setHoveredAppId(app.id)}
+                                onMouseLeave={() => setHoveredAppId((prev) => (prev === app.id ? null : prev))}
                               >
                                 {/* Tooltip Flotante */}
-                                <div className={`invisible group-hover:visible absolute top-0 z-[200] w-48 p-3 bg-slate-900 text-white rounded-xl shadow-2xl pointer-events-none animate-in fade-in zoom-in-95 duration-200 ${tooltipOnLeft ? 'right-full mr-2' : 'left-full ml-2'}`}>
+                                {hoveredAppId === app.id && (
+                                <div className={`absolute top-0 z-[200] w-48 p-3 bg-slate-900 text-white rounded-xl shadow-2xl pointer-events-none animate-in fade-in zoom-in-95 duration-200 ${tooltipOnLeft ? 'right-full mr-2' : 'left-full ml-2'}`}>
                                   <div className="space-y-1">
                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Reserva #{app.short_id || app.id.slice(0, 5)}</p>
                                     <p className="text-sm font-bold truncate text-white">{app.customer_name}</p>
@@ -427,12 +431,13 @@ export default function AdminAppointments() {
                                   </div>
                                   <div className={`absolute top-4 w-2 h-2 bg-slate-900 rotate-45 ${tooltipOnLeft ? 'right-0 translate-x-1' : 'left-0 -translate-x-1'}`} />
                                 </div>
+                                )}
 
-                                <div className="flex flex-col items-center justify-center">
-                                  <p className="truncate leading-tight font-black text-center tracking-tight">
+                                <div className="flex w-full min-w-0 flex-col items-center justify-center">
+                                  <p className="w-full truncate text-center leading-tight font-black tracking-tight">
                                     #{app.short_id || app.id.slice(0, 5)}
                                   </p>
-                                  <p className="truncate text-[8px] font-medium leading-tight opacity-80">
+                                  <p className="w-full truncate text-center text-[8px] font-medium leading-tight opacity-80">
                                     {app.customer_name}
                                   </p>
                                 </div>
