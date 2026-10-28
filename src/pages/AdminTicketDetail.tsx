@@ -1988,6 +1988,7 @@ export default function AdminTicketDetail() {
           body * { visibility: hidden; background: white !important; }
           .print-area, .print-area * { visibility: visible; }
           .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+          .print-area .print-logo { height: 24px !important; width: auto !important; max-width: 130px !important; object-fit: contain; }
           .print-area .print-keep-bg, .print-area .print-keep-bg * { background: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-hidden { display: none !important; }
           .card { border: none !important; box-shadow: none !important; }
@@ -2002,7 +2003,7 @@ export default function AdminTicketDetail() {
             <p className="text-lg font-bold text-slate-500">#{ticket.appointment?.short_id}</p>
           </div>
           <div className="text-right">
-            <img src="/powerfix-negro.png" alt="PowerFix" style={{ height: '24px', width: 'auto', marginLeft: 'auto', marginBottom: '8px' }} />
+            <img src="/powerfix-negro.png" alt="PowerFix" className="print-logo" style={{ marginLeft: 'auto', marginBottom: '8px' }} />
             <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">Servicio Técnico Especializado</p>
             <p className="text-xs font-medium text-slate-500">{format(new Date(), "dd 'de' MMMM, yyyy", { locale: es })}</p>
           </div>
