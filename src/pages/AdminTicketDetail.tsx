@@ -1989,6 +1989,7 @@ export default function AdminTicketDetail() {
           .print-area, .print-area * { visibility: visible; }
           .print-area { position: absolute; left: 0; top: 0; width: 100%; }
           .print-area .print-logo { height: 24px !important; width: auto !important; max-width: 130px !important; object-fit: contain; }
+          .print-area .print-partner-logo { height: 28px !important; width: auto !important; max-width: 110px !important; object-fit: contain; }
           .print-area .print-keep-bg, .print-area .print-keep-bg * { background: #000 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
           .print-hidden { display: none !important; }
           .card { border: none !important; box-shadow: none !important; }
@@ -2097,13 +2098,13 @@ export default function AdminTicketDetail() {
             <img
               src="/logo-msi.png"
               alt="MSI"
-              className="h-6 w-auto"
+              className="print-partner-logo"
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
             <img
               src="/logo-giga.png"
               alt="Gigabyte"
-              className="h-6 w-auto"
+              className="print-partner-logo"
               onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
             />
           </div>
