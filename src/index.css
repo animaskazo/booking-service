@@ -114,6 +114,9 @@
     margin-top: 0 !important;
     margin-bottom: 2px !important;
   }
+  #booking-terms-print > div:first-child {
+    margin-bottom: 12px !important;
+  }
   #booking-terms-print h1,
   #booking-terms-print h2,
   #booking-terms-print h3 {
