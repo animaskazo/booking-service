@@ -36,7 +36,8 @@ export default function PublicTerms() {
                   aria-label="Imprimir documento"
                 >
                   <Printer className="h-4 w-4" />
-                  Imprimir documento
+                  <span className="hidden sm:inline">Imprimir documento</span>
+                  <span className="sm:hidden">Imprimir</span>
                 </button>
               )}
             </div>
