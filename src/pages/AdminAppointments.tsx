@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Search,
   Plus,
@@ -55,7 +56,7 @@ export default function AdminAppointments() {
   const [manualTermsAccepted, setManualTermsAccepted] = useState(false);
   const [manualServiceId, setManualServiceId] = useState('');
   const [selectedApp, setSelectedApp] = useState<any | null>(null);
-  const [hoveredAppId, setHoveredAppId] = useState<string | null>(null);
+  const [hoveredApp, setHoveredApp] = useState<{ app: any; top: number; left: number } | null>(null);
   const [isMobile, setIsMobile] = React.useState(false);
   const navigate = useNavigate();
   const { data: tickets = [] } = useTickets();
@@ -270,6 +271,24 @@ export default function AdminAppointments() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      {hoveredApp && createPortal(
+        <div
+          className="pointer-events-none fixed z-[9999] w-48 rounded-xl bg-slate-900 p-3 text-white shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+          style={{ top: hoveredApp.top, left: hoveredApp.left }}
+        >
+          <div className="space-y-1">
+            <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Reserva #{hoveredApp.app.short_id || hoveredApp.app.id.slice(0, 5)}</p>
+            <p className="truncate text-sm font-bold text-white">{hoveredApp.app.customer_name}</p>
+            <p className="flex items-center gap-1.5 text-[10px] font-medium text-slate-300">
+              <Tag className="w-3 h-3" /> {hoveredApp.app.service?.name}
+            </p>
+            <p className="flex items-center gap-1.5 text-[10px] font-medium text-slate-300">
+              <Clock className="w-3 h-3" /> {format(parseISO(hoveredApp.app.start_time), 'HH:mm')} - {format(parseISO(hoveredApp.app.end_time), 'HH:mm')}
+            </p>
+          </div>
+        </div>,
+        document.body
+      )}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Gestión de Agenda</h1>
@@ -413,26 +432,17 @@ export default function AdminAppointments() {
                                   e.stopPropagation();
                                   setSelectedApp(app);
                                 }}
-                                onMouseEnter={() => setHoveredAppId(app.id)}
-                                onMouseLeave={() => setHoveredAppId((prev) => (prev === app.id ? null : prev))}
+                                onMouseEnter={(e) => {
+                                  const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                                  const rawLeft = tooltipOnLeft ? rect.left - 8 - 192 : rect.right + 8;
+                                  setHoveredApp({
+                                    app,
+                                    top: rect.top,
+                                    left: Math.max(8, Math.min(rawLeft, window.innerWidth - 192 - 8)),
+                                  });
+                                }}
+                                onMouseLeave={() => setHoveredApp((prev) => (prev?.app.id === app.id ? null : prev))}
                               >
-                                {/* Tooltip Flotante */}
-                                {hoveredAppId === app.id && (
-                                <div className={`absolute top-0 z-[200] w-48 p-3 bg-slate-900 text-white rounded-xl shadow-2xl pointer-events-none animate-in fade-in zoom-in-95 duration-200 ${tooltipOnLeft ? 'right-full mr-2' : 'left-full ml-2'}`}>
-                                  <div className="space-y-1">
-                                    <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Reserva #{app.short_id || app.id.slice(0, 5)}</p>
-                                    <p className="text-sm font-bold truncate text-white">{app.customer_name}</p>
-                                    <p className="text-[10px] text-slate-300 flex items-center gap-1.5 font-medium">
-                                      <Tag className="w-3 h-3" /> {app.service?.name}
-                                    </p>
-                                    <p className="text-[10px] text-slate-300 flex items-center gap-1.5 font-medium">
-                                      <Clock className="w-3 h-3" /> {format(parseISO(app.start_time), 'HH:mm')} - {format(parseISO(app.end_time), 'HH:mm')}
-                                    </p>
-                                  </div>
-                                  <div className={`absolute top-4 w-2 h-2 bg-slate-900 rotate-45 ${tooltipOnLeft ? 'right-0 translate-x-1' : 'left-0 -translate-x-1'}`} />
-                                </div>
-                                )}
-
                                 <div className="flex w-full min-w-0 flex-col items-center justify-center">
                                   <p className="w-full truncate text-center leading-tight font-black tracking-tight">
                                     #{app.short_id || app.id.slice(0, 5)}
