@@ -103,19 +103,25 @@
     box-shadow: none !important;
     border: none !important;
     border-radius: 0 !important;
-    font-size: 11pt !important;
-    line-height: 1.6 !important;
+    font-size: 9px !important;
+    line-height: 1.5 !important;
+  }
+  #booking-terms-print p,
+  #booking-terms-print li,
+  #booking-terms-print div {
+    font-size: 9px !important;
+  }
+  #booking-terms-print h1,
+  #booking-terms-print h2,
+  #booking-terms-print h3 {
+    font-size: 11px !important;
+    color: #000 !important;
+    page-break-after: avoid;
   }
   article {
     border-radius: 0 !important;
     box-shadow: none !important;
     border: none !important;
-  }
-  #booking-terms-print h1,
-  #booking-terms-print h2,
-  #booking-terms-print h3 {
-    color: #000 !important;
-    page-break-after: avoid;
   }
   #booking-terms-print p,
   #booking-terms-print li {
