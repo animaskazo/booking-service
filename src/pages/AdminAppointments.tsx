@@ -357,6 +357,7 @@ export default function AdminAppointments() {
                   const isToday = isSameDay(day, new Date());
                   const interval = bSettings.slot_interval || 30;
                   const slotsPerHover = 60 / interval;
+                  const tooltipOnLeft = isMobile || dayIdx >= (isMobile ? 1 : 7) - 2;
 
                   return (
                     <div key={dayIdx} className={`divide-y relative min-h-full ${isToday ? 'bg-slate-50/10' : ''}`}>
@@ -413,7 +414,7 @@ export default function AdminAppointments() {
                                 }}
                               >
                                 {/* Tooltip Flotante */}
-                                <div className="invisible group-hover:visible absolute bottom-full left-0 mb-2 z-[200] w-48 p-3 bg-slate-900 text-white rounded-xl shadow-2xl pointer-events-none animate-in fade-in zoom-in-95 duration-200">
+                                <div className={`invisible group-hover:visible absolute top-0 z-[200] w-48 p-3 bg-slate-900 text-white rounded-xl shadow-2xl pointer-events-none animate-in fade-in zoom-in-95 duration-200 ${tooltipOnLeft ? 'right-full mr-2' : 'left-full ml-2'}`}>
                                   <div className="space-y-1">
                                     <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Reserva #{app.short_id || app.id.slice(0, 5)}</p>
                                     <p className="text-sm font-bold truncate text-white">{app.customer_name}</p>
@@ -424,12 +425,15 @@ export default function AdminAppointments() {
                                       <Clock className="w-3 h-3" /> {format(parseISO(app.start_time), 'HH:mm')} - {format(parseISO(app.end_time), 'HH:mm')}
                                     </p>
                                   </div>
-                                  <div className="absolute top-full left-4 w-2 h-2 bg-slate-900 rotate-45 -translate-y-1" />
+                                  <div className={`absolute top-4 w-2 h-2 bg-slate-900 rotate-45 ${tooltipOnLeft ? 'right-0 translate-x-1' : 'left-0 -translate-x-1'}`} />
                                 </div>
 
                                 <div className="flex flex-col items-center justify-center">
                                   <p className="truncate leading-tight font-black text-center tracking-tight">
                                     #{app.short_id || app.id.slice(0, 5)}
+                                  </p>
+                                  <p className="truncate text-[8px] font-medium leading-tight opacity-80">
+                                    {app.customer_name}
                                   </p>
                                 </div>
                               </div>
