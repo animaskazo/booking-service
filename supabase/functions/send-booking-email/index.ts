@@ -195,6 +195,27 @@ serve(async (req) => {
     const isTest = type === 'test'
     const isBookingEmailType = type === 'booking' && !isBudget && !isTest
 
+    const escapeHtml = (value: unknown) => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+
+    const safeCustomerName = escapeHtml(customerName || 'cliente')
+    const safeShortId = escapeHtml(shortId || '—')
+    const safeDescription = escapeHtml(description || 'Evaluación técnica del equipo')
+    const safeFindings = Array.isArray(findings) ? findings : []
+    const findingsHtml = safeFindings.length
+      ? safeFindings.map((finding: any) => {
+          const name = escapeHtml(finding?.description || 'Trabajo técnico')
+          const price = formatPrice(Number(finding?.price) || 0)
+          return `<tr><td style="padding:14px 0;border-bottom:1px solid #f1f5f9;color:#334155;font-size:14px;">${name}</td><td style="padding:14px 0;border-bottom:1px solid #f1f5f9;color:#0f172a;font-size:14px;font-weight:600;text-align:right;white-space:nowrap;">${price}</td></tr>`
+        }).join('')
+      : '<tr><td colspan="2" style="padding:14px 0;color:#64748b;font-size:14px;">Los detalles del trabajo se coordinarán con el servicio técnico.</td></tr>'
+
+    const budgetHtml = `<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/></head><body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f4f5;padding:40px 16px;"><tr><td align="center"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;"><tr><td style="background-color:#0f172a;border-radius:12px 12px 0 0;padding:40px 48px;text-align:center;"><div style="display:inline-block;background-color:rgba(255,255,255,0.1);border-radius:50%;width:52px;height:52px;line-height:52px;text-align:center;margin-bottom:20px;font-size:24px;">▤</div><h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.5px;">Presupuesto Técnico</h1><p style="margin:10px 0 0;color:#94a3b8;font-size:15px;line-height:1.5;">Hola <strong style="color:#e2e8f0;">${safeCustomerName}</strong>, te enviamos el presupuesto de tu equipo.</p></td></tr><tr><td style="background-color:#1e293b;padding:16px 48px;text-align:center;"><span style="display:inline-block;background-color:#0f172a;border:1px solid #334155;border-radius:6px;color:#94a3b8;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:6px 14px;">Ticket</span>&nbsp;<span style="display:inline-block;background-color:#2563eb;border-radius:6px;color:#ffffff;font-size:13px;font-weight:700;letter-spacing:0.12em;font-family:monospace;padding:6px 16px;">${safeShortId}</span></td></tr><tr><td style="background-color:#ffffff;padding:40px 48px;border-radius:0 0 12px 12px;"><p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">Descripción del equipo / solicitud</p><div style="background-color:#f8fafc;border-left:3px solid #2563eb;border-radius:0 8px 8px 0;padding:16px 20px;margin-bottom:28px;"><p style="margin:0;font-size:14px;color:#334155;line-height:1.6;white-space:pre-line;">${safeDescription}</p></div><p style="margin:0 0 10px;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">Detalle del presupuesto</p><table width="100%" cellpadding="0" cellspacing="0" border="0">${findingsHtml}</table><div style="margin-top:24px;background-color:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:18px 20px;"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="color:#1e3a8a;font-size:15px;font-weight:700;">Total presupuesto</td><td style="color:#1e40af;font-size:20px;font-weight:800;text-align:right;white-space:nowrap;">${formatPrice(Number(totalAmount) || 0)}</td></tr></table></div><div style="margin-top:28px;background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px 20px;"><p style="margin:0;font-size:13px;color:#475569;line-height:1.6;">Para consultas o para coordinar la reparación, responde a este correo.</p></div></td></tr><tr><td style="padding:24px 48px;text-align:center;"><p style="margin:0;font-size:11px;color:#94a3b8;line-height:1.8;">© ${new Date().getFullYear()} PowerFix System<br/>Este mensaje fue generado automáticamente.</p></td></tr></table></td></tr></table></body></html>`
+
     let subject = ''
     if (isTest) {
       subject = 'Prueba de Correo - Sistema de Reservas PowerFix'
@@ -257,7 +278,9 @@ serve(async (req) => {
       } catch (_) {}
     }
 
-    const html = isBookingEmailType && termsTitle
+    const html = isBudget
+      ? budgetHtml
+      : isBookingEmailType && termsTitle
       ? '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0"/></head><body style="margin:0;padding:0;background-color:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f4f5;padding:40px 16px;"><tr><td align="center"><table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;"><tr><td style="background-color:#0f172a;border-radius:12px 12px 0 0;padding:40px 48px;text-align:center;"><div style="display:inline-block;background-color:rgba(255,255,255,0.1);border-radius:50%;width:52px;height:52px;line-height:52px;text-align:center;margin-bottom:20px;font-size:24px;">✓</div><h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.5px;">Reserva Confirmada</h1><p style="margin:10px 0 0;color:#94a3b8;font-size:15px;line-height:1.5;">Hola <strong style="color:#e2e8f0;">' + customerName + '</strong>, tu cita está agendada.</p></td></tr><tr><td style="background-color:#1e293b;padding:16px 48px;text-align:center;"><span style="display:inline-block;background-color:#0f172a;border:1px solid #334155;border-radius:6px;color:#94a3b8;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:6px 14px;">Código de reserva</span>&nbsp;<span style="display:inline-block;background-color:#2563eb;border-radius:6px;color:#ffffff;font-size:13px;font-weight:700;letter-spacing:0.12em;font-family:monospace;padding:6px 16px;">' + shortId + '</span></td></tr><tr><td style="background-color:#ffffff;padding:40px 48px;border-radius:0 0 12px 12px;"><p style="margin:0 0 20px;font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#94a3b8;">Detalles de la cita</p><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:14px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;width:40%;">Servicio</td><td style="padding:14px 0;border-bottom:1px solid #f1f5f9;color:#0f172a;font-size:14px;font-weight:600;text-align:right;">' + serviceName + '</td></tr><tr><td style="padding:14px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;">Fecha</td><td style="padding:14px 0;border-bottom:1px solid #f1f5f9;color:#0f172a;font-size:14px;font-weight:600;text-align:right;">' + date + '</td></tr><tr><td style="padding:14px 0;border-bottom:1px solid #f1f5f9;color:#64748b;font-size:14px;">Horario</td><td style="padding:14px 0;border-bottom:1px solid #f1f5f9;color:#0f172a;font-size:14px;font-weight:600;text-align:right;">' + time + '</td></tr></table>' + (notes ? '<div style="margin-top:28px;background-color:#f8fafc;border-left:3px solid #2563eb;border-radius:0 8px 8px 0;padding:16px 20px;"><p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;">Notas</p><p style="margin:0;font-size:14px;color:#334155;line-height:1.6;font-style:italic;">"' + notes + '"</p></div>' : '') + '            <div style="margin-top:28px;background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px 20px;"><p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;">Términos y condiciones</p><p style="margin:0 0 10px;font-size:13px;color:#475569;line-height:1.6;">Puedes revisar los términos y condiciones en el siguiente enlace:</p><a href="' + termsLink + '" target="_blank" style="display:inline-block;color:#2563eb;font-size:13px;font-weight:700;text-decoration:none;">Ver términos y condiciones</a></div><div style="margin-top:28px;background-color:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:16px 20px;text-align:center;"><p style="margin:0 0 6px;font-size:11px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;">Dónde te esperamos</p><p style="margin:0 0 10px;font-size:14px;color:#0f172a;font-weight:600;line-height:1.5;">Avenida Francisco Bilbao 4620 • Las Condes • Santiago</p><a href="https://www.google.com/maps/search/?api=1&query=Avenida+Francisco+Bilbao+4620+Las+Condes+Santiago" target="_blank" style="display:inline-block;color:#2563eb;font-size:13px;font-weight:700;text-decoration:none;border:1px solid #bfdbfe;border-radius:8px;padding:8px 18px;">Ver en el mapa</a></div><div style="margin-top:32px;background-color:#f8fafc;border:1px dashed #e2e8f0;border-radius:8px;padding:16px 20px;text-align:center;"><p style="margin:0;font-size:12px;color:#64748b;line-height:1.6;">📅 &nbsp;Te recomendamos llegar <strong>5 minutos antes</strong>.</p></div><div style="border-top:1px solid #f1f5f9;margin:32px 0;"></div><p style="margin:0;font-size:13px;color:#94a3b8;text-align:center;line-height:1.6;">¿Tienes dudas? Estamos aquí para ayudarte respondiendo este correo.</p></td></tr><tr><td style="padding:24px 48px;text-align:center;"><p style="margin:0;font-size:11px;color:#94a3b8;line-height:1.8;">© ' + new Date().getFullYear() + ' PowerFix System<br/>Este mensaje fue generado automáticamente.</p></td></tr></table></td></tr></table></body></html>'
       : '<html><body>Reserva</body></html>'
 
@@ -289,7 +312,15 @@ serve(async (req) => {
 
     const data = await res.json()
 
-    return new Response(JSON.stringify(data), {
+    if (!res.ok) {
+      console.error('Resend error sending booking/budget email:', data)
+      return new Response(JSON.stringify({ error: 'Error al enviar email', detail: data }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: 502,
+      })
+    }
+
+    return new Response(JSON.stringify({ success: true, data }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
