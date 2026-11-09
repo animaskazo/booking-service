@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePublicTracking } from '../lib/public-tracking-context';
-import { useTicketById, useTicketFindings, useTicketHistory, useUpdateTicket, useTicketPaymentLinks } from '../lib/supabase-client';
+import { supabase, useTicketById, useTicketFindings, useTicketHistory, useTicketPaymentLinks } from '../lib/supabase-client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -14,7 +14,9 @@ export default function TicketDetailPublic() {
   const { appointment, ticket: contextTicket, setTrackingData } = usePublicTracking();
   const navigate = useNavigate();
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
-  const updateTicketMutation = useUpdateTicket();
+  const [isResponding, setIsResponding] = useState(false);
+  const [responseError, setResponseError] = useState<string | null>(null);
+  const [responseStatus, setResponseStatus] = useState<'accepted' | 'rejected' | null>(null);
 
   // Si no hay datos en el contexto, rehidratar de sessionStorage
   useEffect(() => {
@@ -35,14 +37,44 @@ export default function TicketDetailPublic() {
 
   // Usar hooks para obtener datos en tiempo real
   const { data: ticket } = useTicketById(contextTicket?.id);
-  const { data: findings = [] } = useTicketFindings(contextTicket?.id);
+  const { data: ticketFindings = [] } = useTicketFindings(contextTicket?.id);
   const { data: history = [] } = useTicketHistory(contextTicket?.id);
   const { data: paymentLinks = [] } = useTicketPaymentLinks(contextTicket?.id);
 
   if (!appointment || !contextTicket) return null;
 
   // Si aún no carga el ticket live, usamos el del contexto
-  const currentTicket = (ticket || contextTicket) as any;
+  const currentTicket = { ...(ticket || contextTicket), status: responseStatus || (ticket || contextTicket).status } as any;
+  const findings = ticketFindings.length ? ticketFindings : contextTicket.findings || [];
+
+  const respondToBudget = async (decision: 'accepted' | 'rejected') => {
+    setIsResponding(true);
+    setResponseError(null);
+    try {
+      const { data, error } = await supabase.functions.invoke('public-track', {
+        body: {
+          short_id: appointment.short_id,
+          phone: appointment.customer_phone,
+          decision,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+
+      setResponseStatus(decision);
+      const stored = sessionStorage.getItem('trackingData');
+      if (stored) {
+        const trackingData = JSON.parse(stored);
+        const updated = { ...trackingData, ticket: { ...trackingData.ticket, status: decision } };
+        sessionStorage.setItem('trackingData', JSON.stringify(updated));
+        setTrackingData(updated);
+      }
+    } catch (error) {
+      setResponseError(error instanceof Error ? error.message : 'No pudimos registrar tu respuesta. Inténtalo nuevamente.');
+    } finally {
+      setIsResponding(false);
+    }
+  };
 
   const formatDate = (isoString: string) => {
     try {
@@ -214,22 +246,24 @@ export default function TicketDetailPublic() {
                   {currentTicket.status === 'quoted' && (
                     <div className="pt-4 mt-4 border-t border-slate-100 flex gap-3">
                       <Button
-                        onClick={() => updateTicketMutation.mutate({ id: currentTicket.id, status: 'rejected' })}
-                        disabled={updateTicketMutation.isPending}
+                        onClick={() => respondToBudget('rejected')}
+                        disabled={isResponding}
                         variant="outline"
                         className="flex-1 border-red-200 text-red-600 hover:bg-red-50 font-bold rounded-2xl h-11"
                       >
                         Rechazar Presupuesto
                       </Button>
                       <Button
-                        onClick={() => updateTicketMutation.mutate({ id: currentTicket.id, status: 'accepted' })}
-                        disabled={updateTicketMutation.isPending}
+                        onClick={() => respondToBudget('accepted')}
+                        disabled={isResponding}
                         className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl h-11 shadow-lg shadow-emerald-600/10"
                       >
-                        {updateTicketMutation.isPending ? 'Procesando...' : 'Aceptar Presupuesto'}
+                        {isResponding ? 'Procesando...' : 'Aceptar Presupuesto'}
                       </Button>
                     </div>
                   )}
+                  {responseError && <p role="alert" className="mt-3 text-sm font-medium text-red-600">{responseError}</p>}
+                  {responseStatus && <p role="status" className="mt-3 text-sm font-semibold text-emerald-700">{responseStatus === 'accepted' ? 'Presupuesto aceptado. Gracias por confirmar.' : 'Presupuesto rechazado. Gracias por avisarnos.'}</p>}
                 </div>
               </div>
             )}

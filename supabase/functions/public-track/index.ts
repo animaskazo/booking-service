@@ -21,7 +21,7 @@ serve(async (req) => {
   }
 
   try {
-    const { short_id, phone } = await req.json();
+    const { short_id, phone, decision } = await req.json();
     if (!short_id || !phone) {
       return new Response(JSON.stringify({ error: "Missing short_id or phone" }), {
         status: 400,
@@ -44,11 +44,68 @@ serve(async (req) => {
       });
     }
 
+    if (decision && !["accepted", "rejected"].includes(decision)) {
+      return new Response(JSON.stringify({ error: "Invalid budget decision" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const ticket = Array.isArray(appointment.ticket)
+      ? appointment.ticket[0]
+      : appointment.ticket;
+
+    if (decision) {
+      if (!ticket || ticket.status !== "quoted") {
+        return new Response(JSON.stringify({ error: "This budget is no longer awaiting a response" }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: updatedTicket, error: updateError } = await supabase
+        .from("tickets")
+        .update({ status: decision })
+        .eq("id", ticket.id)
+        .eq("status", "quoted")
+        .select("id, status, budget, total_budget, ready_for_pickup")
+        .maybeSingle();
+
+      if (updateError) {
+        console.error("public-track budget response error:", updateError);
+        return new Response(JSON.stringify({ error: "Could not save budget response" }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      if (!updatedTicket) {
+        return new Response(JSON.stringify({ error: "This budget has already been answered" }), {
+          status: 409,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      Object.assign(ticket, updatedTicket);
+    }
+
+    let findings: Array<{ id: string; description: string; price: number }> = [];
+    if (ticket?.id) {
+      const { data: ticketFindings, error: findingsError } = await supabase
+        .from("ticket_findings")
+        .select("id, description, price")
+        .eq("ticket_id", ticket.id)
+        .order("created_at", { ascending: true });
+      if (findingsError) console.error("public-track findings error:", findingsError);
+      findings = ticketFindings ?? [];
+    }
+
     // Sanitize response (remove internal fields if needed)
     const response = {
       appointment: {
         id: appointment.id,
         short_id: appointment.short_id,
+        customer_phone: appointment.customer_phone,
         status: appointment.status,
         paid: appointment.paid ?? false,
         amount: appointment.paid_amount ?? null,
@@ -59,12 +116,13 @@ serve(async (req) => {
         flow_commerce_order: appointment.flow_commerce_order ?? null,
         flow_token: appointment.flow_token ?? null,
       },
-      ticket: appointment.ticket ? {
-        id: appointment.ticket.id,
-        status: appointment.ticket.status,
-        budget: appointment.ticket.budget,
-        findings: appointment.ticket.findings,
-        ready_for_pickup: appointment.ticket.ready_for_pickup ?? false,
+      ticket: ticket ? {
+        id: ticket.id,
+        status: ticket.status,
+        budget: ticket.budget,
+        total_budget: ticket.total_budget,
+        findings,
+        ready_for_pickup: ticket.ready_for_pickup ?? false,
       } : null,
     };
 

@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState } from 'react';
 interface AppointmentData {
   id: string;
   short_id: string;
+  customer_phone: string;
   status: string;
   paid: boolean;
   amount: number | null;
@@ -18,7 +19,7 @@ interface TicketData {
   id: string;
   status: string;
   budget: number;
-  findings: string;
+  findings: Array<{ id: string; description: string; price: number }>;
   ready_for_pickup: boolean;
 }
 
