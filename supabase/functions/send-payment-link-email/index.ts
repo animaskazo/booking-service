@@ -150,9 +150,9 @@ serve(async (req) => {
                   📍 &nbsp;Nuestra dirección
                 </p>
                 <p style="margin:0 0 10px;font-size:14px;color:#0f172a;font-weight:600;line-height:1.5;">
-                  Avenida Francisco Bilbao 4620 • Las Condes • Santiago
+                  Avda. Las Condes 10415, oficina 01, edificio Black • Las Condes
                 </p>
-                <a href="https://www.google.com/maps/search/?api=1&query=Avenida+Francisco+Bilbao+4620+Las+Condes+Santiago" target="_blank" style="display:inline-block;color:#2563eb;font-size:13px;font-weight:700;text-decoration:none;border:1px solid #bfdbfe;border-radius:8px;padding:8px 18px;">
+                <a href="https://www.google.com/maps/search/?api=1&query=Avda.+Las+Condes+10415+oficina+01+edificio+Black+Las+Condes+Santiago" target="_blank" style="display:inline-block;color:#2563eb;font-size:13px;font-weight:700;text-decoration:none;border:1px solid #bfdbfe;border-radius:8px;padding:8px 18px;">
                   Ver en el mapa
                 </a>
               </div>
