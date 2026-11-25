@@ -5,8 +5,6 @@ import { Link } from 'react-router-dom';
 type ChatMessage = { role: 'user' | 'assistant'; content: string; note?: string };
 type Step = 'chat' | 'code' | 'phone';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
 const initialMessage: ChatMessage = {
   role: 'assistant',
   content: '¡Hola! Soy el asistente de Booking. Puedo ayudarte con el estado de tu ticket, presupuesto, reparación, pagos o agendamiento. ¿Qué necesitas consultar?',
@@ -38,13 +36,9 @@ export default function BookingAssistant() {
     setBusy(true);
     setError('');
     try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/booking-agent`, {
+      const response = await fetch('/api/booking-agent', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         // Reservation credentials are sent separately and never enter Claude's chat history.
         body: JSON.stringify({
           message,
