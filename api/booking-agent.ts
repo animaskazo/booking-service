@@ -1,0 +1,37 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', 'POST');
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+  if (!supabaseUrl || !supabaseKey) {
+    return res.status(500).json({ error: 'Booking no tiene configuradas las variables de Supabase.' });
+  }
+
+  try {
+    const upstream = await fetch(`${supabaseUrl}/functions/v1/booking-agent`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: supabaseKey,
+        Authorization: `Bearer ${supabaseKey}`,
+      },
+      body: JSON.stringify({
+        message: req.body?.message,
+        history: req.body?.history,
+        short_id: req.body?.short_id,
+        phone: req.body?.phone,
+      }),
+    });
+    const body = await upstream.text();
+    res.status(upstream.status).setHeader('Content-Type', 'application/json; charset=utf-8');
+    return res.send(body);
+  } catch (error) {
+    console.error('Booking assistant proxy failed', error);
+    return res.status(502).json({ error: 'No se pudo conectar con Booking.' });
+  }
+}
