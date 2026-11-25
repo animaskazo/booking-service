@@ -27,6 +27,35 @@ const extractInlineOrderCode = (raw: string) => {
   return code ? normalizeOrderCode(code) : '';
 };
 
+function AssistantMessage({ content }: { content: string }) {
+  const blocks = content.split(/\\n\\s*\\n/).map((block) => block.trim()).filter(Boolean);
+
+  return (
+    <div className="space-y-3">
+      {blocks.map((block, blockIndex) => {
+        const lines = block.split('\\n').map((line) => line.trim()).filter(Boolean);
+        return (
+          <div key={blockIndex} className="space-y-1.5">
+            {lines.map((line, lineIndex) => {
+              const bullet = line.match(/^(?:[-*•]|\\d+[.)])\\s+(.*)$/);
+              if (bullet) {
+                return (
+                  <div key={lineIndex} className="flex gap-2 pl-1">
+                    <span aria-hidden="true" className="text-slate-400">•</span>
+                    <p>{bullet[1]}</p>
+                  </div>
+                );
+              }
+              const heading = line.endsWith(':');
+              return <p key={lineIndex} className={heading ? 'font-semibold text-slate-900' : undefined}>{line}</p>;
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function BookingAssistant() {
   const [messages, setMessages] = useState<ChatMessage[]>([initialMessage]);
   const [step, setStep] = useState<Step>('chat');
@@ -200,7 +229,7 @@ export default function BookingAssistant() {
               <div key={index} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {message.role === 'assistant' && <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-950 text-white"><Bot size={18} /></div>}
                 <div className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === 'user' ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-800'}`}>
-                  <p>{message.content}</p>
+                  <AssistantMessage content={message.content} />
                   {message.note && <p className="mt-2 text-xs text-slate-500">{message.note}</p>}
                 </div>
                 {message.role === 'user' && <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-200 text-slate-600"><UserRound size={18} /></div>}
