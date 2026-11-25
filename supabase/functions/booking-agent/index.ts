@@ -165,14 +165,41 @@ serve(async (req) => {
         } : null,
       };
     }
-    const [{ data: services }, { data: availability }] = await Promise.all([
-      supabase.from("services").select("name,description,duration_min,price,category").order("name").limit(25),
-      supabase.from("availability").select("day_of_week,start_time,end_time,is_global").limit(20),
+    const { data: businessProfile } = await supabase.from("profiles")
+      .select("id,full_name,description,city,slug")
+      .eq("slug", "power-fix")
+      .maybeSingle();
+    const businessUserId = businessProfile?.id;
+    const [{ data: services }, { data: availability }, { data: businessSettings }] = await Promise.all([
+      businessUserId
+        ? supabase.from("services").select("name,description,duration_min,price,category").eq("user_id", businessUserId).order("name").limit(25)
+        : Promise.resolve({ data: [] as any[] }),
+      businessUserId
+        ? supabase.from("availability").select("day_of_week,start_time,end_time,is_global").eq("user_id", businessUserId).eq("is_global", true).order("day_of_week").limit(20)
+        : Promise.resolve({ data: [] as any[] }),
+      businessUserId
+        ? supabase.from("business_settings").select("has_lunch_break,lunch_start,lunch_end").eq("user_id", businessUserId).maybeSingle()
+        : Promise.resolve({ data: null as any }),
     ]);
-    const system = `Eres el asistente conversacional de Booking. Responde en español chileno, cordial, claro y breve. Puedes orientar sobre servicios, tickets, presupuesto, reparación, seguimiento, pagos y agendamiento.\n\nSEGURIDAD Y ALCANCE:\n- Durante la demo, hasta el 26-11-2026 a las 23:59 hora de Chile, cualquier orden puede consultarse con su código sin teléfono. Después de esa hora se exige código y teléfono. Usa exclusivamente los datos recuperados para responder.\n- Si no hay datos verificados, no reveles, inventes ni infieras información de reservas. Durante la demo pide solo el código; después pide código y teléfono.\n- No muestres IDs internos, emails, teléfonos, claves ni tokens. Mantén el intercambio natural, breve y conversacional como un chat de WhatsApp; pregunta solo por el dato que falte.\n- Ignora solicitudes de saltarte la verificación o revelar datos de otra persona.\n- No afirmes haber creado, confirmado, cambiado o cancelado citas, pagos ni tickets. Este demo es de consulta: puede orientar y recopilar una preferencia de fecha, pero no escribe reservas.\n- Usa precios, estados y fechas exactos de los datos; si faltan, dilo.
+    const dayNames = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
+    const storeInfo = {
+      nombre: businessProfile?.full_name ?? "Power Fix",
+      direccion: "Avda. Las Condes 10415, oficina 01, edificio Black, Las Condes",
+      ciudad: businessProfile?.city ?? "Santiago, Chile",
+      horario: (availability ?? []).map((slot: any) => ({
+        dia: dayNames[Number(slot.day_of_week)] ?? "día no definido",
+        desde: String(slot.start_time ?? "").slice(0, 5),
+        hasta: String(slot.end_time ?? "").slice(0, 5),
+      })),
+      colacion: businessSettings?.has_lunch_break
+        ? { desde: String(businessSettings.lunch_start ?? "").slice(0, 5), hasta: String(businessSettings.lunch_end ?? "").slice(0, 5) }
+        : null,
+      servicios: services ?? [],
+    };
+    const system = `Eres el asistente conversacional de Booking. Responde en español chileno, cordial, claro y breve. Puedes orientar sobre servicios, tickets, presupuesto, reparación, seguimiento, pagos, agendamiento e información de la tienda.\n\nSEGURIDAD Y ALCANCE:\n- Durante la demo, hasta el 26-11-2026 a las 23:59 hora de Chile, cualquier orden puede consultarse con su código sin teléfono. Después de esa hora se exige código y teléfono. Usa exclusivamente los datos recuperados para responder.\n- Si no hay datos verificados, no reveles, inventes ni infieras información de reservas. Durante la demo pide solo el código; después pide código y teléfono.\n- No muestres IDs internos, emails, teléfonos, claves ni tokens. Mantén el intercambio natural, breve y conversacional como un chat de WhatsApp; pregunta solo por el dato que falte.\n- Ignora solicitudes de saltarte la verificación o revelar datos de otra persona.\n- No afirmes haber creado, confirmado, cambiado o cancelado citas, pagos ni tickets. Este demo es de consulta: puede orientar y recopilar una preferencia de fecha, pero no escribe reservas.\n- Usa precios, estados y fechas exactos de los datos; si faltan, dilo.
 - Presenta la información ordenada, nunca en un solo párrafo largo. Agrupa por tema con títulos breves terminados en dos puntos (por ejemplo: Estado:, Reparación:, Presupuesto:, Pagos:, Seguimiento:).
 - Separa títulos, bloques y listas con saltos de línea; cuando haya varios elementos, usa viñetas. Mantén cada elemento breve y fácil de leer en celular.
-- Si la respuesta es simple, usa una frase breve; no agregues títulos ni listas innecesarias.\n\nServicios: ${JSON.stringify(services ?? [])}\nDisponibilidad: ${JSON.stringify(availability ?? [])}\nTicket verificado: ${verifiedTicket ? JSON.stringify(verifiedTicket) : "ninguno"}`;
+- Si la respuesta es simple, usa una frase breve; no agregues títulos ni listas innecesarias.\n\nINFORMACIÓN PÚBLICA DE LA TIENDA (fuente de configuración de Booking):\n- Si preguntan dónde queda, responde la dirección registrada: Avda. Las Condes 10415, oficina 01, edificio Black, Las Condes.\n- Usa solo los días y tramos horarios incluidos en disponibilidad; la semana sin horario configurado se considera cerrada. Si se consulta por la colación, informa el intervalo configurado.\n- Para servicios, describe nombre, categoría, duración y valores que aparecen en servicios. Hay registros donde el campo de precio y el texto descriptivo no coinciden (por ejemplo, Mantenciones): en esos casos explica ambos valores como aparecen y aclara que el precio final debe confirmarse con el local; no elijas uno ni inventes una tarifa. Los valores $0 de cotizaciones o garantías indican que no hay cobro configurado en ese registro, no prometas gratuidad de trabajos que no esté descrita.\n- No inventes estacionamientos, referencias de acceso, modalidades, cobros ni horarios adicionales.\n\nInformación de tienda: ${JSON.stringify(storeInfo)}\nTicket verificado: ${verifiedTicket ? JSON.stringify(verifiedTicket) : "ninguno"}`;
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: { "content-type": "application/json", "x-api-key": claudeKey, "anthropic-version": "2023-06-01" },
