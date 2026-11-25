@@ -28,16 +28,16 @@ const extractInlineOrderCode = (raw: string) => {
 };
 
 function AssistantMessage({ content }: { content: string }) {
-  const blocks = content.split(/\\n\\s*\\n/).map((block) => block.trim()).filter(Boolean);
+  const blocks = content.split(/\n\s*\n/).map((block) => block.trim()).filter(Boolean);
 
   return (
     <div className="space-y-3">
       {blocks.map((block, blockIndex) => {
-        const lines = block.split('\\n').map((line) => line.trim()).filter(Boolean);
+        const lines = block.split('\n').map((line) => line.trim()).filter(Boolean);
         return (
           <div key={blockIndex} className="space-y-1.5">
             {lines.map((line, lineIndex) => {
-              const bullet = line.match(/^(?:[-*•]|\\d+[.)])\\s+(.*)$/);
+              const bullet = line.match(/^(?:[-*•]|\d+[.)])\s+(.*)$/);
               if (bullet) {
                 return (
                   <div key={lineIndex} className="flex gap-2 pl-1">
