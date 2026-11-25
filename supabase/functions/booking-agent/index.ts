@@ -6,6 +6,13 @@ const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const claudeKey = Deno.env.get("CLAUDE_API_KEY") ?? "";
 const supabase = createClient(url, serviceKey);
 const allowedOrigin = "https://booking-asistente-servicio.truewoodpecker16.chatgpt.site";
+const normalizePhone = (value: string) => {
+  let digits = String(value ?? "").replace(/\\D/g, "");
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  // Chilean numbers may be stored or entered with the country prefix.
+  if (digits.startsWith("56") && digits.length >= 11) digits = digits.slice(2);
+  return digits;
+};
 const rate = new Map<string, { start: number; count: number }>();
 const headers = (origin: string | null) => ({
   "Access-Control-Allow-Origin": origin === allowedOrigin ? origin : "null",
@@ -47,9 +54,12 @@ serve(async (req) => {
     let verifiedTicket: Record<string, unknown> | null = null;
     if (shortId && phone) {
       const { data: appointment, error } = await supabase.from("appointments")
-        .select("id,short_id,status,start_time,end_time,paid,paid_amount,service_id,ticket:tickets(id,status,description,total_budget,ready_for_pickup)")
-        .eq("short_id", shortId).eq("customer_phone", phone).maybeSingle();
-      if (error || !appointment) return reply({ error: "No encontré una reserva que coincida con ese código y teléfono. Revísalos e inténtalo nuevamente." }, 404, origin);
+        .select("id,short_id,status,start_time,end_time,paid,paid_amount,service_id,customer_phone,ticket:tickets(id,status,description,total_budget,ready_for_pickup)")
+        .eq("short_id", shortId).maybeSingle();
+      if (error || !appointment || !normalizePhone(appointment.customer_phone) ||
+          normalizePhone(appointment.customer_phone) !== normalizePhone(phone)) {
+        return reply({ error: "No encontré una reserva que coincida con ese código y teléfono. Revísalos e inténtalo nuevamente." }, 404, origin);
+      }
       const ticket = Array.isArray(appointment.ticket) ? appointment.ticket[0] : appointment.ticket;
       const [{ data: service }, findingsResult, historyResult, paymentsResult] = await Promise.all([
         supabase.from("services").select("name").eq("id", appointment.service_id).maybeSingle(),
