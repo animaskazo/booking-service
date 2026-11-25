@@ -20,6 +20,7 @@ import ReservationStatus from './pages/ReservationStatus';
 import TicketDetailPublic from './pages/TicketDetailPublic';
 import PublicTerms from './pages/PublicTerms';
 import BookingAssistant from './pages/BookingAssistant';
+import WhatsAppAssistantPreview from './pages/WhatsAppAssistantPreview';
 
 export default function App() {
   return (
@@ -35,6 +36,7 @@ export default function App() {
 
           {/* Asistente conversacional, integrado en el dominio de Booking */}
           <Route path="/asistente" element={<BookingAssistant />} />
+          <Route path="/asistente/whatsapp-demo" element={<WhatsAppAssistantPreview />} />
 
           {/* Seguimiento Público */}
           <Route path="/track" element={<PublicTrackingProvider><TrackReservation /></PublicTrackingProvider>} />
