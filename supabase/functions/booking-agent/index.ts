@@ -77,6 +77,12 @@ serve(async (req) => {
         return reply({ error: "No encontré una reserva que coincida con ese código y teléfono. Revísalos e inténtalo nuevamente." }, 404, origin);
       }
       const ticket = Array.isArray(appointment.ticket) ? appointment.ticket[0] : appointment.ticket;
+      if (!ticket) {
+        return reply({
+          reply: `Encontré la reserva #${appointment.short_id}, pero todavía no tiene un ticket de reparación asociado.`,
+          verified: true,
+        }, 200, origin);
+      }
       const [{ data: service }, findingsResult, historyResult, paymentsResult] = await Promise.all([
         supabase.from("services").select("name").eq("id", appointment.service_id).maybeSingle(),
         ticket?.id ? supabase.from("ticket_findings").select("description,price").eq("ticket_id", ticket.id).order("created_at") : Promise.resolve({ data: [] } as any),
