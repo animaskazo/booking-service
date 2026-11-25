@@ -28,7 +28,8 @@ const extractInlineOrderCode = (raw: string) => {
 };
 
 function AssistantMessage({ content }: { content: string }) {
-  const blocks = content.split(/\n\s*\n/).map((block) => block.trim()).filter(Boolean);
+  const normalized = content.replace(/\\n/g, '\n').replace(/\r\n?/g, '\n').replace(/\*\*/g, '').trim();
+  const blocks = normalized.split(/\n\s*\n/).map((block) => block.trim()).filter(Boolean);
 
   return (
     <div className="space-y-3">
