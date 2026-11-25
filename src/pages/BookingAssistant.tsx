@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { type FormEvent, useMemo, useState } from 'react';
 import { ArrowLeft, Bot, Send, ShieldCheck, UserRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -63,7 +63,7 @@ export default function BookingAssistant() {
     }
   }
 
-  async function submit(event: React.FormEvent<HTMLFormElement>) {
+  async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const value = draft.trim();
     if (!value || busy) return;
