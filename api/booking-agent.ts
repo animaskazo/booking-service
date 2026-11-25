@@ -12,7 +12,7 @@ export default async function handler(req: any, res: any) {
     const upstream = await fetch(`${supabaseUrl}/functions/v1/booking-agent`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` },
-      body: JSON.stringify({ message: req.body?.message, history: req.body?.history, short_id: req.body?.short_id, phone: req.body?.phone }),
+      body: JSON.stringify({ message: req.body?.message, history: req.body?.history, short_id: req.body?.short_id, phone: req.body?.phone, action: req.body?.action, email: req.body?.email }),
     });
     res.status(upstream.status).setHeader('Content-Type', 'application/json; charset=utf-8');
     return res.send(await upstream.text());
