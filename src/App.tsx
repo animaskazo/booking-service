@@ -19,6 +19,7 @@ import TrackReservation from './pages/TrackReservation';
 import ReservationStatus from './pages/ReservationStatus';
 import TicketDetailPublic from './pages/TicketDetailPublic';
 import PublicTerms from './pages/PublicTerms';
+import BookingAssistant from './pages/BookingAssistant';
 
 export default function App() {
   return (
@@ -31,20 +32,23 @@ export default function App() {
           <Route path="/booking/return" element={<BookingReturn />} />
           <Route path="/terminos/:serviceId" element={<PublicTerms />} />
           <Route path="/tickets/:id/upload" element={<TicketMobileUpload />} />
-          
+
+          {/* Asistente conversacional, integrado en el dominio de Booking */}
+          <Route path="/asistente" element={<BookingAssistant />} />
+
           {/* Seguimiento Público */}
           <Route path="/track" element={<PublicTrackingProvider><TrackReservation /></PublicTrackingProvider>} />
           <Route path="/track/status" element={<PublicTrackingProvider><ReservationStatus /></PublicTrackingProvider>} />
           <Route path="/track/ticket" element={<PublicTrackingProvider><TicketDetailPublic /></PublicTrackingProvider>} />
-          
+
           {/* Panel Administrativo Protegido con Layout */}
-          <Route 
-            path="/admin" 
+          <Route
+            path="/admin"
             element={
               <ProtectedRoute>
                 <AdminLayout />
               </ProtectedRoute>
-            } 
+            }
           >
             {/* Sub-rutas que se renderizan dentro del Outlet del Layout */}
             <Route index element={<AdminAppointments />} />
