@@ -1,5 +1,5 @@
-import { type FormEvent, useMemo, useState } from 'react';
-import { ArrowLeft, Bot, Send, ShieldCheck, UserRound } from 'lucide-react';
+import { type FormEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, CheckCheck, MoreVertical, Paperclip, Phone, Send, ShieldCheck, Smile, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string; note?: string; sensitive?: boolean };
@@ -60,7 +60,7 @@ function AssistantMessage({ content }: { content: string }) {
 
   return (
     <div className="space-y-3">
-      {title && <p className="font-semibold text-slate-900">{title}</p>}
+      {sections.length === 0 ? <p className="whitespace-pre-wrap text-sm leading-5 text-slate-800">{normalized}</p> : title && <p className="font-semibold text-slate-900">{title}</p>}
       {sections.map((section, index) => (
         <section key={section.label + '-' + index} className="rounded-xl border border-slate-200 bg-white/80 p-3">
           <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{section.label}</p>
@@ -192,101 +192,92 @@ export default function BookingAssistant() {
     await askAssistant(value, messages, effectiveCode, phone);
   }
 
-  function choose(question: string) {
-    if (busy) return;
-    setMessages((current) => [...current, { role: 'user', content: question }]);
-    if (isPrivateQuery(question)) {
-      if (!reservationCode) {
-        setPendingQuestion(question);
-        setStep('code');
-        addAssistant(isDemoCodeOnly() ? 'Claro, dime el número de orden y lo reviso.' : 'Para verificar tu reserva, dime primero el número de orden.');
-        return;
-      }
-      if (!isDemoCodeOnly() && !phone) {
-        setPendingQuestion(question);
-        setStep('phone');
-        addAssistant('Dime el teléfono usado al agendar para verificar la orden.');
-        return;
-      }
-    }
-    void askAssistant(question, messages, reservationCode, phone);
-  }
+  const chatEndRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, [messages, busy]);
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
-      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 py-5 sm:px-8">
-        <Link to="/" className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-950">
-          <ArrowLeft size={18} /> Volver a Booking
-        </Link>
-        <div className="flex items-center gap-3">
-          <Link to="/asistente/whatsapp-demo" className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700 shadow-sm transition hover:bg-slate-100">Ver simulación WhatsApp</Link>
-          <div className="hidden items-center gap-2 rounded-full bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm sm:flex">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" /> Asistente en línea
+    <main className="min-h-dvh bg-[#d1d7db] text-slate-900 sm:px-5 sm:py-5">
+      <section className="mx-auto flex h-dvh w-full max-w-5xl flex-col overflow-hidden bg-[#efeae2] shadow-xl sm:h-[calc(100dvh-2.5rem)] sm:rounded-2xl">
+        <header className="flex h-[68px] shrink-0 items-center gap-3 bg-[#075e54] px-4 text-white">
+          <Link to="/" aria-label="Volver a Booking" className="rounded-full p-1 transition hover:bg-white/10">
+            <ArrowLeft size={20} />
+          </Link>
+          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white/20 text-sm font-semibold">B</div>
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[15px] font-medium">Booking · Asistente</div>
+            <div className="text-xs text-white/75">{busy ? 'escribiendo…' : 'en línea'}</div>
           </div>
-        </div>
-      </header>
+          <Video size={19} className="hidden sm:block" aria-hidden="true" />
+          <Phone size={18} className="hidden sm:block" aria-hidden="true" />
+          <MoreVertical size={20} aria-hidden="true" />
+        </header>
 
-      <section className="mx-auto grid min-h-[calc(100vh-88px)] w-full max-w-6xl gap-5 px-4 pb-8 sm:px-8 lg:grid-cols-[270px_1fr]">
-        <aside className="hidden rounded-3xl bg-white p-6 shadow-sm lg:block">
-          <div className="flex items-center gap-3">
-            <div className="grid h-11 w-11 place-items-center rounded-2xl bg-slate-950 text-white"><Bot size={22} /></div>
-            <div><div className="font-semibold">Booking</div><div className="text-xs text-slate-500">Asistente de servicio</div></div>
+        <div className="flex-1 space-y-3 overflow-y-auto bg-[#efeae2] px-3 py-5 sm:px-8 sm:py-7">
+          <div className="mx-auto mb-4 w-fit rounded-lg bg-[#fff4c7] px-3 py-1.5 text-center text-[11px] leading-4 text-slate-600 shadow-sm">
+            Conversación con el asistente de Booking
           </div>
-          <div className="mt-8 text-xs font-semibold uppercase tracking-wider text-slate-400">Te puedo ayudar con</div>
-          <div className="mt-3 space-y-2">
-            {[
-              ['Estado de mi ticket', 'Quiero consultar el estado de mi ticket.'],
-              ['Presupuesto y reparación', 'Quiero consultar el presupuesto y detalle de reparación.'],
-              ['Agendar un servicio', 'Quiero agendar un servicio.'],
-              ['Pagos', 'Quiero consultar un pago asociado a mi reserva.'],
-            ].map(([label, question]) => (
-              <button key={label} onClick={() => choose(question)} className="w-full rounded-xl px-3 py-3 text-left text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-950">{label}</button>
-            ))}
-          </div>
-          <div className="mt-8 rounded-2xl bg-slate-50 p-4 text-xs leading-5 text-slate-600">
-            <div className="mb-1 flex items-center gap-2 font-semibold text-slate-900"><ShieldCheck size={15} /> Privacidad primero</div>
-{isDemoCodeOnly() ? 'Modo demo: consulta con el número de orden, escrito con o sin #.' : 'Para proteger tus datos, verificamos el número de orden y el teléfono asociado.'}
-          </div>
-        </aside>
-
-        <section className="flex min-h-[72vh] flex-col overflow-hidden rounded-3xl bg-white shadow-sm">
-          <div className="border-b border-slate-100 px-5 py-4 sm:px-7">
-            <div className="font-semibold">Asistente de Booking</div>
-            <div className="mt-1 text-xs text-slate-500">Consultas de reservas, reparación y pagos</div>
-          </div>
-          <div className="flex-1 space-y-5 overflow-y-auto px-4 py-6 sm:px-7">
-            {messages.map((message, index) => (
-              <div key={index} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                {message.role === 'assistant' && <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-950 text-white"><Bot size={18} /></div>}
-                <div className={`max-w-[82%] rounded-2xl px-4 py-3 text-sm leading-6 ${message.role === 'user' ? 'bg-slate-950 text-white' : 'bg-slate-100 text-slate-800'}`}>
-                  <AssistantMessage content={message.content} />
-                  {message.note && <p className="mt-2 text-xs text-slate-500">{message.note}</p>}
+          {messages.map((message, index) => (
+            <div key={index} ref={index === messages.length - 1 ? chatEndRef : undefined} className={message.role === 'user' ? 'flex justify-end' : 'flex justify-start'}>
+              <article className={message.role === 'user'
+                ? 'max-w-[92%] rounded-xl rounded-tr-sm bg-[#d9fdd3] px-3 py-2.5 text-[14px] leading-[1.45] shadow-sm sm:max-w-[82%] sm:px-4 sm:py-3'
+                : 'max-w-[92%] rounded-xl rounded-tl-sm bg-white px-3 py-2.5 text-[14px] leading-[1.45] shadow-sm sm:max-w-[82%] sm:px-4 sm:py-3'}>
+                <AssistantMessage content={message.content} />
+                {message.note && <p className="mt-2 border-t border-slate-100 pt-2 text-xs leading-5 text-slate-500">{message.note}</p>}
+                <div className="mt-1 flex items-center justify-end gap-1 text-[10px] text-slate-400">
+                  {message.role === 'user' ? 'ahora' : 'Booking'}
+                  {message.role === 'user' && <CheckCheck size={14} className="text-sky-600" aria-label="Enviado" />}
                 </div>
-                {message.role === 'user' && <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-slate-200 text-slate-600"><UserRound size={18} /></div>}
-              </div>
-            ))}
-            {busy && <div className="text-sm text-slate-500">Estoy consultando Booking…</div>}
-          </div>
-
-          {error && <div role="alert" className="mx-4 rounded-xl bg-rose-50 px-4 py-3 text-sm text-rose-700 sm:mx-7">{error}</div>}
-          <form onSubmit={submit} className="border-t border-slate-100 p-4 sm:p-6">
-            <div className="flex gap-2">
-              <input
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                placeholder={placeholder}
-                disabled={busy}
-                autoComplete={step === 'phone' ? 'tel' : 'off'}
-                className="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-slate-400"
-                aria-label={placeholder}
-              />
-              <button type="submit" disabled={busy || !draft.trim()} aria-label="Enviar mensaje" className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-slate-950 text-white transition hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-40">
-                <Send size={18} />
-              </button>
+              </article>
             </div>
-            <p className="mt-3 flex items-center justify-center gap-1.5 text-[11px] text-slate-400"><ShieldCheck size={13} /> Tu código y teléfono se usan solo para verificar la reserva.</p>
-          </form>
-        </section>
+          ))}
+          {busy && (
+            <div className="flex justify-start">
+              <div className="rounded-xl rounded-tl-sm bg-white px-4 py-3 text-sm text-slate-500 shadow-sm">
+                Estoy consultando Booking…
+              </div>
+            </div>
+          )}
+          {error && (
+            <div role="alert" className="mx-auto max-w-xl rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {error}
+            </div>
+          )}
+        </div>
+
+        <form onSubmit={submit} className="shrink-0 bg-[#f0f2f5] px-3 py-3 sm:px-5 sm:py-4">
+          <div className="flex items-center gap-2">
+            <Smile size={22} className="hidden shrink-0 text-slate-500 sm:block" aria-hidden="true" />
+            <Paperclip size={20} className="hidden shrink-0 rotate-[-35deg] text-slate-500 sm:block" aria-hidden="true" />
+            <input
+              value={draft}
+              onChange={(event) => {
+                setDraft(event.target.value);
+                if (error) setError('');
+              }}
+              placeholder={placeholder}
+              disabled={busy}
+              autoComplete={step === 'phone' ? 'tel' : 'off'}
+              className="min-w-0 flex-1 rounded-full bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-[#128c7e]/30 disabled:opacity-60"
+              aria-label={placeholder}
+            />
+            <button
+              type="submit"
+              disabled={busy || !draft.trim()}
+              aria-label="Enviar mensaje"
+              className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-[#075e54] text-white transition hover:bg-[#064e46] disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <Send size={18} />
+            </button>
+          </div>
+          <p className="mt-2 flex items-center justify-center gap-1.5 text-[10px] text-slate-500">
+            <ShieldCheck size={12} />
+            {isDemoCodeOnly()
+              ? 'Escribe tu consulta; para ver un ticket, el bot te pedirá el número de orden.'
+              : 'Escribe tu consulta; para ver un ticket, el bot te pedirá el número de orden y el teléfono de reserva.'}
+          </p>
+        </form>
       </section>
     </main>
   );
