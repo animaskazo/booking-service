@@ -145,7 +145,7 @@ serve(async (req) => {
           if (description || created) sections.push(`• ${created ? `${created}: ` : ""}${description || "Actualización registrada"}`);
         }
       }
-      return reply({ reply: sections.join("\\n"), verified: true }, 200, origin);
+      return reply({ reply: sections.join("\n"), verified: true }, 200, origin);
 
       verifiedTicket = {
         booking_code: appointment.short_id,
