@@ -70,7 +70,7 @@ serve(async (req) => {
     let verifiedTicket: Record<string, unknown> | null = null;
     if (shortId && (phone || demoCodeOnly)) {
       const { data: appointment, error } = await supabase.from("appointments")
-        .select("id,short_id,status,start_time,end_time,paid,paid_amount,service_id,customer_phone,ticket:tickets(id,status,description,total_budget,ready_for_pickup)")
+        .select("id,short_id,status,start_time,end_time,paid,paid_amount,service_id,customer_phone,ticket:tickets(id,status,description,total_budget)")
         .eq("short_id", shortId).maybeSingle();
       if (error || !appointment || !normalizePhone(appointment.customer_phone) ||
           (!demoCodeOnly && normalizePhone(appointment.customer_phone) !== normalizePhone(phone))) {
