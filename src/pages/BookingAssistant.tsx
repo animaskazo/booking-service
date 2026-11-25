@@ -23,7 +23,7 @@ import {
 } from '../lib/supabase-client';
 
 type ChatMessage = { role: 'user' | 'assistant'; content: string; note?: string; sensitive?: boolean };
-type Step = 'chat' | 'code' | 'phone';
+type Step = 'chat' | 'code' | 'phone' | 'email';
 
 const initialMessage: ChatMessage = {
   role: 'assistant',
@@ -54,7 +54,7 @@ function AssistantMessage({ content }: { content: string }) {
   const sectionLabels = new Set([
     'Estado', 'Equipo', 'Problema informado', 'Detalle registrado', 'Detalle de reparación',
     'Resultado de la revisión', 'Presupuesto total', 'Evaluación', 'Pagos asociados',
-    'Seguimiento', 'Servicio', 'Fecha de atención',
+    'Seguimiento', 'Servicio', 'Fecha de atención', 'Fecha y hora', 'Código de reserva', 'Pago',
   ]);
   const sections: { label: string; items: string[] }[] = [];
   let current: { label: string; items: string[] } | undefined;
@@ -362,25 +362,28 @@ export default function BookingAssistant() {
   const placeholder = useMemo(() => {
     if (step === 'code') return 'Número de orden (ej. #000004)';
     if (step === 'phone') return 'Teléfono usado al agendar';
+    if (step === 'email') return 'Correo electrónico usado al agendar';
     return 'Escribe tu consulta…';
   }, [step]);
 
   const addAssistant = (content: string, note?: string) =>
     setMessages((current) => [...current, { role: 'assistant', content, note }]);
 
-  async function askAssistant(message: string, history: ChatMessage[] = messages, code = reservationCode, phoneNumber = phone) {
+  async function askAssistant(message: string, history: ChatMessage[] = messages, code = reservationCode, phoneNumber = phone, action?: string, email?: string) {
     setBusy(true);
     setError('');
     try {
       const response = await fetch('/api/booking-agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        // Reservation credentials are sent separately and never enter Claude's chat history.
+        // Booking identifiers and the lookup email stay outside Claude's chat history.
         body: JSON.stringify({
           message,
           history: history.filter((item) => !item.sensitive && (item.role === 'user' || item.role === 'assistant')).slice(-8),
           short_id: code,
           phone: phoneNumber,
+          action,
+          email,
         }),
       });
       const result = await response.json();
@@ -391,7 +394,7 @@ export default function BookingAssistant() {
         return;
       }
       if (!response.ok || result.error) throw new Error(result.error || 'No pude conectar con Booking. Inténtalo nuevamente.');
-      addAssistant(result.reply || 'No tengo una respuesta disponible para esa consulta.', result.verified ? 'Ticket validado en Booking; información obtenida de sus datos.' : undefined);
+      addAssistant(result.reply || 'No tengo una respuesta disponible para esa consulta.', result.verified ? 'Ticket validado en Booking; información obtenida de sus datos.' : result.appointment_lookup ? 'Información consultada en las reservas de Booking.' : undefined);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Ocurrió un error al consultar Booking.');
     } finally {
@@ -435,10 +438,31 @@ export default function BookingAssistant() {
       return;
     }
 
+    if (step === 'email') {
+      const email = value.toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setError('Ese correo no parece válido. Revísalo e inténtalo nuevamente.');
+        setDraft(value);
+        return;
+      }
+      setStep('chat');
+      await askAssistant('Buscar mis horas agendadas.', messages, '', '', 'lookup_appointment_by_email', email);
+      setPendingQuestion('');
+      return;
+    }
+
     const inlineCode = isDemoCodeOnly() ? extractInlineOrderCode(value) : '';
     const effectiveCode = inlineCode || reservationCode;
     setMessages((current) => [...current, { role: 'user', content: value }]);
     if (inlineCode) setReservationCode(inlineCode);
+
+    const wantsAppointmentLookup = /(?:ver|consultar|revisar|mostrar|buscar).{0,35}(?:hora|cita|agendamiento|reserva)|(?:mi|mis).{0,18}(?:hora|cita|agendamiento|reserva)|hora.{0,12}agendada|cita.{0,12}agendada/i.test(value);
+    if (wantsAppointmentLookup && !/ticket|presupuesto|reparaci|seguimiento/i.test(value)) {
+      setPendingQuestion(value);
+      setStep('email');
+      addAssistant('Claro. Dime el correo electrónico que usaste al agendar y buscaré tus próximas horas.');
+      return;
+    }
 
     const wantsBooking = /\b(?:agendar|agendamiento|reservar|hacer una reserva|pedir una hora|tomar una hora|cita nueva)\b/i.test(value);
     if (wantsBooking && !/\b(?:estado|seguimiento|ticket|presupuesto)\b/i.test(value)) {
@@ -526,6 +550,7 @@ export default function BookingAssistant() {
             <Smile size={22} className="hidden shrink-0 text-slate-500 sm:block" aria-hidden="true" />
             <Paperclip size={20} className="hidden shrink-0 rotate-[-35deg] text-slate-500 sm:block" aria-hidden="true" />
             <input
+              type={step === 'email' ? 'email' : 'text'}
               value={draft}
               onChange={(event) => {
                 setDraft(event.target.value);
@@ -533,7 +558,7 @@ export default function BookingAssistant() {
               }}
               placeholder={placeholder}
               disabled={busy}
-              autoComplete={step === 'phone' ? 'tel' : 'off'}
+              autoComplete={step === 'phone' ? 'tel' : step === 'email' ? 'email' : 'off'}
               className="min-w-0 flex-1 rounded-full bg-white px-4 py-3 text-sm outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-[#128c7e]/30 disabled:opacity-60"
               aria-label={placeholder}
             />
@@ -549,8 +574,8 @@ export default function BookingAssistant() {
           <p className="mt-2 flex items-center justify-center gap-1.5 text-[10px] text-slate-500">
             <ShieldCheck size={12} />
             {isDemoCodeOnly()
-              ? 'Escribe tu consulta; para ver un ticket, el bot te pedirá el número de orden.'
-              : 'Escribe tu consulta; para ver un ticket, el bot te pedirá el número de orden y el teléfono de reserva.'}
+              ? step === 'email' ? 'El correo se usa para buscar tus próximas horas agendadas.' : 'Escribe tu consulta; para ver un ticket, el bot te pedirá el número de orden.'
+              : step === 'email' ? 'El correo se usa para buscar tus próximas horas agendadas.' : 'Escribe tu consulta; para ver un ticket, el bot te pedirá el número de orden y el teléfono de reserva.'}
           </p>
         </form>
       </section>
