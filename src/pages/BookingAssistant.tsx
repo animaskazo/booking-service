@@ -2,7 +2,7 @@ import { type FormEvent, useMemo, useState } from 'react';
 import { ArrowLeft, Bot, Send, ShieldCheck, UserRound } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
-type ChatMessage = { role: 'user' | 'assistant'; content: string; note?: string };
+type ChatMessage = { role: 'user' | 'assistant'; content: string; note?: string; sensitive?: boolean };
 type Step = 'chat' | 'code' | 'phone';
 
 const initialMessage: ChatMessage = {
@@ -12,6 +12,20 @@ const initialMessage: ChatMessage = {
 
 const isPrivateQuery = (text: string) =>
   /ticket|presupuesto|reparaci|seguimiento|pago|reserva|estado/i.test(text);
+
+const DEMO_CODE_ONLY_UNTIL = Date.parse('2026-11-26T23:59:59-03:00');
+const isDemoCodeOnly = () => Date.now() <= DEMO_CODE_ONLY_UNTIL;
+const normalizeOrderCode = (raw: string) => {
+  const digits = raw.trim().replace(/\D/g, '');
+  return digits.length > 0 && digits.length <= 6 ? digits.padStart(6, '0') : '';
+};
+const extractInlineOrderCode = (raw: string) => {
+  const byHash = raw.match(/#\s*(\d{1,6})\b/)?.[1];
+  const byContext = raw.match(/\b(?:orden|reserva|ticket|c[oó]digo)\b.{0,16}?\b(\d{1,6})\b/i)?.[1];
+  const exact = raw.match(/^\s*(\d{1,6})\s*$/)?.[1];
+  const code = byHash ?? byContext ?? exact;
+  return code ? normalizeOrderCode(code) : '';
+};
 
 export default function BookingAssistant() {
   const [messages, setMessages] = useState<ChatMessage[]>([initialMessage]);
@@ -24,7 +38,7 @@ export default function BookingAssistant() {
   const [error, setError] = useState('');
 
   const placeholder = useMemo(() => {
-    if (step === 'code') return 'Código de reserva';
+    if (step === 'code') return 'Número de orden (ej. #000004)';
     if (step === 'phone') return 'Teléfono usado al agendar';
     return 'Escribe tu consulta…';
   }, [step]);
@@ -32,7 +46,7 @@ export default function BookingAssistant() {
   const addAssistant = (content: string, note?: string) =>
     setMessages((current) => [...current, { role: 'assistant', content, note }]);
 
-  async function askAssistant(message: string, history: ChatMessage[] = messages, code = '', phoneNumber = '') {
+  async function askAssistant(message: string, history: ChatMessage[] = messages, code = reservationCode, phoneNumber = phone) {
     setBusy(true);
     setError('');
     try {
@@ -42,7 +56,7 @@ export default function BookingAssistant() {
         // Reservation credentials are sent separately and never enter Claude's chat history.
         body: JSON.stringify({
           message,
-          history: history.filter((item) => item.role === 'user' || item.role === 'assistant').slice(-8),
+          history: history.filter((item) => !item.sensitive && (item.role === 'user' || item.role === 'assistant')).slice(-8),
           short_id: code,
           phone: phoneNumber,
         }),
@@ -51,7 +65,7 @@ export default function BookingAssistant() {
       if (result.needs_verification) {
         setPendingQuestion(message);
         setStep('code');
-        addAssistant('Para proteger tu información, primero necesito verificar la reserva. ¿Cuál es el código de reserva?');
+        addAssistant(isDemoCodeOnly() ? 'Claro. Dime el número de orden; puedes escribirlo con o sin #.' : 'Para verificar tu reserva, dime primero el número de orden.');
         return;
       }
       if (!response.ok || result.error) throw new Error(result.error || 'No pude conectar con Booking. Inténtalo nuevamente.');
@@ -70,43 +84,76 @@ export default function BookingAssistant() {
     setDraft('');
 
     if (step === 'code') {
-      setReservationCode(value);
-      setStep('phone');
-      addAssistant('Gracias. Ahora ingresa el teléfono que usaste al agendar. Verificaremos ambos datos juntos.');
-      return;
-    }
-
-    if (step === 'phone') {
-      const safeHistory = messages.filter((message) => message.content !== reservationCode && message.content !== value);
-      setPhone(value);
-      setStep('chat');
-      await askAssistant(pendingQuestion || 'Quiero consultar mi reserva.', safeHistory, reservationCode, value);
-      setReservationCode('');
-      setPhone('');
+      const code = normalizeOrderCode(value);
+      if (!code) {
+        setError('No pude reconocer el número de orden. Prueba con #000004 o 000004.');
+        setDraft(value);
+        return;
+      }
+      const codeMessage: ChatMessage = { role: 'user', content: value, sensitive: true };
+      const safeHistory = [...messages, codeMessage];
+      setMessages(safeHistory);
+      setReservationCode(code);
+      if (isDemoCodeOnly()) {
+        setStep('chat');
+        await askAssistant(pendingQuestion || 'Quiero consultar mi orden.', safeHistory, code, '');
+      } else {
+        setStep('phone');
+        addAssistant('Gracias. Ahora necesito el teléfono que usaste al agendar para verificar la orden.');
+      }
       setPendingQuestion('');
       return;
     }
 
-    setMessages((current) => [...current, { role: 'user', content: value }]);
-    if (isPrivateQuery(value) && (!reservationCode || !phone)) {
-      setPendingQuestion(value);
-      setStep('code');
-      addAssistant('Para consultar información privada de una reserva necesito verificar primero el código de reserva y el teléfono asociado.');
+    if (step === 'phone') {
+      setPhone(value);
+      setStep('chat');
+      await askAssistant(pendingQuestion || 'Quiero consultar mi reserva.', messages, reservationCode, value);
+      setPendingQuestion('');
       return;
     }
-    await askAssistant(value, messages);
+
+    const inlineCode = isDemoCodeOnly() ? extractInlineOrderCode(value) : '';
+    const effectiveCode = inlineCode || reservationCode;
+    setMessages((current) => [...current, { role: 'user', content: value }]);
+    if (inlineCode) setReservationCode(inlineCode);
+
+    if (isPrivateQuery(value)) {
+      if (!effectiveCode) {
+        setPendingQuestion(value);
+        setStep('code');
+        addAssistant(isDemoCodeOnly() ? 'Claro, ¿cuál es el número de orden? Acepto formatos como #000004 o 000004.' : 'Para proteger tu información, necesito el número de orden.');
+        return;
+      }
+      if (!isDemoCodeOnly() && !phone) {
+        setPendingQuestion(value);
+        setStep('phone');
+        addAssistant('Ya tengo el número de orden. Ahora dime el teléfono usado al agendar.');
+        return;
+      }
+    }
+
+    await askAssistant(value, messages, effectiveCode, phone);
   }
 
   function choose(question: string) {
     if (busy) return;
     setMessages((current) => [...current, { role: 'user', content: question }]);
     if (isPrivateQuery(question)) {
-      setPendingQuestion(question);
-      setStep('code');
-      addAssistant('Para consultar información privada de una reserva necesito verificar primero el código de reserva y el teléfono asociado.');
-      return;
+      if (!reservationCode) {
+        setPendingQuestion(question);
+        setStep('code');
+        addAssistant(isDemoCodeOnly() ? 'Claro, dime el número de orden y lo reviso.' : 'Para verificar tu reserva, dime primero el número de orden.');
+        return;
+      }
+      if (!isDemoCodeOnly() && !phone) {
+        setPendingQuestion(question);
+        setStep('phone');
+        addAssistant('Dime el teléfono usado al agendar para verificar la orden.');
+        return;
+      }
     }
-    void askAssistant(question, messages);
+    void askAssistant(question, messages, reservationCode, phone);
   }
 
   return (
@@ -139,7 +186,7 @@ export default function BookingAssistant() {
           </div>
           <div className="mt-8 rounded-2xl bg-slate-50 p-4 text-xs leading-5 text-slate-600">
             <div className="mb-1 flex items-center gap-2 font-semibold text-slate-900"><ShieldCheck size={15} /> Privacidad primero</div>
-            Antes de mostrar información de una reserva, verificamos el código y el teléfono asociado.
+{isDemoCodeOnly() ? 'Modo demo: consulta con el número de orden, escrito con o sin #.' : 'Para proteger tus datos, verificamos el número de orden y el teléfono asociado.'}
           </div>
         </aside>
 
