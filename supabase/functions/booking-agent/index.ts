@@ -70,18 +70,20 @@ serve(async (req) => {
     let verifiedTicket: Record<string, unknown> | null = null;
     if (shortId && (phone || demoCodeOnly)) {
       const { data: appointment, error } = await supabase.from("appointments")
-        .select("id,short_id,status,start_time,end_time,paid,paid_amount,service_id,customer_phone,ticket:tickets(id,status,description,total_budget)")
+        .select("id,short_id,status,start_time,end_time,paid,paid_amount,service_id,customer_phone,ticket:tickets(id,status,description,reported_issue,device_model,total_budget)")
         .eq("short_id", shortId).maybeSingle();
       if (error || !appointment || (!demoCodeOnly &&
           (!normalizePhone(appointment.customer_phone) || normalizePhone(appointment.customer_phone) !== normalizePhone(phone)))) {
-        return reply({ error: "No encontré una reserva que coincida con ese código y teléfono. Revísalos e inténtalo nuevamente." }, 404, origin);
+        const message = demoCodeOnly
+          ? `No encontré un ticket asociado al número de orden #${shortId}. Revisa el número e inténtalo nuevamente.`
+          : "No encontré una reserva que coincida con ese código y teléfono. Revísalos e inténtalo nuevamente.";
+        return reply({ error: message }, 404, origin);
       }
       const ticket = Array.isArray(appointment.ticket) ? appointment.ticket[0] : appointment.ticket;
       if (!ticket) {
         return reply({
-          reply: `Encontré la reserva #${appointment.short_id}, pero todavía no tiene un ticket de reparación asociado.`,
-          verified: true,
-        }, 200, origin);
+          error: `Encontré la orden #${appointment.short_id}, pero no hay un ticket de reparación asociado.`,
+        }, 404, origin);
       }
       const [{ data: service }, findingsResult, historyResult, paymentsResult] = await Promise.all([
         supabase.from("services").select("name").eq("id", appointment.service_id).maybeSingle(),
@@ -89,6 +91,62 @@ serve(async (req) => {
         ticket?.id ? supabase.from("ticket_history").select("description,created_at").eq("ticket_id", ticket.id).order("created_at", { ascending: false }).limit(8) : Promise.resolve({ data: [] } as any),
         ticket?.id ? supabase.from("ticket_payment_links").select("description,amount,status").eq("ticket_id", ticket.id).order("created_at", { ascending: false }).limit(5) : Promise.resolve({ data: [] } as any),
       ]);
+      const statusLabels: Record<string, string> = {
+        evaluating: "En evaluación",
+        quoted: "Con presupuesto",
+        accepted: "Presupuesto aceptado",
+        rejected: "Presupuesto rechazado",
+        repairing: "En reparación",
+        ready: "Listo para retirar",
+        closed: "Cerrado",
+      };
+      const money = (amount: unknown) =>
+        typeof amount === "number" || (typeof amount === "string" && amount.trim() !== "")
+          ? new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(Number(amount))
+          : "";
+      const date = (value: unknown) => {
+        if (typeof value !== "string" || !value) return "";
+        const parsed = new Date(value);
+        return Number.isNaN(parsed.getTime())
+          ? ""
+          : new Intl.DateTimeFormat("es-CL", { dateStyle: "medium", timeStyle: "short", timeZone: "America/Santiago" }).format(parsed);
+      };
+      const sections: string[] = [`Ticket de reparación · orden #${appointment.short_id}`, "", "Estado:", statusLabels[String(ticket.status)] ?? String(ticket.status)];
+      if (ticket.device_model) sections.push("", "Equipo:", String(ticket.device_model));
+      if (ticket.reported_issue) sections.push("", "Problema informado:", String(ticket.reported_issue));
+      if (ticket.description) sections.push("", "Detalle registrado:", String(ticket.description));
+      const budget = Number(ticket.total_budget);
+      if (Number.isFinite(budget) && budget > 0) sections.push("", "Presupuesto total:", money(budget));
+      const findings = findingsResult.data ?? [];
+      if (findings.length) {
+        sections.push("", "Evaluación:");
+        for (const finding of findings) {
+          const description = String(finding.description ?? "").trim();
+          const price = money(finding.price);
+          if (description || price) sections.push(`• ${description || "Ítem registrado"}${price ? ` — ${price}` : ""}`);
+        }
+      }
+      const payments = paymentsResult.data ?? [];
+      if (payments.length) {
+        sections.push("", "Pagos asociados:");
+        for (const payment of payments) {
+          const description = String(payment.description ?? "Pago").trim();
+          const amount = money(payment.amount);
+          const status = String(payment.status ?? "").trim();
+          sections.push(`• ${description}${amount ? ` — ${amount}` : ""}${status ? ` — ${status}` : ""}`);
+        }
+      }
+      const timeline = historyResult.data ?? [];
+      if (timeline.length) {
+        sections.push("", "Seguimiento:");
+        for (const entry of timeline) {
+          const description = String(entry.description ?? "").trim();
+          const created = date(entry.created_at);
+          if (description || created) sections.push(`• ${created ? `${created}: ` : ""}${description || "Actualización registrada"}`);
+        }
+      }
+      return reply({ reply: sections.join("\\n"), verified: true }, 200, origin);
+
       verifiedTicket = {
         booking_code: appointment.short_id,
         service: service?.name ?? "Servicio",
@@ -101,8 +159,7 @@ serve(async (req) => {
           status: ticket.status,
           repair_description: ticket.description,
           total_budget: ticket.total_budget,
-          ready_for_pickup: ticket.ready_for_pickup ?? false,
-          findings: findingsResult.data ?? [],
+            findings: findingsResult.data ?? [],
           timeline: historyResult.data ?? [],
           payment_links: paymentsResult.data ?? [],
         } : null,
