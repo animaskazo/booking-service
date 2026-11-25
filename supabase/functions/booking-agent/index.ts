@@ -72,8 +72,8 @@ serve(async (req) => {
       const { data: appointment, error } = await supabase.from("appointments")
         .select("id,short_id,status,start_time,end_time,paid,paid_amount,service_id,customer_phone,ticket:tickets(id,status,description,total_budget)")
         .eq("short_id", shortId).maybeSingle();
-      if (error || !appointment || !normalizePhone(appointment.customer_phone) ||
-          (!demoCodeOnly && normalizePhone(appointment.customer_phone) !== normalizePhone(phone))) {
+      if (error || !appointment || (!demoCodeOnly &&
+          (!normalizePhone(appointment.customer_phone) || normalizePhone(appointment.customer_phone) !== normalizePhone(phone)))) {
         return reply({ error: "No encontré una reserva que coincida con ese código y teléfono. Revísalos e inténtalo nuevamente." }, 404, origin);
       }
       const ticket = Array.isArray(appointment.ticket) ? appointment.ticket[0] : appointment.ticket;
