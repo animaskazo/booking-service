@@ -7,7 +7,7 @@ const claudeKey = Deno.env.get("CLAUDE_API_KEY") ?? "";
 const supabase = createClient(url, serviceKey);
 const allowedOrigin = "https://booking-asistente-servicio.truewoodpecker16.chatgpt.site";
 const normalizePhone = (value: string) => {
-  let digits = String(value ?? "").replace(/\\D/g, "");
+  let digits = String(value ?? "").replace(/\D/g, "");
   if (digits.startsWith("00")) digits = digits.slice(2);
   // Chilean numbers may be stored or entered with the country prefix.
   if (digits.startsWith("56") && digits.length >= 11) digits = digits.slice(2);
