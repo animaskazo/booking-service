@@ -29,30 +29,56 @@ const extractInlineOrderCode = (raw: string) => {
 
 function AssistantMessage({ content }: { content: string }) {
   const normalized = content.replace(/\\n/g, '\n').replace(/\r\n?/g, '\n').replace(/\*\*/g, '').trim();
-  const blocks = normalized.split(/\n\s*\n/).map((block) => block.trim()).filter(Boolean);
+  const lines = normalized.split('\n');
+  const title = lines.shift()?.trim() ?? '';
+  const sectionLabels = new Set([
+    'Estado', 'Equipo', 'Problema informado', 'Detalle registrado', 'Detalle de reparación',
+    'Resultado de la revisión', 'Presupuesto total', 'Evaluación', 'Pagos asociados',
+    'Seguimiento', 'Servicio', 'Fecha de atención',
+  ]);
+  const sections: { label: string; items: string[] }[] = [];
+  let current: { label: string; items: string[] } | undefined;
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    const label = line.endsWith(':') ? line.slice(0, -1).trim() : '';
+    if (label && sectionLabels.has(label)) {
+      if (current && current.items.length === 0) {
+        current.label = current.label + ' · ' + label;
+      } else {
+        current = { label, items: [] };
+        sections.push(current);
+      }
+      continue;
+    }
+    if (!line) {
+      if (current && current.items.length && current.items[current.items.length - 1] !== '') current.items.push('');
+      continue;
+    }
+    if (current) current.items.push(line);
+  }
 
   return (
     <div className="space-y-3">
-      {blocks.map((block, blockIndex) => {
-        const lines = block.split('\n').map((line) => line.trim()).filter(Boolean);
-        return (
-          <div key={blockIndex} className="space-y-1.5">
-            {lines.map((line, lineIndex) => {
-              const bullet = line.match(/^(?:[-*•]|\d+[.)])\s+(.*)$/);
-              if (bullet) {
-                return (
-                  <div key={lineIndex} className="flex gap-2 pl-1">
-                    <span aria-hidden="true" className="text-slate-400">•</span>
-                    <p>{bullet[1]}</p>
-                  </div>
-                );
-              }
-              const heading = line.endsWith(':');
-              return <p key={lineIndex} className={heading ? 'font-semibold text-slate-900' : undefined}>{line}</p>;
+      {title && <p className="font-semibold text-slate-900">{title}</p>}
+      {sections.map((section, index) => (
+        <section key={section.label + '-' + index} className="rounded-xl border border-slate-200 bg-white/80 p-3">
+          <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{section.label}</p>
+          <div className="space-y-1.5">
+            {section.items.filter(Boolean).map((item, itemIndex) => {
+              const bullet = item.match(/^(?:[-*•]|\d+[.)])\s+(.*)$/);
+              return bullet ? (
+                <div key={itemIndex} className="flex gap-2 text-sm leading-5 text-slate-700">
+                  <span aria-hidden="true" className="text-slate-400">•</span>
+                  <p>{bullet[1]}</p>
+                </div>
+              ) : (
+                <p key={itemIndex} className={section.label === 'Estado' ? 'inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-sm font-medium text-emerald-800' : 'whitespace-pre-line text-sm leading-5 text-slate-700'}>{item}</p>
+              );
             })}
           </div>
-        );
-      })}
+        </section>
+      ))}
     </div>
   );
 }
