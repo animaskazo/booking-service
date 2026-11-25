@@ -142,11 +142,6 @@ function BookingFlowSimulation({ onClose, onBooked }: BookingFlowProps) {
         if (error) setAppointmentsError('No se pudieron consultar las reservas existentes.');
         else setAppointments(data ?? []);
         setLoadingAppointments(false);
-      })
-      .catch(() => {
-        if (!active) return;
-        setAppointmentsError('No se pudieron consultar las reservas existentes.');
-        setLoadingAppointments(false);
       });
     return () => { active = false; };
   }, [dateRangeStart, dateRangeEnd]);
