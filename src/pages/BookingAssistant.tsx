@@ -98,7 +98,7 @@ export default function BookingAssistant() {
         return;
       }
       if (!response.ok || result.error) throw new Error(result.error || 'No pude conectar con Booking. Inténtalo nuevamente.');
-      addAssistant(result.reply || 'No tengo una respuesta disponible para esa consulta.', result.verified ? 'Información consultada en Booking tras verificar la reserva.' : undefined);
+      addAssistant(result.reply || 'No tengo una respuesta disponible para esa consulta.', result.verified ? 'Ticket validado en Booking; información obtenida de sus datos.' : undefined);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Ocurrió un error al consultar Booking.');
     } finally {
